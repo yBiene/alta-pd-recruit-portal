@@ -903,13 +903,13 @@ const radioBank=[
 function academyNavPatch(){
  const navEl=$('#nav');if(!navEl||navEl.querySelector('[data-view="scenario"]'))return;
  const portal=[...navEl.querySelectorAll('.nav-label')].find(x=>x.textContent.includes('PORTAL'));
- const html=`<div class="nav-label">ACADEMY TOOLS</div><button class="nav-btn" data-view="scenario">🎬 Einsatz-Simulator</button><button class="nav-btn" data-view="radio">📻 Funk-Trainer</button><button class="nav-btn" data-view="mapquiz">🗺️ Kartenprüfung</button><button class="nav-btn" data-view="plan">📅 Mein Plan</button><button class="nav-btn" data-view="rides">🚓 Ausbildungsfahrten</button><button class="nav-btn" data-view="dienstbuch">📔 Dienstbuch</button><button class="nav-btn" data-view="messages">✉️ Nachrichten</button><button class="nav-btn" data-view="achievements">🏆 Abzeichen</button>`;
+ const html=`<div class="nav-label">ACADEMY TOOLS</div><button class="nav-btn" data-view="scenario">🎬 Einsatz-Simulator</button><button class="nav-btn" data-view="radio">📻 Funk-Trainer</button><button class="nav-btn" data-view="mapquiz">🗺️ Kartenprüfung</button><button class="nav-btn" data-view="plan">📅 Mein Plan</button><button class="nav-btn" data-view="rides">🚓 Ausbildungsfahrten</button><button class="nav-btn" data-view="dienstbuch">📔 Dienstbuch</button><button class="nav-btn" data-view="messages">✉️ Nachrichten</button><button class="nav-btn" data-view="achievements">🏆 Abzeichen</button><button class="nav-btn" data-view="leaderboard">🥇 Leaderboard</button>`;
  if(portal)portal.insertAdjacentHTML('beforebegin',html);else navEl.insertAdjacentHTML('beforeend',html);
  navEl.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>showView(b.dataset.view));
 }
 const _navV49=nav;nav=function(){_navV49();academyNavPatch()};
 const _showViewV49=showView;showView=function(v){
- if(v==='scenario')return scenarioView();if(v==='radio')return radioView();if(v==='mapquiz')return mapQuizView();if(v==='plan')return planView();if(v==='rides')return ridesView();if(v==='dienstbuch')return dienstbuchView();if(v==='messages')return messagesView();if(v==='achievements')return achievementsView();return _showViewV49(v)
+ if(v==='scenario')return scenarioView();if(v==='radio')return radioView();if(v==='mapquiz')return mapQuizView();if(v==='plan')return planView();if(v==='rides')return ridesView();if(v==='dienstbuch')return dienstbuchView();if(v==='messages')return messagesView();if(v==='achievements')return achievementsView();if(v==='leaderboard')return leaderboardViewV565();return _showViewV49(v)
 };
 function moduleHead(kicker,title,desc){return `<div class="section-head"><div><div class="eyebrow">${kicker}</div><h1>${title}</h1><p class="muted">${desc}</p></div><span class="status">● Academy online</span></div>`}
 function scenarioView(){setActive('[data-view="scenario"]');$('#pageTitle').textContent='Einsatz-Simulator';let i=academyGet('scenarioIndex',0)%scenarioBank.length,s=scenarioBank[i];$('#content').innerHTML=moduleHead('🎬 PRAXISTRAINING','Einsatz-Simulator','Trainiere Entscheidungen anhand kurzer Einsatzlagen.')+`<div class="card simulator-card"><div class="scenario-tag">SZENARIO ${i+1} / ${scenarioBank.length}</div><h2>${esc(s.q)}</h2><div class="sim-options">${s.a.map((a,j)=>`<button data-sim="${j}">${esc(a)}</button>`).join('')}</div><div id="simFeedback" class="sim-feedback"></div></div>`;document.querySelectorAll('[data-sim]').forEach(b=>b.onclick=()=>{let ok=+b.dataset.sim===s.c;document.querySelectorAll('[data-sim]').forEach(x=>x.disabled=true);b.classList.add(ok?'correct':'wrong');$('#simFeedback').innerHTML=`<b>${ok?'✓ Richtig':'✕ Noch einmal ansehen'}</b><span>Passender Lernstoff: Kapitel ${s.chapter} · ${esc(CHAPTERS[s.chapter].title)}</span><button class="primary" id="nextScenario">Nächstes Szenario →</button>`;$('#nextScenario').onclick=()=>{academySet('scenarioIndex',i+1);scenarioView()}})}
@@ -1317,7 +1317,7 @@ setTimeout(sidebarTooltipsV544,0);
 
 /* ===== V5.6 – Final Release: Deep Links, Reload & History QA ===== */
 (function(){
- const ROUTES=new Set(['dashboard','command','accounts','admin','tests','account','news','documents','calendar','scenario','radio','mapquiz','plan','rides','dienstbuch','messages','achievements']);
+ const ROUTES=new Set(['dashboard','command','accounts','admin','tests','account','news','documents','calendar','scenario','radio','mapquiz','plan','rides','dienstbuch','messages','achievements','leaderboard']);
  let applying=false;
  function stateFor(route,extra={}){return {apdPortal:true,route:route||'dashboard',chapter:extra.chapter||null,recruitId:extra.recruitId||null,recordClosed:extra.recordClosed??null,v56:true}}
  function hashFor(s){if(s.route==='chapter'&&s.chapter)return '#chapter-'+s.chapter;if(s.route==='admin'&&s.recruitId&&!s.recordClosed)return '#admin-recruit-'+encodeURIComponent(s.recruitId);return '#'+(s.route||'dashboard')}
@@ -1385,3 +1385,62 @@ setTimeout(sidebarTooltipsV544,0);
  };
 })();
 
+
+
+/* ===== V5.6.5 – Academy Leaderboard ===== */
+function v565WeekBounds(){
+ const now=new Date(), d=new Date(now); d.setHours(0,0,0,0);
+ const day=(d.getDay()+6)%7; const start=new Date(d); start.setDate(d.getDate()-day);
+ const end=new Date(start); end.setDate(start.getDate()+7);
+ return {start,end,now};
+}
+function v565Date(x){const d=x?new Date(x):null;return d&&!isNaN(d)?d:null}
+function v565InWeek(x,b){const d=v565Date(x);return !!d&&d>=b.start&&d<b.end}
+function v565PassedTests(r){return (r.testResults||[]).filter(x=>x.passed).length}
+function v565WeekScore(r,b){
+ let pts=0,activity=0;
+ const audits=(typeof academyAudit!=='undefined'?academyAudit:[]).filter(x=>x.recruit_id===r.id&&v565InWeek(x.created_at,b));
+ audits.forEach(x=>{
+  const a=String(x.action||'').toLowerCase(); let p=4;
+  if(a.includes('abschluss'))p=18;
+  else if(a.includes('praxis')||a.includes('bewertung'))p=12;
+  else if(a.includes('ziel')||a.includes('termin'))p=7;
+  else if(a.includes('freigabe')||a.includes('qualifikation'))p=10;
+  pts+=p; activity++;
+ });
+ (r.testResults||[]).forEach(x=>{const when=x.created_at||x.completed_at||x.date;if(v565InWeek(when,b)){pts+=x.passed?18:5;activity++}});
+ (r.reports||[]).forEach(x=>{const when=x.created_at||x.date||x.timestamp;if(v565InWeek(when,b)){pts+=12;activity++}});
+ (r.goals||[]).forEach(x=>{const when=x.completed_at||x.updated_at;if(x.done&&v565InWeek(when,b)){pts+=8;activity++}});
+ return {pts,activity};
+}
+function v565Trend(r,b){
+ const pct=progress(r), open=(r.goals||[]).filter(g=>!g.done).length;
+ if(pct>=90&&open<=1)return ['▲','Stark','up'];
+ if(pct>=60)return ['●','Stabil','flat'];
+ if(pct>=30)return ['↗','Aufbau','up'];
+ return ['○','Startphase','flat'];
+}
+function v565LeaderboardData(){
+ const b=v565WeekBounds();
+ return db.users.filter(x=>x.role==='recruit'&&x.status!=='Archiviert').map(r=>{
+  const w=v565WeekScore(r,b), tr=v565Trend(r,b);
+  const practice=(typeof academyPracticeEvaluations!=='undefined'?academyPracticeEvaluations:[]).filter(x=>x.recruit_id===r.id);
+  let avg=0;if(practice.length){const vals=[];practice.forEach(x=>['radio','safety','driving','citizen','law','appearance','independence'].forEach(k=>{const v=+x[k];if(v)vals.push(v)}));if(vals.length)avg=vals.reduce((a,v)=>a+v,0)/vals.length}
+  return {r,points:w.pts,activity:w.activity,pct:progress(r),tests:v565PassedTests(r),practice:practice.length,avg,trend:tr};
+ }).sort((a,b)=>b.points-a.points||b.pct-a.pct||b.tests-a.tests||a.r.name.localeCompare(b.r.name,'de'));
+}
+function leaderboardViewV565(){
+ setActive('[data-view="leaderboard"]');$('#pageTitle').textContent='Academy Leaderboard';
+ const b=v565WeekBounds(), all=v565LeaderboardData(), top=all.slice(0,10);
+ const end=new Date(b.end);end.setDate(end.getDate()-1);
+ const weekLabel=`${b.start.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} – ${end.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}`;
+ const podium=[top[1],top[0],top[2]], places=[2,1,3], medals=['🥈','🥇','🥉'];
+ const bestProgress=[...all].sort((a,b)=>b.pct-a.pct)[0], bestTests=[...all].sort((a,b)=>b.tests-a.tests)[0], bestPractice=[...all].sort((a,b)=>b.avg-a.avg)[0], mostActive=[...all].sort((a,b)=>b.activity-a.activity)[0];
+ const pod=podium.map((x,i)=>x?`<div class="lb-podium lb-place-${places[i]}"><div class="lb-medal">${medals[i]}</div><img src="${esc(x.r.avatarUrl||'apd-logo.png')}" onerror="this.src='apd-logo.png'"><small>PLATZ ${places[i]}</small><h3>${esc(x.r.name)}</h3><span>${esc(x.r.serviceNo||'—')} · ${esc(x.r.rank||'Recruit I')}</span><strong>${x.points} P</strong><div class="lb-mini-progress"><i style="width:${x.pct}%"></i></div><em>${x.pct}% Ausbildung</em></div>`:'<div class="lb-podium lb-empty">—</div>').join('');
+ const rows=top.map((x,i)=>`<div class="lb-row ${i<3?'top':''}"><div class="lb-rank">${i+1}</div><div class="lb-person"><img src="${esc(x.r.avatarUrl||'apd-logo.png')}" onerror="this.src='apd-logo.png'"><div><b>${esc(x.r.name)}</b><small>${esc(x.r.serviceNo||'—')} · ${esc(x.r.rank||'Recruit I')} · FTO: ${esc(x.r.fto||'—')}</small></div></div><div><small>Phase</small><b>${esc(stage(x.r))}</b></div><div><small>Fortschritt</small><b>${x.pct}%</b></div><div><small>Tests</small><b>${x.tests}/5</b></div><div><small>Praxis</small><b>${x.practice}</b></div><div class="lb-points"><small>Woche</small><b>${x.points} P</b></div><div class="lb-trend ${x.trend[2]}">${x.trend[0]} ${x.trend[1]}</div></div>`).join('');
+ $('#content').innerHTML=moduleHead('🥇 ACADEMY TOOLS','Academy Leaderboard','Top 10 der aktiven Rekruten – Wochenleistung und aktueller Ausbildungsstand.')+
+ `<section class="card lb-hero"><div><div class="eyebrow">AKTUELLE WOCHE</div><h2>${weekLabel}</h2><p class="muted">Wochenpunkte entstehen aus dokumentierten Academy-Aktivitäten, Tests, Praxis und abgeschlossenen Ausbildungszielen. Der Gesamtfortschritt dient bei Gleichstand als nächstes Kriterium.</p></div><div class="lb-week-badge"><span>🏆</span><b>${all.length}</b><small>aktive Recruits</small></div></section>
+ ${top.length?`<section class="lb-podium-wrap">${pod}</section>`:`<div class="card empty-state-v551"><b>Noch keine Recruits</b>Das Leaderboard füllt sich automatisch, sobald Recruit-Accounts vorhanden sind.</div>`}
+ <section class="card lb-highlights"><div><small>🚀 Höchster Fortschritt</small><b>${bestProgress?esc(bestProgress.r.name)+' · '+bestProgress.pct+'%':'—'}</b></div><div><small>📝 Beste Testbilanz</small><b>${bestTests?esc(bestTests.r.name)+' · '+bestTests.tests+'/5':'—'}</b></div><div><small>🎯 Praxis</small><b>${bestPractice&&bestPractice.practice?esc(bestPractice.r.name)+' · '+bestPractice.practice+' Bewertungen':'—'}</b></div><div><small>⚡ Aktivität der Woche</small><b>${mostActive&&mostActive.activity?esc(mostActive.r.name)+' · '+mostActive.activity+' Aktionen':'—'}</b></div></section>
+ ${top.length?`<section class="card lb-table-card"><div class="section-head compact"><div><div class="eyebrow">TOP 10</div><h2>Wochenrangliste</h2></div><span class="status">Montag – Sonntag</span></div><div class="lb-list">${rows}</div><p class="muted lb-note">Das Leaderboard ist eine Motivationsübersicht. Ausbildungsfreigaben und FTO-Bewertungen werden dadurch nicht verändert.</p></section>`:''}`;
+}
