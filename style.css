@@ -406,3 +406,42 @@ select{color-scheme:dark;cursor:pointer}
 .motivation-preview{display:flex;align-items:center;gap:14px;padding:12px 16px;margin:4px 0 14px;border:1px solid rgba(24,169,255,.45);border-radius:14px;background:linear-gradient(90deg,rgba(0,123,255,.16),rgba(5,14,29,.75));box-shadow:0 10px 30px rgba(0,0,0,.18)}
 .motivation-preview span{font-weight:900;color:#53c7ff;letter-spacing:.06em}.motivation-preview b{font-size:16px}.motivation-preview small{color:#8fa7bd}
 @media(max-width:800px){.motivation-preview{align-items:flex-start;flex-direction:column;gap:4px}}
+
+/* ===== V4.8.2 Dashboard Kapitelkarten kompakter ===== */
+/* Zurueck zur kompakteren Kartenhoehe: Bilder bleiben proportional und werden nur beschnitten. */
+.chapter-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.chapter-card-image{
+  aspect-ratio:2.75 / 1!important;
+  min-height:108px!important;
+  max-height:145px;
+}
+.chapter-card-content{
+  min-height:0!important;
+  height:100%!important;
+  padding:11px 13px!important;
+}
+.chapter-card-image .chapter-num{
+  font-size:10px;
+}
+.chapter-card-icon{font-size:14px}
+.chapter-card-image h3{
+  font-size:14px!important;
+  line-height:1.15!important;
+  margin:5px 0 7px!important;
+  max-width:92%!important;
+}
+.chapter-card-state{
+  padding:3px 7px!important;
+  font-size:9px!important;
+}
+@media(max-width:1250px){
+  .chapter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chapter-card-image{aspect-ratio:2.65 / 1!important;max-height:none}
+}
+@media(max-width:760px){
+  .chapter-grid{grid-template-columns:1fr}
+  .chapter-card-image{aspect-ratio:2.35 / 1!important;min-height:112px!important}
+}
