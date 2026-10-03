@@ -67,9 +67,9 @@ function showChapter(n){
  const c=CHAPTERS[n]; if(!c)return;
  setActive(`[data-chapter="${n}"]`); $("#pageTitle").textContent=`Kapitel ${n}`;
  const done=current.completed.includes(n);
- const imgs=(c.images||[]).map(i=>`<img src="assets/handbook/${i}" alt="Handbuch-Abbildung ${i}" onclick="window.open(this.src,'_blank')">`).join("");
+ const imgs=(c.images||[]).map(i=>`<img src="${i}" alt="Handbuch-Abbildung ${i}" onclick="window.open(this.src,'_blank')">`).join("");
  $("#content").innerHTML=`
- <div class="chapter-header" style="background-image:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.58)),url('assets/handbook/${(c.images||[])[0]||"image26.png"}')">
+ <div class="chapter-header" style="background-image:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.58)),url('${(c.images||[])[0]||"image26.png"}')">
   <div><div class="chapter-no">KAPITEL ${String(n).padStart(2,"0")}</div><h1>${esc(c.title)}</h1><span class="status">${done?"✓ Abgeschlossen":"● In Ausbildung"}</span></div>
  </div>
  <div class="chapter-body">
@@ -160,10 +160,26 @@ $("#loginForm").onsubmit=e=>{
  e.preventDefault();db=loadDB();let u=$("#loginUser").value.trim().toLowerCase(),p=$("#loginPass").value;
  let found=db.users.find(x=>x.username.toLowerCase()===u&&x.password===p);
  if(!found){$("#loginError").textContent="Benutzername oder Passwort ist nicht korrekt.";return}
- current=found;$("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
+ current=found;
+ localStorage.setItem("apd_logged_in_user", current.username);
+ $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
  $("#topName").textContent=current.name;$("#topRole").textContent=current.role==="admin"?"Administrator / FTO":"Recruit";
  nav();setupSearch();dashboard();
  if(!sessionStorage.getItem("apd_seen_splash")){$("#splash").classList.remove("hidden")}
 };
 $("#enterPortal").onclick=()=>{$("#splash").classList.add("hidden");sessionStorage.setItem("apd_seen_splash","1")};
-$("#logoutBtn").onclick=()=>{current=null;location.reload()};
+$("#logoutBtn").onclick=()=>{localStorage.removeItem("apd_logged_in_user");current=null;location.reload()};
+
+(function restoreLogin(){
+  const username=localStorage.getItem("apd_logged_in_user");
+  if(!username) return;
+  db=loadDB();
+  const found=db.users.find(x=>x.username===username);
+  if(!found){localStorage.removeItem("apd_logged_in_user");return;}
+  current=found;
+  $("#loginView").classList.add("hidden");
+  $("#app").classList.remove("hidden");
+  $("#topName").textContent=current.name;
+  $("#topRole").textContent=current.role==="admin"?"Administrator / FTO":"Recruit";
+  nav();setupSearch();dashboard();
+})();
