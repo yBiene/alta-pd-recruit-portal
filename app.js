@@ -369,6 +369,8 @@ let recruitRecordsOnly=false;
 function recruitRecordsView(){
  if(!isTrainer(current)) return;
  recruitRecordsOnly=true;
+ recruitRecordClosed=true;
+ selectedRecruit=null;
  admin();
 }
 function admin(){
@@ -377,7 +379,7 @@ function admin(){
  $("#pageTitle").textContent=recruitRecordsOnly?"Rekruten Ausbildungsakten":"Recruit-Verwaltung";
  const recruits=db.users.filter(x=>x.role==="recruit");
  const trainers=db.users.filter(x=>x.role==="trainer");
- if(!recruitRecordClosed && !selectedRecruit && recruits[0]) selectedRecruit=recruits[0].id;
+ /* V5.3.3: Akte öffnet sich ausschließlich über „Öffnen“. */
  let sel=db.users.find(x=>x.id===selectedRecruit && x.role==="recruit");
  const createRecruitCard=recruitRecordsOnly?"":canCreateRecruit()?`<div class="card account-create-card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
     <label>Name<input name="name" required placeholder="Recruit Name"></label>

@@ -594,3 +594,12 @@ select{color-scheme:dark;cursor:pointer}
 .admin-grid.record-is-closed{grid-template-columns:minmax(460px,650px)!important}
 @media(max-width:1050px){.account-management-grid{grid-template-columns:1fr;gap:22px}.admin-grid:not(.record-is-closed){grid-template-columns:1fr!important}}
 @media(max-width:700px){.account-form-spacious{grid-template-columns:1fr}.account-management-grid{margin-top:16px}.account-create-panel{padding:20px!important}}
+
+
+/* ===== V5.3.3 Ausbildungsakte: erst auf Klick + optisch tiefer ===== */
+@media(min-width:1051px){
+  .admin-grid:not(.record-is-closed) .record-workspace{margin-top:92px!important}
+}
+@media(max-width:1050px){
+  .admin-grid:not(.record-is-closed) .record-workspace{margin-top:30px!important}
+}
