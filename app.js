@@ -6,7 +6,7 @@ const SUPABASE_PUBLISHABLE_KEY="sb_publishable_EmJes2VlNCNztFeNiL6KLQ_U_1G_Mvy";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
 });
-let db={users:[]}, current=null, selectedRecruit=null;
+let db={users:[]}, current=null, selectedRecruit=null, recruitRecordClosed=false;
 
 function authEmail(username){
  return `${String(username||"").trim().toLowerCase()}@altapd.internal`;
@@ -302,7 +302,7 @@ function admin(){
  setActive('[data-view="admin"]'); $("#pageTitle").textContent="Recruit-Verwaltung";
  const recruits=db.users.filter(x=>x.role==="recruit");
  const trainers=db.users.filter(x=>x.role==="trainer");
- if(!selectedRecruit && recruits[0]) selectedRecruit=recruits[0].id;
+ if(!recruitRecordClosed && !selectedRecruit && recruits[0]) selectedRecruit=recruits[0].id;
  let sel=db.users.find(x=>x.id===selectedRecruit && x.role==="recruit");
  const createRecruitCard=canCreateRecruit()?`<div class="card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
     <label>Name<input name="name" required placeholder="Recruit Name"></label>
@@ -334,7 +334,7 @@ function admin(){
     ${recruits.map(r=>`<div class="recruit-row"><div><b>${esc(r.name)}</b><small>${esc(r.serviceNo)} · ${progress(r)}% · ${esc(r.fto)}</small></div><button class="primary" data-edit="${r.id}">Öffnen</button></div>`).join("")||"<p>Noch keine Recruit-Accounts.</p>"}
    </div>
   </div>
-  <div>${sel?adminRecruit(sel):`<div class="card"><h2>Keinen Recruit ausgewählt</h2></div>`}</div>
+  <div>${sel?adminRecruit(sel):`<div class="card record-closed-card"><div><div class="eyebrow">AUSBILDUNGSAKTE</div><h2>Akte geschlossen</h2><p class="muted">Wähle links bei einem Recruit „Öffnen“, wenn du die Ausbildungsakte bearbeiten möchtest.</p></div><span>📁</span></div>`}</div>
  </div>
  ${trainerAdmin?`<div class="trainer-admin-wide">${trainerAdmin}</div>`:""}`;
  $("#createRecruit")?.addEventListener("submit",async e=>{
@@ -353,7 +353,8 @@ function admin(){
    await refreshData();admin();
   }catch(err){alert("Ausbilder konnte nicht erstellt werden: "+err.message)}
  });
- document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{selectedRecruit=b.dataset.edit;admin()});
+ document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{recruitRecordClosed=false;selectedRecruit=b.dataset.edit;admin()});
+ $("#closeRecruitRecord")?.addEventListener("click",()=>{recruitRecordClosed=true;selectedRecruit=null;admin()});
  document.querySelectorAll("[data-check]").forEach(b=>b.onchange=async()=>{await toggleChapter(sel.id,+b.dataset.check);await refreshData();admin()});
  document.querySelectorAll("[data-test-assign]").forEach(b=>b.onchange=async()=>{
   if(b.checked){
@@ -418,7 +419,7 @@ function admin(){
 function adminRecruit(r){
  let p=progress(r);
  return `<div class="card">
-  <div class="eyebrow">AUSBILDUNGSAKTE</div><h2>${esc(r.name)}</h2>
+  <div class="record-head"><div><div class="eyebrow">AUSBILDUNGSAKTE</div><h2>${esc(r.name)}</h2></div><button class="record-close-btn" id="closeRecruitRecord" type="button" title="Ausbildungsakte schließen">✕ Ausbildungsakte schließen</button></div>
   <p class="muted">${esc(r.serviceNo)} · ${esc(r.username)}</p>
   <div class="progress"><i style="width:${p}%"></i></div><p><b>${p}%</b> · ${r.completed.length}/22 Kapitel · ${stage(r)}</p>
   <div class="grid account-grid">
@@ -608,7 +609,7 @@ function openRecruitQuickPanel(id){
  document.querySelector('.quick-panel')?.remove();document.querySelector('.quick-backdrop')?.remove();
  const r=db.users.find(x=>x.id===id);if(!r)return;const sig=recruitSignal(r),open=(r.goals||[]).filter(g=>!g.done),failed=(r.testResults||[]).filter(t=>!t.passed);
  const back=document.createElement('div');back.className='quick-backdrop';const p=document.createElement('aside');p.className='quick-panel';p.innerHTML=`<button class="quick-close">×</button><div class="eyebrow">RECRUIT-SCHNELLAKTE</div><div class="quick-person"><div class="quick-avatar">${esc((r.name||'APD').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}</div><div><h2>${esc(r.name)}</h2><small>${esc(r.rank||'Recruit')} · Badge ${esc(r.serviceNo||'—')}</small></div></div><div class="signal ${sig.cls}"><i></i>${sig.label}</div><div class="quick-progress"><div><b>Ausbildungsfortschritt</b><strong>${progress(r)}%</strong></div><div class="progress"><i style="width:${progress(r)}%"></i></div></div><div class="quick-grid"><div><small>Haupt-FTO</small><b>${esc(r.fto||'—')}</b></div><div><small>Phase</small><b>${esc(stage(r))}</b></div><div><small>Offene Ziele</small><b>${open.length}</b></div><div><small>FTO-Berichte</small><b>${(r.reports||[]).length}</b></div></div>${open.length?`<div class="quick-section"><b>Nächste Aufgaben</b>${open.slice(0,3).map(g=>`<p>📌 ${esc(g.text)}</p>`).join('')}</div>`:''}${failed.length?`<div class="quick-section danger"><b>Prüfung beachten</b><p>⚠ ${failed.length} nicht bestandene Prüfung(en)</p></div>`:''}<div class="quick-actions"><button class="primary" data-full-record>📂 Ausbildungsakte öffnen</button><button class="secondary" data-close>Schließen</button></div>`;
- document.body.append(back,p);const close=()=>{p.remove();back.remove()};back.onclick=close;p.querySelector('.quick-close').onclick=close;p.querySelector('[data-close]').onclick=close;p.querySelector('[data-full-record]').onclick=()=>{close();selectedRecruit=r.id;admin()};
+ document.body.append(back,p);const close=()=>{p.remove();back.remove()};back.onclick=close;p.querySelector('.quick-close').onclick=close;p.querySelector('[data-close]').onclick=close;p.querySelector('[data-full-record]').onclick=()=>{close();recruitRecordClosed=false;selectedRecruit=r.id;admin()};
 }
 const _adminV45=admin;admin=function(){_adminV45();if(!isTrainer(current))return;const rows=[...document.querySelectorAll('.recruit-row')];rows.forEach(row=>{const btn=row.querySelector('[data-edit]');if(!btn)return;const id=btn.dataset.edit, r=db.users.find(x=>x.id===id);if(!r)return;const sig=recruitSignal(r);if(!row.querySelector('.recruit-signal'))row.querySelector('div')?.insertAdjacentHTML('beforeend',`<span class="recruit-signal ${sig.cls}"><i></i>${sig.label}</span>`);if(!row.querySelector('[data-quick]')){const q=document.createElement('button');q.className='secondary quick-record-btn';q.dataset.quick=id;q.textContent='👁 Schnellakte';btn.before(q);q.onclick=()=>openRecruitQuickPanel(id)}});
  const filter=$('#adminFilter'),sort=$('#adminSort');const apply=()=>{const q=($('#adminSearch')?.value||'').toLowerCase(),f=filter?.value||'Alle';rows.forEach(row=>{const id=row.querySelector('[data-edit]')?.dataset.edit,r=db.users.find(x=>x.id===id);if(!r)return;const matchQ=(row.dataset.search||row.textContent.toLowerCase()).includes(q);const s=statusName(r);const matchF=f==='Alle'||(f==='In Ausbildung'&&s==='In Ausbildung')||(f==='Abgeschlossen'&&s==='Abgeschlossen')||(f==='Archiviert'&&s==='Archiviert');row.style.display=matchQ&&matchF?'':'none'});if(sort){const parent=rows[0]?.parentElement;if(parent){[...rows].sort((a,b)=>{const ra=db.users.find(x=>x.id===a.querySelector('[data-edit]')?.dataset.edit),rb=db.users.find(x=>x.id===b.querySelector('[data-edit]')?.dataset.edit);if(sort.value==='Fortschritt')return progress(rb)-progress(ra);if(sort.value==='Dienstnummer')return String(ra?.serviceNo||'').localeCompare(String(rb?.serviceNo||''),'de',{numeric:true});return String(ra?.name||'').localeCompare(String(rb?.name||''),'de')}).forEach(x=>parent.appendChild(x))}}};$('#adminSearch')?.addEventListener('input',apply);filter?.addEventListener('change',apply);sort?.addEventListener('change',apply);apply();installNotificationBell()};
