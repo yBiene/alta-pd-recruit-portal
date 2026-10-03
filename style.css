@@ -929,3 +929,89 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(prefers-reduced-motion:reduce){
   .sidebar .brand img,.sidebar .sidebar-brand img,.sidebar .brand-wrap img,.sidebar img.brand-logo,.sidebar img.logo{animation:none !important}
 }
+
+
+/* ===== V5.6.8 – Logo füllt vorhandenen Header-Kasten ===== */
+/* Der Header-Kasten selbst bleibt unverändert. Nur das Wappen wird visuell größer. */
+.sidebar .brand,
+.sidebar .sidebar-brand,
+.sidebar .brand-wrap{
+  min-height:0 !important;
+  height:auto !important;
+  overflow:visible !important;
+}
+
+.sidebar .brand img,
+.sidebar .sidebar-brand img,
+.sidebar .brand-wrap img,
+.sidebar img.brand-logo,
+.sidebar img.logo{
+  width:132px !important;
+  height:132px !important;
+  min-width:132px !important;
+  max-width:132px !important;
+  margin-left:-22px !important;
+  margin-right:-8px !important;
+  object-fit:contain !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  opacity:.92;
+  mix-blend-mode:screen;
+  transform-origin:center;
+  animation:apdLogoFill568 3.8s ease-in-out infinite !important;
+}
+
+@keyframes apdLogoFill568{
+  0%,100%{
+    transform:scale(1);
+    opacity:.88;
+    filter:drop-shadow(0 0 7px rgba(45,174,255,.25));
+  }
+  50%{
+    transform:scale(1.045);
+    opacity:1;
+    filter:drop-shadow(0 0 15px rgba(45,174,255,.48));
+  }
+}
+
+.sidebar .brand img:hover,
+.sidebar .sidebar-brand img:hover,
+.sidebar .brand-wrap img:hover,
+.sidebar img.brand-logo:hover,
+.sidebar img.logo:hover{
+  transform:scale(1.07) !important;
+  opacity:1;
+}
+
+@media(min-width:761px){
+  body.sidebar-collapsed .sidebar .brand,
+  body.sidebar-collapsed .sidebar .sidebar-brand,
+  body.sidebar-collapsed .sidebar .brand-wrap{
+    min-height:0 !important;
+    height:auto !important;
+  }
+  body.sidebar-collapsed .sidebar .brand img,
+  body.sidebar-collapsed .sidebar .sidebar-brand img,
+  body.sidebar-collapsed .sidebar .brand-wrap img,
+  body.sidebar-collapsed .sidebar img.brand-logo,
+  body.sidebar-collapsed .sidebar img.logo{
+    width:82px !important;height:82px !important;
+    min-width:82px !important;max-width:82px !important;
+    margin:0 auto !important;
+  }
+}
+@media(max-width:760px){
+  .sidebar .brand img,
+  .sidebar .sidebar-brand img,
+  .sidebar .brand-wrap img,
+  .sidebar img.brand-logo,
+  .sidebar img.logo{
+    width:92px !important;height:92px !important;
+    min-width:92px !important;max-width:92px !important;
+    margin-left:-12px !important;margin-right:-4px !important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .sidebar .brand img,.sidebar .sidebar-brand img,.sidebar .brand-wrap img,.sidebar img.brand-logo,.sidebar img.logo{animation:none !important}
+}
