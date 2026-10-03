@@ -1028,3 +1028,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(min-width:761px){body.sidebar-collapsed .brand{height:112px!important;min-height:112px!important;justify-content:center!important;padding:0!important}body.sidebar-collapsed .brand>img{width:86px!important;height:86px!important;min-width:86px!important;max-width:86px!important;margin:0 auto!important}}
 @media(max-width:760px){.brand{height:116px!important;min-height:116px!important}.brand>img{width:98px!important;height:98px!important;min-width:98px!important;max-width:98px!important;margin-left:-15px!important}}
 @media(prefers-reduced-motion:reduce){.brand>img{animation:none!important}}
+
+/* ===== V5.6.11 – Dashboard Banner ohne Logo ===== */
+.hero{grid-template-columns:1fr!important;}
+.hero>.hero-logo{display:none!important;}
