@@ -1015,3 +1015,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(prefers-reduced-motion:reduce){
   .sidebar .brand img,.sidebar .sidebar-brand img,.sidebar .brand-wrap img,.sidebar img.brand-logo,.sidebar img.logo{animation:none !important}
 }
+
+
+/* ===== V5.6.10 – Neues APD-Wappen, groß, transparent, cache-sicher ===== */
+.brand{height:145px !important;min-height:145px !important;padding:0 7px 14px !important;gap:2px !important;overflow:visible !important}
+.brand>img{width:136px !important;height:136px !important;min-width:136px !important;max-width:136px !important;margin-left:-27px !important;margin-right:-3px !important;object-fit:contain !important;background:transparent !important;border:0 !important;box-shadow:none !important;opacity:.96 !important;mix-blend-mode:normal !important;transform-origin:center;animation:apdNewLogo5610 3.8s ease-in-out infinite !important;filter:drop-shadow(0 0 9px rgba(28,153,255,.34)) !important}
+.brand>div{position:relative;z-index:2;flex:0 0 auto}.brand>div strong{font-size:20px}.brand>div small{font-size:9px}
+@keyframes apdNewLogo5610{0%,100%{transform:scale(1);filter:drop-shadow(0 0 7px rgba(28,153,255,.28))}50%{transform:scale(1.045);filter:drop-shadow(0 0 16px rgba(28,153,255,.55))}}
+.brand>img:hover{transform:scale(1.07)!important}
+.avatar{overflow:hidden;padding:0!important;background:#081827!important}.avatar img{width:100%;height:100%;object-fit:contain;display:block}
+.login-brand img,.splash img,.hero-logo img,.digital-id img,.profile-line img,.service-avatar{background:transparent!important}
+@media(min-width:761px){body.sidebar-collapsed .brand{height:112px!important;min-height:112px!important;justify-content:center!important;padding:0!important}body.sidebar-collapsed .brand>img{width:86px!important;height:86px!important;min-width:86px!important;max-width:86px!important;margin:0 auto!important}}
+@media(max-width:760px){.brand{height:116px!important;min-height:116px!important}.brand>img{width:98px!important;height:98px!important;min-width:98px!important;max-width:98px!important;margin-left:-15px!important}}
+@media(prefers-reduced-motion:reduce){.brand>img{animation:none!important}}
