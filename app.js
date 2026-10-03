@@ -1240,3 +1240,57 @@ setTimeout(sidebarTooltipsV544,0);
  });
  window.addEventListener('unhandledrejection',()=>{try{toast('⚠ Aktion fehlgeschlagen. Verbindung prüfen und erneut versuchen.')}catch{}});
 })();
+
+/* ===== V5.5.2 – Browser Zurück / Vorwärts ===== */
+(function(){
+ let restoring=false;
+ const viewFn=showView, chapterFn=showChapter;
+ function routeState(route,extra={}){
+  return {apdPortal:true,route,chapter:extra.chapter||null,recruitId:extra.recruitId||null,recordClosed:extra.recordClosed??null};
+ }
+ function routeHash(s){
+  if(s.route==='chapter') return `#chapter-${s.chapter}`;
+  if(s.route==='admin'&&s.recruitId&&!s.recordClosed) return `#admin-recruit-${encodeURIComponent(s.recruitId)}`;
+  return `#${s.route||'dashboard'}`;
+ }
+ function same(a,b){return !!a?.apdPortal&&a.route===b.route&&String(a.chapter||'')===String(b.chapter||'')&&String(a.recruitId||'')===String(b.recruitId||'')&&Boolean(a.recordClosed)===Boolean(b.recordClosed)}
+ function commit(s){
+  if(restoring)return;
+  const method=history.state?.apdPortal?(same(history.state,s)?'replaceState':'pushState'):'replaceState';
+  history[method](s,'',routeHash(s));
+ }
+ showView=function(v){
+  const result=viewFn(v);
+  commit(routeState(v,{recruitId:v==='admin'?selectedRecruit:null,recordClosed:v==='admin'?recruitRecordClosed:null}));
+  return result;
+ };
+ showChapter=function(n){
+  const result=chapterFn(n);
+  commit(routeState('chapter',{chapter:+n}));
+  return result;
+ };
+ function render(s){
+  if(!s?.apdPortal||!current)return;
+  restoring=true;
+  try{
+   if(s.route==='chapter'&&s.chapter) chapterFn(+s.chapter);
+   else {
+    if(s.route==='admin'){
+     selectedRecruit=s.recruitId||null;
+     recruitRecordClosed=s.recordClosed??!s.recruitId;
+    }
+    viewFn(s.route||'dashboard');
+   }
+   savePortalRoute(s.route==='chapter'?'chapter':s.route,{chapter:s.chapter||undefined,scrollY:0});
+   window.scrollTo({top:0,left:0,behavior:'auto'});
+  } finally {restoring=false}
+ }
+ window.addEventListener('popstate',e=>{if(e.state?.apdPortal)render(e.state)});
+ // Nach Login/Restore die aktuell sichtbare Portal-Seite als ersten History-Eintrag markieren.
+ document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{
+  if(!current||history.state?.apdPortal)return;
+  const s=readPortalRoute();
+  const initial=s?.route==='chapter'&&s.chapter?routeState('chapter',{chapter:+s.chapter}):routeState(s?.route||'dashboard',{recruitId:selectedRecruit,recordClosed:recruitRecordClosed});
+  history.replaceState(initial,'',routeHash(initial));
+ },700));
+})();
