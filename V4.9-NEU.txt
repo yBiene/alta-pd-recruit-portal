@@ -1,0 +1,14 @@
+ALTA PD Portal V4.9 Academy Suite
+- Einsatz-Simulator
+- Funk-Trainer
+- Kartenpruefung
+- Wochen-/Ausbildungsplan
+- Ausbildungsfahrt-Timer + Verlauf
+- Dienstbuch
+- Nachrichten/Notizen
+- Abzeichen-Sammlung
+- Persoenlicher Lernzettel
+- Schnellstart-Tools
+- Strg+K Command-Palette
+- bestehende XP/Level/Lernserie/Missionen bleiben erhalten
+Hinweis: Neue persoenliche V4.9-Tools speichern im Browser (localStorage). Bestehende offizielle Ausbildungsdaten bleiben ueber Supabase synchronisiert.
