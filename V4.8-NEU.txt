@@ -1,0 +1,11 @@
+ALTA PD Portal V4.8
+
+- 22 neue GTA-V-inspirierte Kapitelmotive, jeweils als eigene 800x400 WebP-Datei
+- Recruit-Level und XP sichtbar
+- Lernserie sichtbar
+- Tagesmissionen sichtbar
+- Abzeichen sichtbar
+- Meilenstein sichtbar
+- Schnellquiz sichtbar
+- Trainer/Admin sehen eine Recruit-Motivations-Vorschau auf dem Dashboard
+- Cache-Version auf 4.8.0 erhöht
