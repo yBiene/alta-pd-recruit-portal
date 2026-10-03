@@ -1201,3 +1201,12 @@ function relativeDateV543(value){const d=new Date(value),diff=d-Date.now(),mins=
 const _calendarV543=calendarView;calendarView=function(){_calendarV543();document.querySelectorAll('#content .test-result-row').forEach((row,i)=>{const e=trainingEvents[i];if(e?.starts_at&&!row.querySelector('.countdown-v543'))row.querySelector('small')?.insertAdjacentHTML('beforeend',` <span class="countdown-v543">· ${relativeDateV543(e.starts_at)}</span>`)})};
 const _ensureChromeV543=ensureChrome;ensureChrome=function(){_ensureChromeV543();setupSidebarCollapseV543();setupSearchV543()};
 const _navV543=nav;nav=function(){_navV543();setupSidebarCollapseV543();setupSearchV543()};
+
+/* ===== V5.4.4 – Sidebar Collapse FIX ===== */
+function sidebarTooltipsV544(){
+ document.querySelectorAll('.sidebar .nav-btn').forEach(b=>{
+  if(!b.title){const clone=b.cloneNode(true);clone.querySelectorAll('.chapter-nav-icon').forEach(x=>x.remove());const label=(clone.textContent||'').trim().replace(/^\p{Extended_Pictographic}+\s*/u,'');if(label)b.title=label;}
+ });
+}
+const _navV544=nav;nav=function(){_navV544();sidebarTooltipsV544();};
+setTimeout(sidebarTooltipsV544,0);
