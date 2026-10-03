@@ -1154,3 +1154,50 @@ dashboard=function(){
   }
   // Die Dashboard-Inhalte bleiben vollständig erhalten; nur die visuelle Hierarchie wird verbessert.
 };
+
+/* ===== V5.4.3 – Komfort & Übersicht ===== */
+function setupSidebarCollapseV543(){
+ const b=document.querySelector('#sidebarCollapseBtn'); if(!b||b.dataset.bound543)return;
+ b.dataset.bound543='1';
+ const apply=()=>{const collapsed=localStorage.getItem('apd_sidebar_collapsed')==='1';document.body.classList.toggle('sidebar-collapsed',collapsed);b.textContent=collapsed?'⇥':'⇤';b.title=collapsed?'Seitenleiste ausklappen':'Seitenleiste einklappen'};
+ b.onclick=()=>{localStorage.setItem('apd_sidebar_collapsed',document.body.classList.contains('sidebar-collapsed')?'0':'1');apply()};apply();
+}
+function portalSearchItemsV543(){
+ const views=[['dashboard','🏠','Dashboard','Übersicht und Ausbildungsstatus'],['tests','📝','Tests','Prüfungen und Testergebnisse'],['news','📢','Mitteilungen','Department News und Hinweise'],['documents','📂','Dokumente','Favoriten, zuletzt angesehen und Druckzugriff'],['account','👤','Mein Account','Profil, Dienstnummer und Sicherheit']];
+ if(isTrainer(current))views.push(['accounts','👤','Account-Verwaltung','Recruit- und Ausbilder-Accounts'],['admin','📂','Rekruten Ausbildungsakten','Ausbildungsakten und FTO-Dokumentation']);
+ if(isOwner())views.push(['calendar','📅','Ausbildungskalender','Termine und Planung'],['command','⚡','Command Center','Führung und Academy-Übersicht']);
+ return views.map(x=>({type:'view',id:x[0],icon:x[1],title:x[2],sub:x[3]}));
+}
+function setupSearchV543(){
+ const input=$('#globalSearch'),box=$('#searchResults');if(!input||!box||input.dataset.v543)return;input.dataset.v543='1';
+ input.oninput=e=>{const q=e.target.value.trim().toLowerCase();if(!q){box.classList.add('hidden');return}
+  const chapters=titles.map(x=>({type:'chapter',id:x.n,icon:chapterIcons[x.n]||'📘',title:`Kapitel ${x.n}: ${x.title}`,sub:'Rekrutenhandbuch',hay:(x.title+' '+(CHAPTERS[x.n].html||'').replace(/<[^>]+>/g,' ')).toLowerCase()})).filter(x=>x.hay.includes(q));
+  const views=portalSearchItemsV543().filter(x=>(x.title+' '+x.sub).toLowerCase().includes(q));
+  const recruits=isTrainer(current)?db.users.filter(x=>x.role==='recruit'&&(x.name+' '+(x.serviceNo||'')+' '+(x.username||'')).toLowerCase().includes(q)).map(x=>({type:'recruit',id:x.id,icon:'👮',title:x.name,sub:`Recruit · #${x.serviceNo||'—'} · Ausbildungsakte`})):[];
+  const hits=[...views,...recruits,...chapters].slice(0,14);
+  box.innerHTML=hits.length?`<div class="search-group-title">SUCHERGEBNISSE</div>`+hits.map((x,i)=>`<button class="search-item search-item-v543" data-search-i="${i}"><span>${x.icon}</span><span><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></span><i>→</i></button>`).join(''):`<div class="search-empty"><b>Keine Treffer</b><small>Suche z. B. nach „Funk“, „Tests“, „Account“ oder einem Recruit.</small></div>`;
+  box.classList.remove('hidden');box.querySelectorAll('[data-search-i]').forEach(b=>b.onclick=()=>{const x=hits[+b.dataset.searchI];box.classList.add('hidden');input.value='';if(x.type==='chapter')showChapter(+x.id);else if(x.type==='recruit'){selectedRecruit=x.id;recruitRecordClosed=false;showView('admin')}else showView(x.id)});
+ };
+}
+function workflowItemsV543(){
+ if(!current)return[];const out=[];
+ if(current.role==='recruit'){
+  const open=(current.goals||[]).filter(x=>!x.done);if(open.length)out.push({icon:'🎯',title:`${open.length} offene Ausbildungsziele`,sub:'Deine nächsten Aufgaben ansehen',view:'dashboard'});
+  const assigned=(current.assignedTests||[]).length;if(assigned)out.push({icon:'📝',title:`${assigned} freigegebene Tests`,sub:'Zu den Prüfungen',view:'tests'});
+  if(progress(current)<100)out.push({icon:'📚',title:`Noch ${22-(current.completed||[]).length} Kapitel offen`,sub:'Ausbildung fortsetzen',chapter:Math.min(22,Math.max(1,...(current.completed||[]),0)+1)});
+ }else{
+  const rs=db.users.filter(x=>x.role==='recruit');const att=rs.filter(x=>readiness(x)[0]==='Handlungsbedarf').length;if(att)out.push({icon:'⚠️',title:`${att} Recruit${att===1?'':'s'} mit Handlungsbedarf`,sub:'Ausbildungsakten prüfen',view:'admin'});
+  const ready=rs.filter(x=>readiness(x)[0]==='Abschlussbereit').length;if(ready)out.push({icon:'🎓',title:`${ready} Recruit${ready===1?'':'s'} abschlussbereit`,sub:'Abschlussfreigabe prüfen',view:'admin'});
+  const open=rs.reduce((a,x)=>a+(x.goals||[]).filter(g=>!g.done).length,0);if(open)out.push({icon:'🎯',title:`${open} offene Ausbildungsziele`,sub:'Rekrutenakten öffnen',view:'admin'});
+ }
+ return out;
+}
+openWorkflowNotifications=function(){
+ document.querySelector('.workflow-pop')?.remove();const items=workflowItemsV543(),d=document.createElement('div');d.className='workflow-pop workflow-pop-v543';
+ d.innerHTML=`<div class="workflow-pop-head"><div><b>🔔 Benachrichtigungen</b><small>${items.length?items.length+' offene Hinweise':'Alles erledigt'}</small></div><button type="button">×</button></div><div class="workflow-list-v543">${items.length?items.map((x,i)=>`<button class="workflow-note workflow-note-v543" data-notify-i="${i}"><span>${x.icon}</span><span><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></span><i>→</i></button>`).join(''):'<div class="workflow-empty">✓ Aktuell nichts offen.</div>'}</div>`;
+ document.body.appendChild(d);d.querySelector('.workflow-pop-head button').onclick=()=>d.remove();d.querySelectorAll('[data-notify-i]').forEach(b=>b.onclick=()=>{const x=items[+b.dataset.notifyI];d.remove();x.chapter?showChapter(x.chapter):showView(x.view||'dashboard')});
+}
+function relativeDateV543(value){const d=new Date(value),diff=d-Date.now(),mins=Math.round(diff/60000);if(!Number.isFinite(mins))return'';if(mins<0)return'läuft/war bereits';if(mins<60)return`in ${mins} Min.`;const h=Math.round(mins/60);if(h<24)return`in ${h} Std.`;const days=Math.round(h/24);return days===1?'morgen':`in ${days} Tagen`}
+const _calendarV543=calendarView;calendarView=function(){_calendarV543();document.querySelectorAll('#content .test-result-row').forEach((row,i)=>{const e=trainingEvents[i];if(e?.starts_at&&!row.querySelector('.countdown-v543'))row.querySelector('small')?.insertAdjacentHTML('beforeend',` <span class="countdown-v543">· ${relativeDateV543(e.starts_at)}</span>`)})};
+const _ensureChromeV543=ensureChrome;ensureChrome=function(){_ensureChromeV543();setupSidebarCollapseV543();setupSearchV543()};
+const _navV543=nav;nav=function(){_navV543();setupSidebarCollapseV543();setupSearchV543()};
