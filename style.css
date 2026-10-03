@@ -449,3 +449,40 @@ select{color-scheme:dark;cursor:pointer}
 /* ===== V4.9 Academy Suite ===== */
 .simulator-card{padding:24px}.scenario-tag{display:inline-flex;padding:6px 10px;border:1px solid #2c7198;border-radius:999px;color:#65d1ff;font-size:10px;font-weight:900;letter-spacing:.12em}.simulator-card h2{max-width:850px;margin:18px 0}.sim-options{display:grid;gap:10px}.sim-options button,.zone-buttons button{padding:13px 14px;border:1px solid #28516a;border-radius:12px;background:#0a2131;color:#dceef7;text-align:left;cursor:pointer;font-weight:750}.sim-options button:hover,.zone-buttons button:hover{border-color:#52bdf4;background:#0d2d42}.sim-options button.correct{border-color:#2bc47a;background:#0d3528}.sim-options button.wrong{border-color:#e65c69;background:#3a1820}.sim-feedback{display:grid;gap:10px;margin-top:14px}.sim-feedback span{color:#91aabc}.radio-code{font-size:52px;color:#61cfff}.map-trainer{display:grid;grid-template-columns:1.3fr .7fr;gap:18px}.map-trainer img{width:100%;height:100%;max-height:520px;object-fit:cover;border-radius:13px}.map-question{padding:18px}.zone-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.ok-text{color:#67e6a7}.bad-text{color:#ff8994}.plan-task{display:flex!important;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #17394e}.plan-task input{width:18px;height:18px}.plan-task b,.plan-task small{display:block}.plan-task small{color:#7896a8}.inline-add{display:flex;gap:8px;margin-top:14px}.inline-add input{flex:1}.ride-clock{margin:18px 0;font-size:42px;font-weight:900;letter-spacing:.08em;color:#67d3ff}.big-number{font-size:34px;font-weight:900;color:#e8f7ff;margin:20px 0}.message-row{padding:12px 0;border-bottom:1px solid #17394e}.message-row p{margin:6px 0;color:#c5d8e2}.message-row small{color:#7896a8}.achievement-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.achievement{text-align:center}.achievement>span{display:block;font-size:38px;margin:8px}.achievement.locked{opacity:.42;filter:grayscale(.8)}.achievement.earned{border-color:#3c8bb7;box-shadow:inset 0 0 25px #0c4a6a44}.quick-tool-buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}.command-palette{position:fixed;inset:0;z-index:9000;background:#0009;backdrop-filter:blur(5px);padding-top:12vh}.command-box{width:min(680px,90vw);margin:auto;padding:12px;border:1px solid #326b8d;border-radius:16px;background:#071925;box-shadow:0 28px 80px #000c}.command-box input{width:100%;font-size:17px}.command-box button{display:block;width:100%;padding:12px;border:0;border-top:1px solid #17394e;background:transparent;color:#dceef7;text-align:left;cursor:pointer}.command-box button:hover{background:#0c2b40}.v49-tools textarea,.card textarea{width:100%;resize:vertical}.danger{padding:10px 14px;border:1px solid #a3424b;border-radius:10px;background:#4b1920;color:#ffd9dc;cursor:pointer}
 @media(max-width:1100px){.achievement-grid{grid-template-columns:repeat(3,1fr)}.map-trainer{grid-template-columns:1fr}}@media(max-width:700px){.achievement-grid{grid-template-columns:repeat(2,1fr)}.zone-buttons,.quick-tool-buttons{grid-template-columns:1fr}.ride-clock{font-size:32px}}
+
+/* ===== V4.9.2 Recruit-Verwaltung: gleiche Höhen & bündiger Start ===== */
+.admin-toolbar{
+  display:grid!important;
+  grid-template-columns:minmax(280px,1fr) 140px 140px!important;
+  gap:12px!important;
+  align-items:stretch!important;
+  margin-bottom:16px!important;
+}
+.admin-toolbar input,
+.admin-toolbar select{
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:44px!important;
+  min-height:44px!important;
+  margin:0!important;
+  padding:0 14px!important;
+  border:1px solid #294d68!important;
+  border-radius:12px!important;
+  background:#091b2a!important;
+  color:#d9edf8!important;
+  font:inherit!important;
+  outline:none!important;
+}
+.admin-toolbar input::placeholder{color:#7898ad!important}
+.admin-toolbar input:focus,.admin-toolbar select:focus{border-color:#42afe8!important;box-shadow:0 0 0 2px rgba(66,175,232,.10)!important}
+
+/* Formular und geöffnete Ausbildungsakte beginnen exakt auf derselben Höhe. */
+@media(min-width:1051px){
+  .admin-grid:not(.record-is-closed){align-items:start!important}
+  .admin-grid:not(.record-is-closed) .record-workspace{margin-top:0!important}
+  .admin-grid:not(.record-is-closed)>div:first-child,
+  .admin-grid:not(.record-is-closed)>.record-workspace{align-self:start!important}
+  .admin-grid:not(.record-is-closed)>div:first-child>.card:first-child,
+  .admin-grid:not(.record-is-closed)>.record-workspace>.card:first-child{margin-top:0!important}
+}
+@media(max-width:760px){.admin-toolbar{grid-template-columns:1fr!important}}

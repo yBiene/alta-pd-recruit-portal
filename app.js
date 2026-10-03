@@ -646,7 +646,7 @@ function derivedNotifications(){
 function installNotificationBell(){
  const host=document.querySelector('.top-actions'); if(!host||host.querySelector('.notify-btn')) return;
  const notes=derivedNotifications(); const b=document.createElement('button'); b.className='notify-btn'; b.innerHTML=`🔔${notes.length?`<i>${notes.length}</i>`:''}`; b.title='Benachrichtigungen';
- b.onclick=()=>{document.querySelector('.notify-pop')?.remove();const p=document.createElement('div');p.className='notify-pop';p.innerHTML=`<b>Benachrichtigungen</b>${notes.length?notes.map(x=>`<div>• ${esc(x)}</div>`).join(''):`<div class="muted">Keine offenen Hinweise.</div>`}`;host.appendChild(p);setTimeout(()=>document.addEventListener('click',e=>{if(!p.contains(e.target)&&e.target!==b)p.remove()},{once:true}),0)};host.insertBefore(b,host.querySelector('.user-pill'));
+ b.onclick=(e)=>{e.preventDefault();e.stopPropagation();document.querySelector('.notify-pop')?.remove();openWorkflowNotifications()};host.insertBefore(b,host.querySelector('.user-pill'));
 }
 function openRecruitQuickPanel(id){
  document.querySelector('.quick-panel')?.remove();document.querySelector('.quick-backdrop')?.remove();
