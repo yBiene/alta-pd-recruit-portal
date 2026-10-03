@@ -1,39 +1,74 @@
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const DBKEY="apd_portal_v2";
-const seed={
- users:[
-  {id:"admin-carter",username:"sgt.carter",password:"APD-Demo-Admin",name:"Sgt Carter",serviceNo:"S-01",role:"admin",rank:"Sergeant",fto:"Sgt Carter",start:"03.10.2026",status:"FTO / Administration",completed:[]},
-  {id:"recruit-test",username:"recruit.test",password:"APD-Demo-2026",name:"Recruit Test",serviceNo:"R-102",role:"recruit",rank:"Recruit",fto:"Sgt Carter",start:"03.10.2026",status:"In Ausbildung",completed:[]}
- ]};
-function loadDB(){
-  let data;
-  try { data = JSON.parse(localStorage.getItem(DBKEY) || '{"users":[]}'); }
-  catch { data = {users:[]}; }
-  if (!data || !Array.isArray(data.users)) data = {users:[]};
+const SUPABASE_URL="https://nbjfslwznuuwbqmvtldl.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_EmJes2VlNCNztFeNiL6KLQ_U_1G_Mvy";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
+ auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
+let db={users:[]}, current=null, selectedRecruit=null;
 
-  // Demo-/Notfallkonten immer sicherstellen, auch wenn bereits alte Browserdaten existieren.
-  for (const demo of seed.users) {
-    const i = data.users.findIndex(u => u.username === demo.username);
-    if (i === -1) data.users.push({...demo, completed:[...(demo.completed||[])]});
-    else data.users[i] = {...data.users[i], ...demo, completed:data.users[i].completed||[]};
-  }
-  for(const u of data.users){u.assignedTests=u.assignedTests||[];u.testResults=u.testResults||[];}
-  localStorage.setItem(DBKEY, JSON.stringify(data));
-  return data;
+function authEmail(username){
+ return `${String(username||"").trim().toLowerCase()}@altapd.internal`;
 }
-function saveDB(){localStorage.setItem(DBKEY,JSON.stringify(db))}
-function isOwner(u=current){return !!u && u.id==="admin-carter"}
+function mapProfile(p){
+ return {
+  id:p.id, username:p.username, name:p.name, serviceNo:p.service_no||"",
+  role:p.role, access:p.access_level||"standard", rank:p.rank||"",
+  fto:p.fto||"", start:p.training_start||"", status:p.status||"In Ausbildung",
+  completed:[], assignedTests:[], testResults:[]
+ };
+}
+async function refreshData(){
+ const {data:{user}}=await sb.auth.getUser();
+ if(!user){db={users:[]};current=null;return false}
+ const {data:me,error:meErr}=await sb.from("profiles").select("*").eq("id",user.id).single();
+ if(meErr||!me) throw meErr||new Error("Kein Portal-Profil gefunden.");
+ current=mapProfile(me);
+
+ let profiles=[me];
+ if(["admin","trainer"].includes(me.role)){
+  const {data,error}=await sb.from("profiles").select("*").order("name");
+  if(error) throw error;
+  profiles=data||[];
+ }
+ db.users=profiles.map(mapProfile);
+
+ const ids=db.users.map(x=>x.id);
+ if(ids.length){
+  const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re}]=await Promise.all([
+   sb.from("training_progress").select("*").in("recruit_id",ids),
+   sb.from("test_assignments").select("*").eq("active",true).in("recruit_id",ids),
+   sb.from("test_results").select("*").in("recruit_id",ids).order("completed_at",{ascending:true})
+  ]);
+  if(pe) throw pe;if(ae) throw ae;if(re) throw re;
+  for(const u of db.users){
+   u.completed=(prog||[]).filter(x=>x.recruit_id===u.id&&x.completed).map(x=>x.chapter).sort((a,b)=>a-b);
+   u.assignedTests=(assign||[]).filter(x=>x.recruit_id===u.id&&x.active).map(x=>x.test_id);
+   u.testResults=(results||[]).filter(x=>x.recruit_id===u.id).map(x=>({
+    testId:x.test_id,score:x.score,total:x.total,percent:x.percent,passed:x.passed,
+    date:new Date(x.completed_at).toLocaleString("de-DE")
+   }));
+  }
+ }
+ current=db.users.find(x=>x.id===user.id)||current;
+ return true;
+}
+function isOwner(u=current){return !!u && u.role==="admin"&&u.access==="owner"}
 function isTrainer(u=current){return !!u && (u.role==="admin"||u.role==="trainer")}
-function canCreateRecruit(u=current){return isOwner(u)||u?.role==="admin"||(u?.role==="trainer"&&u.access==="extra")}
+function canCreateRecruit(u=current){return isOwner(u)||(u?.role==="trainer"&&u.access==="extra")}
 function roleLabel(u){
  if(!u)return "";
  if(isOwner(u))return "Hauptadmin / FTO";
  if(u.role==="trainer")return u.access==="extra"?"Ausbilder · Extra-Zugriff":"Ausbilder";
  return "Recruit";
 }
-let db=loadDB(), current=null, selectedRecruit=null;
+async function invokeAccountAction(body){
+ const {data,error}=await sb.functions.invoke("manage-user",{body});
+ if(error) throw error;
+ if(data?.error) throw new Error(data.error);
+ return data;
+}
 const titles=Object.entries(CHAPTERS).map(([n,c])=>({n:+n,title:c.title}));
 
 const TESTS=[
@@ -131,33 +166,22 @@ function dashboard(){
  document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>showChapter(+x.dataset.open));
 }
 
-function chapterNotesKey(n){return `apd_notes_${current.id}_${n}`}
-function editableChapterHtml(n,html){
- let out=html||"";
- // Modellnachweise in Waffeninformationen vollständig entfernen.
- if(n===18){
-   // Kapitel vollständig behalten; nur Modellnachweis-/URL-Text entfernen.
-   out=out.replace(/Modellnachweise:\s*/gi,"");
-   out=out.replace(/GLOCK G17 Produktinformation,\s*/gi,"");
-   out=out.replace(/Axon TASER 7 Kartuschen,\s*/gi,"");
-   out=out.replace(/GLOCK Gebrauchsanweisung G17–G48,\s*Technische Daten:\s*/gi,"");
-   out=out.replace(/https?:\/\/[^\s<]+/gi,"");
- }
- // Die handschriftlichen Linien in den gewünschten Kapiteln in Eingabefelder umwandeln.
- if([16,17,18].includes(n)){
-   let idx=0;
-   out=out.replace(/_{5,}/g,()=>`<input class="learn-line" data-note="${idx++}" type="text" autocomplete="off" aria-label="Lernnotiz">`);
- }
- return out;
-}
-function restoreChapterNotes(n){
- let notes={};try{notes=JSON.parse(localStorage.getItem(chapterNotesKey(n))||"{}")}catch{}
+async function restoreChapterNotes(n){
+ let notes={};
+ const {data,error}=await sb.from("chapter_notes").select("field_key,value").eq("user_id",current.id).eq("chapter",n);
+ if(!error) for(const row of data||[]) notes[row.field_key]=row.value||"";
  document.querySelectorAll(".learn-line").forEach(el=>{
-   el.value=notes[el.dataset.note]||"";
-   el.addEventListener("input",()=>{
-     notes[el.dataset.note]=el.value;
-     localStorage.setItem(chapterNotesKey(n),JSON.stringify(notes));
-   });
+  const key=String(el.dataset.note);
+  el.value=notes[key]||"";
+  let timer;
+  el.addEventListener("input",()=>{
+   clearTimeout(timer);
+   timer=setTimeout(async()=>{
+    await sb.from("chapter_notes").upsert({
+     user_id:current.id,chapter:n,field_key:key,value:el.value,updated_at:new Date().toISOString()
+    },{onConflict:"user_id,chapter,field_key"});
+   },350);
+  });
  });
 }
 function showChapter(n){
@@ -178,7 +202,7 @@ function showChapter(n){
     ${isTrainer(current)?`<button class="primary complete-btn ${done?"done":""}" id="quickToggle">${done?"Abschluss zurücknehmen":"Kapitel abschließen"}</button>`:""}
   </aside>
  </div>`;
- restoreChapterNotes(n); if(isTrainer(current)) $("#quickToggle").onclick=()=>{toggleChapter(current.id,n);showChapter(n)};
+ restoreChapterNotes(n); if(isTrainer(current)) $("#quickToggle").onclick=async()=>{await toggleChapter(current.id,n);showChapter(n)};
 }
 function account(){
  setActive('[data-view="account"]');$("#pageTitle").textContent="Mein Konto";
@@ -194,14 +218,14 @@ function account(){
   <button class="primary" id="saveMyAccount">Dienstnummer speichern</button>
   <p class="muted" style="margin-top:10px">Die Dienstnummer kann von jedem Account selbst geändert werden.</p>
  </div>`;
- $("#saveMyAccount").onclick=()=>{
-   const value=$("#myServiceNo").value.trim();
-   if(!value){alert("Bitte eine Dienstnummer eintragen.");return}
-   const u=db.users.find(x=>x.id===current.id);
-   if(!u)return;
-   u.serviceNo=value;saveDB();current=u;
-   alert("Dienstnummer gespeichert.");
-   account();
+ $("#saveMyAccount").onclick=async()=>{
+    const value=$("#myServiceNo").value.trim();
+    if(!value){alert("Bitte eine Dienstnummer eintragen.");return}
+    const {error}=await sb.rpc("update_my_service_no",{new_service_no:value});
+    if(error){alert("Speichern fehlgeschlagen: "+error.message);return}
+    await refreshData();
+    alert("Dienstnummer gespeichert.");
+    account();
  };
 }
 function admin(){
@@ -244,15 +268,49 @@ function admin(){
   </div>
   <div>${sel?adminRecruit(sel):`<div class="card"><h2>Keinen Recruit ausgewählt</h2></div>`}</div>
  </div>`;
- $("#createRecruit")?.addEventListener("submit",e=>{e.preventDefault();let f=new FormData(e.target);let username=f.get("username").trim().toLowerCase();if(db.users.some(x=>x.username===username)){alert("Benutzername existiert bereits.");return}let u={id:"r-"+Date.now(),username,password:f.get("password"),name:f.get("name"),serviceNo:f.get("serviceNo"),role:"recruit",rank:"Recruit",fto:f.get("fto"),start:f.get("start"),status:"In Ausbildung",completed:[],assignedTests:[],testResults:[]};db.users.push(u);saveDB();selectedRecruit=u.id;admin()});
- $("#createTrainer")?.addEventListener("submit",e=>{e.preventDefault();let f=new FormData(e.target);let username=f.get("username").trim().toLowerCase();if(db.users.some(x=>x.username===username)){alert("Benutzername existiert bereits.");return}db.users.push({id:"t-"+Date.now(),username,password:f.get("password"),name:f.get("name"),serviceNo:f.get("serviceNo"),role:"trainer",access:f.get("access"),rank:f.get("rank"),fto:"—",start:new Date().toLocaleDateString("de-DE"),status:f.get("access")==="extra"?"Ausbilder · Extra-Zugriff":"Ausbilder",completed:[],assignedTests:[],testResults:[]});saveDB();admin()});
+ $("#createRecruit")?.addEventListener("submit",async e=>{
+  e.preventDefault();const f=new FormData(e.target);
+  try{
+   await invokeAccountAction({action:"create",role:"recruit",username:f.get("username"),password:f.get("password"),
+    name:f.get("name"),serviceNo:f.get("serviceNo"),rank:"Recruit",fto:f.get("fto"),start:f.get("start"),access:"standard"});
+   await refreshData();selectedRecruit=db.users.find(x=>x.username===String(f.get("username")).trim().toLowerCase())?.id||null;admin();
+  }catch(err){alert("Account konnte nicht erstellt werden: "+err.message)}
+ });
+ $("#createTrainer")?.addEventListener("submit",async e=>{
+  e.preventDefault();const f=new FormData(e.target);
+  try{
+   await invokeAccountAction({action:"create",role:"trainer",username:f.get("username"),password:f.get("password"),
+    name:f.get("name"),serviceNo:f.get("serviceNo"),rank:f.get("rank"),fto:"—",access:f.get("access")});
+   await refreshData();admin();
+  }catch(err){alert("Ausbilder konnte nicht erstellt werden: "+err.message)}
+ });saveDB();admin()});
  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{selectedRecruit=b.dataset.edit;admin()});
- document.querySelectorAll("[data-check]").forEach(b=>b.onchange=()=>{toggleChapter(sel.id,+b.dataset.check);admin()});
- document.querySelectorAll("[data-test-assign]").forEach(b=>b.onchange=()=>{let u=db.users.find(x=>x.id===sel.id);u.assignedTests=u.assignedTests||[];if(b.checked&&!u.assignedTests.includes(b.dataset.testAssign))u.assignedTests.push(b.dataset.testAssign);if(!b.checked)u.assignedTests=u.assignedTests.filter(x=>x!==b.dataset.testAssign);saveDB();admin()});
- document.querySelectorAll("[data-access]").forEach(x=>x.onchange=()=>{let u=db.users.find(v=>v.id===x.dataset.access);if(!u)return;u.access=x.value;u.status=x.value==="extra"?"Ausbilder · Extra-Zugriff":"Ausbilder";saveDB();admin()});
- document.querySelectorAll("[data-delete-trainer]").forEach(b=>b.onclick=()=>{if(confirm("Ausbilder-Account wirklich löschen?")){db.users=db.users.filter(x=>x.id!==b.dataset.deleteTrainer);saveDB();admin()}});
- $("#saveRecruit")?.addEventListener("click",()=>{let u=db.users.find(x=>x.id===sel.id);u.fto=$("#editFto").value;u.status=$("#editStatus").value;u.rank=$("#editRank").value;saveDB();admin()});
- $("#deleteRecruit")?.addEventListener("click",()=>{if(!canCreateRecruit()){alert("Zum Löschen von Accounts ist Extra-Zugriff erforderlich.");return}if(confirm("Recruit-Account wirklich löschen?")){db.users=db.users.filter(x=>x.id!==sel.id);saveDB();selectedRecruit=null;admin()}});
+ document.querySelectorAll("[data-check]").forEach(b=>b.onchange=async()=>{await toggleChapter(sel.id,+b.dataset.check);await refreshData();admin()});
+ document.querySelectorAll("[data-test-assign]").forEach(b=>b.onchange=async()=>{
+  if(b.checked){
+   const {error}=await sb.from("test_assignments").upsert({recruit_id:sel.id,test_id:b.dataset.testAssign,assigned_by:current.id,active:true},{onConflict:"recruit_id,test_id"});
+   if(error) alert(error.message);
+  }else{
+   const {error}=await sb.from("test_assignments").update({active:false}).eq("recruit_id",sel.id).eq("test_id",b.dataset.testAssign);
+   if(error) alert(error.message);
+  }
+  await refreshData();admin();
+});
+ document.querySelectorAll("[data-access]").forEach(x=>x.onchange=async()=>{
+  try{await invokeAccountAction({action:"trainer_access",userId:x.dataset.access,access:x.value});await refreshData();admin()}
+  catch(err){alert(err.message)}
+});
+ document.querySelectorAll("[data-delete-trainer]").forEach(b=>b.onclick=async()=>{
+ if(confirm("Ausbilder-Account wirklich löschen?"))try{await invokeAccountAction({action:"delete",userId:b.dataset.deleteTrainer});await refreshData();admin()}catch(err){alert(err.message)}
+});
+ $("#saveRecruit")?.addEventListener("click",async()=>{
+ const {error}=await sb.rpc("staff_update_recruit",{target_id:sel.id,new_fto:$("#editFto").value,new_status:$("#editStatus").value,new_rank:$("#editRank").value});
+ if(error){alert(error.message);return}await refreshData();admin();
+});
+ $("#deleteRecruit")?.addEventListener("click",async()=>{
+ if(!canCreateRecruit()){alert("Zum Löschen von Accounts ist Extra-Zugriff erforderlich.");return}
+ if(confirm("Recruit-Account wirklich löschen?"))try{await invokeAccountAction({action:"delete",userId:sel.id});selectedRecruit=null;await refreshData();admin()}catch(err){alert(err.message)}
+});
 }
 function adminRecruit(r){
  let p=progress(r);
@@ -290,7 +348,7 @@ function testsView(){
 function startTest(id){
  const t=TESTS.find(x=>x.id===id);if(!t||isTrainer(current)||!(current.assignedTests||[]).includes(id))return testsView();
  $("#pageTitle").textContent=t.title;$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">ÜBUNGSTEST</div><h1>${esc(t.title)}</h1><p>${esc(t.desc)}</p></div><span class="status">${t.questions.length} Fragen</span></div><form id="testForm">${t.questions.map((q,i)=>`<div class="card question-card"><div class="question-no">FRAGE ${i+1} / ${t.questions.length}</div><h3>${esc(q.q)}</h3><div class="answers">${q.a.map((a,j)=>`<label class="answer"><input type="radio" name="q${i}" value="${j}" required><span>${esc(a)}</span></label>`).join("")}</div></div>`).join("")}<button class="primary finish-test" type="submit">Test auswerten</button></form>`;
- $("#testForm").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),score=0;t.questions.forEach((q,i)=>{if(+f.get("q"+i)===q.c)score++});let percent=Math.round(score/t.questions.length*100),passed=percent>=t.pass;let u=db.users.find(x=>x.id===current.id);u.testResults=u.testResults||[];u.testResults.push({testId:t.id,score,total:t.questions.length,percent,passed,date:new Date().toLocaleString("de-DE")});saveDB();current=u;showTestResult(t,score,percent,passed)};
+ $("#testForm").onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target),score=0;t.questions.forEach((q,i)=>{if(+f.get("q"+i)===q.c)score++});let percent=Math.round(score/t.questions.length*100),passed=percent>=t.pass;await sb.from("test_results").insert({recruit_id:current.id,test_id:t.id,score,total:t.questions.length,percent,passed});await refreshData();showTestResult(t,score,percent,passed)};
 }
 function showTestResult(t,score,percent,passed){
  $("#content").innerHTML=`<div class="result-hero card ${passed?"passed":"failed"}"><div class="eyebrow">TEST ABGESCHLOSSEN</div><h1>${passed?"Bestanden":"Nicht bestanden"}</h1><div class="score-big">${score} / ${t.questions.length}</div><h2>${percent}%</h2><p>${passed?"Bestanden und in deiner Mappe gespeichert.":"Versuch gespeichert. Du kannst den Test erneut üben."}</p><button class="primary" id="toFolder">📁 Zur Mappe</button> <button class="secondary" id="backTests">Zu den Tests</button></div>`;$("#toFolder").onclick=showTestFolder;$("#backTests").onclick=testsView;
@@ -298,7 +356,18 @@ function showTestResult(t,score,percent,passed){
 function showTestFolder(){
  $("#pageTitle").textContent="Tests · Mappe";const results=(current.testResults||[]).slice().reverse();$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">TESTS</div><h1>📁 Meine Mappe</h1><p>Abgeschlossene Testversuche.</p></div></div><div class="card">${results.length?results.map(r=>{let t=TESTS.find(x=>x.id===r.testId);return `<div class="folder-row"><div><b>${esc(t?.title||r.testId)}</b><small>${esc(r.date)} · ${r.score}/${r.total} Punkte · ${r.percent}%</small></div><span class="test-state ${r.passed?"passed":"failed"}">${r.passed?"BESTANDEN":"NICHT BESTANDEN"}</span></div>`}).join(""):"<p class='muted'>Deine Mappe ist noch leer.</p>"}</div><button class="secondary" id="backTests">← Zurück zu Tests</button>`;$("#backTests").onclick=testsView;
 }
-function toggleChapter(uid,n){let u=db.users.find(x=>x.id===uid);if(!u)return;u.completed=u.completed||[];u.completed=u.completed.includes(n)?u.completed.filter(x=>x!==n):[...u.completed,n].sort((a,b)=>a-b);if(u.role==="recruit"){u.status=u.completed.length===22?"Streifenfreigabe":"In Ausbildung"}saveDB();if(current.id===uid)current=u}
+async function toggleChapter(uid,n){
+ const u=db.users.find(x=>x.id===uid);if(!u)return;
+ const done=(u.completed||[]).includes(n);
+ if(done){
+  const {error}=await sb.from("training_progress").delete().eq("recruit_id",uid).eq("chapter",n);
+  if(error) throw error;
+ }else{
+  const {error}=await sb.from("training_progress").upsert({recruit_id:uid,chapter:n,completed:true,completed_by:current.id,completed_at:new Date().toISOString()},{onConflict:"recruit_id,chapter"});
+  if(error) throw error;
+ }
+ await refreshData();
+}
 function setupSearch(){
  $("#globalSearch").addEventListener("input",e=>{
   let q=e.target.value.trim().toLowerCase(), box=$("#searchResults");
@@ -311,29 +380,28 @@ function setupSearch(){
  });
  document.addEventListener("click",e=>{if(!e.target.closest(".searchbox"))$("#searchResults").classList.add("hidden")});
 }
-$("#loginForm").onsubmit=e=>{
- e.preventDefault();db=loadDB();let u=$("#loginUser").value.trim().toLowerCase(),p=$("#loginPass").value;
- let found=db.users.find(x=>x.username.toLowerCase()===u&&x.password===p);
- if(!found){$("#loginError").textContent="Benutzername oder Passwort ist nicht korrekt.";return}
- current=found;
- localStorage.setItem("apd_logged_in_user", current.username); db.activeUser=current.username; saveDB();
+$("#loginForm").onsubmit=async e=>{
+ e.preventDefault();
+ $("#loginError").textContent="";
+ const username=$("#loginUser").value.trim().toLowerCase(), password=$("#loginPass").value;
+ const {error}=await sb.auth.signInWithPassword({email:authEmail(username),password});
+ if(error){$("#loginError").textContent="Benutzername oder Passwort ist nicht korrekt.";return}
+ try{await refreshData()}catch(err){await sb.auth.signOut();$("#loginError").textContent="Portal-Profil konnte nicht geladen werden.";return}
  $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
  $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
  nav();setupSearch();dashboard();
  if(!sessionStorage.getItem("apd_seen_splash")){$("#splash").classList.remove("hidden")}
 };
 $("#enterPortal").onclick=()=>{$("#splash").classList.add("hidden");sessionStorage.setItem("apd_seen_splash","1")};
-$("#logoutBtn").onclick=()=>{localStorage.removeItem("apd_logged_in_user");db.activeUser=null;saveDB();current=null;location.reload()};
+$("#logoutBtn").onclick=async()=>{await sb.auth.signOut();current=null;location.reload()};
 
-(function restoreLogin(){
-  db=loadDB(); const username=localStorage.getItem("apd_logged_in_user") || db.activeUser;
-  if(!username) return;
-  const found=db.users.find(x=>x.username===username);
-  if(!found){localStorage.removeItem("apd_logged_in_user");return;}
-  current=found;
-  $("#loginView").classList.add("hidden");
-  $("#app").classList.remove("hidden");
-  $("#topName").textContent=current.name;
-  $("#topRole").textContent=roleLabel(current);
+(async function restoreLogin(){
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session)return;
+ try{
+  await refreshData();
+  $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
+  $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
   nav();setupSearch();dashboard();
+ }catch(err){console.error(err);await sb.auth.signOut()}
 })();
