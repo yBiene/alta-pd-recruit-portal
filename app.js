@@ -50,7 +50,7 @@ function dashboard(){
   <div><div class="eyebrow">WILLKOMMEN ZURÜCK</div><h1>${esc(u.name)}</h1>
    <span class="status">● ${esc(u.status)}</span>
    <p>Willkommen im Alta PD Ausbildungsportal. Hier findest du die Inhalte des Rekrutenhandbuchs, bebilderte Anleitungen und deinen persönlichen Ausbildungsfortschritt. Dein zuständiger FTO ist <b>${esc(u.fto)}</b>.</p>
-  </div><div class="hero-logo"><img src="assets/apd-logo.png" alt="APD"></div>
+  </div><div class="hero-logo"><img src="apd-logo.png" alt="APD"></div>
  </div>
  <div class="grid stats">
   <div class="card stat"><span>DIENSTNUMMER</span><b>${esc(u.serviceNo)}</b></div>
