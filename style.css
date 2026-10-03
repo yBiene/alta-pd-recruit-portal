@@ -350,3 +350,8 @@ select{color-scheme:dark;cursor:pointer}
 .admin-grid.record-is-closed>div:first-child{width:100%}
 .record-workspace{min-width:0}
 @media(max-width:900px){.admin-grid.record-is-closed{grid-template-columns:1fr}.recruit-row-actions{width:100%;justify-content:flex-start}.recruit-row-actions button{flex:1}}
+
+/* ===== V4.5.4 Ausbildungsakte bündig mit Recruit-Formular ===== */
+@media(min-width:1051px){
+  .admin-grid:not(.record-is-closed) .record-workspace{margin-top:58px}
+}
