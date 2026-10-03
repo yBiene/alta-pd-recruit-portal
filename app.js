@@ -355,7 +355,7 @@ function accountManagement(){
  const trainerCreate=isOwner()?`<section class="card account-create-panel"><div class="eyebrow">AUSBILDER</div><h2>Ausbilder-Account erstellen</h2><p class="muted">Account und Berechtigungsstufe für einen neuen Ausbilder anlegen.</p><form id="createTrainerAccounts" class="form-grid account-form-spacious">
   <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
   <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
-  <label>Rang<select name="rank" required><option>Officer</option><option selected>Sergeant</option><option>Lieutenant</option><option>Captain</option><option>Commander</option></select></label>
+  <label>Rang<select name="rank" required><option>Chief of Police</option><option>Assistant Chief</option><option>Deputy Chief</option><option>Commander</option><option>Captain II</option><option selected>Sergeant I</option><option>Detective I</option><option>Police Officer II</option><option>Recruit I</option></select></label>
   <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
   <label>Standardpasswort<input value="123456" disabled></label>
   <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
@@ -394,13 +394,13 @@ function admin(){
    <form id="createTrainer" class="form-grid">
     <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
     <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
-    <label>Rang<select name="rank" required><option>Officer</option><option selected>Sergeant</option><option>Lieutenant</option><option>Captain</option><option>Commander</option></select></label>
+    <label>Rang<select name="rank" required><option>Chief of Police</option><option>Assistant Chief</option><option>Deputy Chief</option><option>Commander</option><option>Captain II</option><option selected>Sergeant I</option><option>Detective I</option><option>Police Officer II</option><option>Recruit I</option></select></label>
     <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
     <label>Standardpasswort<input value="123456" disabled></label>
     <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
     <button class="primary" type="submit">Ausbilder-Account erstellen</button>
    </form>
-   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Officer"?"selected":""}>Officer</option><option ${t.rank==="Sergeant"?"selected":""}>Sergeant</option><option ${t.rank==="Lieutenant"?"selected":""}>Lieutenant</option><option ${t.rank==="Captain"?"selected":""}>Captain</option><option ${t.rank==="Commander"?"selected":""}>Commander</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="secondary" data-reset-password="${t.id}" data-reset-name="${esc(t.name)}">🔑 Passwort zurücksetzen</button><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
+   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Chief of Police"?"selected":""}>Chief of Police</option><option ${t.rank==="Assistant Chief"?"selected":""}>Assistant Chief</option><option ${t.rank==="Deputy Chief"?"selected":""}>Deputy Chief</option><option ${t.rank==="Commander"?"selected":""}>Commander</option><option ${t.rank==="Captain II"?"selected":""}>Captain II</option><option ${t.rank==="Sergeant I"?"selected":""}>Sergeant I</option><option ${t.rank==="Detective I"?"selected":""}>Detective I</option><option ${t.rank==="Police Officer II"?"selected":""}>Police Officer II</option><option ${t.rank==="Recruit I"?"selected":""}>Recruit I</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="secondary" data-reset-password="${t.id}" data-reset-name="${esc(t.name)}">🔑 Passwort zurücksetzen</button><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
   </div>`:"";
  $("#content").innerHTML=`
  <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>${recruitRecordsOnly?"Rekruten Ausbildungsakten":"Recruit-Verwaltung"}</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
@@ -1347,5 +1347,22 @@ setTimeout(sidebarTooltipsV544,0);
  });
  const logout=document.querySelector('#logoutBtn');
  if(logout)logout.addEventListener('click',()=>{try{sessionStorage.removeItem(APD_ROUTE_KEY)}catch{}try{history.replaceState(null,'',location.pathname+location.search)}catch{}},true);
+})();
+
+
+
+/* ===== V5.6.1 – Ausbilder-Ränge ===== */
+(function(){
+ const officialTrainerRanksV561=["Chief of Police","Assistant Chief","Deputy Chief","Commander","Captain II","Sergeant I","Detective I","Police Officer II","Recruit I"];
+ const oldAdminV561=admin;
+ admin=function(){
+  oldAdminV561();
+  document.querySelectorAll('select[data-rank]').forEach(sel=>{
+   const trainer=db.users.find(u=>u.id===sel.dataset.rank);
+   if(trainer?.rank && !officialTrainerRanksV561.includes(trainer.rank) && ![...sel.options].some(o=>o.value===trainer.rank)){
+    const o=document.createElement('option');o.value=trainer.rank;o.textContent=trainer.rank+' (Altbestand)';o.selected=true;sel.prepend(o);
+   }
+  });
+ };
 })();
 
