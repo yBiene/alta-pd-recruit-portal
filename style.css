@@ -96,3 +96,27 @@ main{min-width:0;background:radial-gradient(circle at 70% 0,rgba(23,109,176,.11)
     width:100%;
   }
 }
+
+/* V2.9 – beschreibbare Lern-/Nachweislinien */
+.learn-line{
+  display:inline-block;
+  width:min(240px,100%);
+  min-width:120px;
+  margin:2px 5px;
+  padding:3px 5px 4px;
+  border:0;
+  border-bottom:1px solid #9eb7c9;
+  border-radius:0;
+  background:transparent;
+  color:#fff;
+  font:inherit;
+  outline:none;
+  vertical-align:baseline;
+}
+.learn-line:focus{
+  border-bottom-color:#42b8ff;
+  box-shadow:0 2px 0 rgba(66,184,255,.18);
+}
+@media(max-width:650px){
+  .learn-line{width:100%;margin:5px 0 9px}
+}

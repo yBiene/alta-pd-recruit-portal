@@ -130,17 +130,43 @@ function dashboard(){
  <div class="grid chapter-grid">${titles.map(x=>`<div class="card chapter-card ${u.completed.includes(x.n)?"done":""}" data-open="${x.n}"><div class="chapter-num">KAPITEL ${String(x.n).padStart(2,"0")}</div><h3>${esc(x.title)}</h3></div>`).join("")}</div>`;
  document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>showChapter(+x.dataset.open));
 }
+
+function chapterNotesKey(n){return `apd_notes_${current.id}_${n}`}
+function editableChapterHtml(n,html){
+ let out=html||"";
+ // Modellnachweise in Waffeninformationen vollständig entfernen.
+ if(n===18){
+   out=out.replace(/<p[^>]*>[\s\S]*?Modellnachweise[\s\S]*?<\/p>/gi,"");
+   out=out.replace(/Modellnachweise:[\s\S]*?(?=<h[1-6]|$)/gi,"");
+ }
+ // Die handschriftlichen Linien in den gewünschten Kapiteln in Eingabefelder umwandeln.
+ if([16,17,18].includes(n)){
+   let idx=0;
+   out=out.replace(/_{5,}/g,()=>`<input class="learn-line" data-note="${idx++}" type="text" autocomplete="off" aria-label="Lernnotiz">`);
+ }
+ return out;
+}
+function restoreChapterNotes(n){
+ let notes={};try{notes=JSON.parse(localStorage.getItem(chapterNotesKey(n))||"{}")}catch{}
+ document.querySelectorAll(".learn-line").forEach(el=>{
+   el.value=notes[el.dataset.note]||"";
+   el.addEventListener("input",()=>{
+     notes[el.dataset.note]=el.value;
+     localStorage.setItem(chapterNotesKey(n),JSON.stringify(notes));
+   });
+ });
+}
 function showChapter(n){
  const c=CHAPTERS[n]; if(!c)return;
  setActive(`[data-chapter="${n}"]`); $("#pageTitle").textContent=`Kapitel ${n}`;
  const done=current.completed.includes(n);
- const chapterImages=n===21?["gebietskarte.png"]:(c.images||[]); const imgs=chapterImages.map(i=>`<img src="${i}" alt="Handbuch-Abbildung ${i}" onclick="window.open(this.src,'_blank')">`).join("");
+ const chapterImages=(n===6||n===21)?["gebietskarte.png"]:(c.images||[]); const imgs=chapterImages.map(i=>`<img src="${i}" alt="Handbuch-Abbildung ${i}" onclick="window.open(this.src,'_blank')">`).join("");
  $("#content").innerHTML=`
- <div class="chapter-header" style="background-image:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.58)),url('${n===21?"gebietskarte.png":((c.images||[])[0]||"image26.png")}')">
+ <div class="chapter-header" style="background-image:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.58)),url('${(n===6||n===21)?"gebietskarte.png":((c.images||[])[0]||"image26.png")}')">
   <div><div class="chapter-no">KAPITEL ${String(n).padStart(2,"0")}</div><h1>${esc(c.title)}</h1><span class="status">${done?"✓ Abgeschlossen":"● In Ausbildung"}</span></div>
  </div>
  <div class="chapter-body">
-  <article class="card article">${c.html || "<p>Für dieses Kapitel wurden keine zusätzlichen Textblöcke erkannt.</p>"}${imgs?`<h3>Bebilderte Anleitung</h3><div class="gallery">${imgs}</div>`:""}</article>
+  <article class="card article">${editableChapterHtml(n,c.html) || "<p>Für dieses Kapitel wurden keine zusätzlichen Textblöcke erkannt.</p>"}${imgs?`<h3>Bebilderte Anleitung</h3><div class="gallery">${imgs}</div>`:""}</article>
   <aside class="card side-card">
     <div class="eyebrow">AUSBILDUNGSSTATUS</div><h2>${done?"Abgeschlossen":"In Ausbildung"}</h2>
     <p class="muted">Zuständiger FTO</p><h3>${esc(current.fto)}</h3>
@@ -148,7 +174,7 @@ function showChapter(n){
     ${isTrainer(current)?`<button class="primary complete-btn ${done?"done":""}" id="quickToggle">${done?"Abschluss zurücknehmen":"Kapitel abschließen"}</button>`:""}
   </aside>
  </div>`;
- if(isTrainer(current)) $("#quickToggle").onclick=()=>{toggleChapter(current.id,n);showChapter(n)};
+ restoreChapterNotes(n); if(isTrainer(current)) $("#quickToggle").onclick=()=>{toggleChapter(current.id,n);showChapter(n)};
 }
 function account(){
  setActive('[data-view="account"]');$("#pageTitle").textContent="Mein Konto";
