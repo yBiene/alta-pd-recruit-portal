@@ -23,13 +23,22 @@ function loadDB(){
   return data;
 }
 function saveDB(){localStorage.setItem(DBKEY,JSON.stringify(db))}
+function isOwner(u=current){return !!u && u.id==="admin-carter"}
+function isTrainer(u=current){return !!u && (u.role==="admin"||u.role==="trainer")}
+function canCreateRecruit(u=current){return isOwner(u)||u?.role==="admin"||(u?.role==="trainer"&&u.access==="extra")}
+function roleLabel(u){
+ if(!u)return "";
+ if(isOwner(u))return "Hauptadmin / FTO";
+ if(u.role==="trainer")return u.access==="extra"?"Ausbilder · Extra-Zugriff":"Ausbilder";
+ return "Recruit";
+}
 let db=loadDB(), current=null, selectedRecruit=null;
 const titles=Object.entries(CHAPTERS).map(([n,c])=>({n:+n,title:c.title}));
 
 function nav(){
  let html=`<button class="nav-btn active" data-view="dashboard">⌂ Dashboard</button><div class="nav-label">AUSBILDUNG</div>`;
  for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="num">${x.n}</span>${esc(x.title)}</button>`;
- if(current?.role==="admin") html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="admin">⚙ Recruit-Verwaltung</button>`;
+ if(isTrainer(current)) html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="admin">⚙ Recruit-Verwaltung</button>`;
  $("#nav").innerHTML=html;
  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
  document.querySelectorAll("[data-chapter]").forEach(b=>b.onclick=()=>showChapter(+b.dataset.chapter));
@@ -77,11 +86,11 @@ function showChapter(n){
   <aside class="card side-card">
     <div class="eyebrow">AUSBILDUNGSSTATUS</div><h2>${done?"Abgeschlossen":"In Ausbildung"}</h2>
     <p class="muted">Zuständiger FTO</p><h3>${esc(current.fto)}</h3>
-    <div class="notice">${current.role==="admin"?"Als Admin kannst du den Ausbildungsstand in der Recruit-Verwaltung ändern.":"Der Abschluss wird durch deinen FTO im Adminbereich bestätigt."}</div>
-    ${current.role==="admin"?`<button class="primary complete-btn ${done?"done":""}" id="quickToggle">${done?"Abschluss zurücknehmen":"Kapitel abschließen"}</button>`:""}
+    <div class="notice">${isTrainer(current)?"Als Ausbilder kannst du den Ausbildungsstand in der Recruit-Verwaltung ändern.":"Der Abschluss wird durch deinen FTO im Verwaltungsbereich bestätigt."}</div>
+    ${isTrainer(current)?`<button class="primary complete-btn ${done?"done":""}" id="quickToggle">${done?"Abschluss zurücknehmen":"Kapitel abschließen"}</button>`:""}
   </aside>
  </div>`;
- if(current.role==="admin") $("#quickToggle").onclick=()=>{toggleChapter(current.id,n);showChapter(n)};
+ if(isTrainer(current)) $("#quickToggle").onclick=()=>{toggleChapter(current.id,n);showChapter(n)};
 }
 function account(){
  setActive('[data-view="account"]'); $("#pageTitle").textContent="Mein Account";
@@ -96,35 +105,53 @@ function account(){
  </div>`;
 }
 function admin(){
- if(current.role!=="admin") return dashboard();
+ if(!isTrainer(current)) return dashboard();
  setActive('[data-view="admin"]'); $("#pageTitle").textContent="Recruit-Verwaltung";
  const recruits=db.users.filter(x=>x.role==="recruit");
+ const trainers=db.users.filter(x=>x.role==="trainer");
  if(!selectedRecruit && recruits[0]) selectedRecruit=recruits[0].id;
- let sel=db.users.find(x=>x.id===selectedRecruit);
- $("#content").innerHTML=`
- <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>Recruit-Verwaltung</h1></div><span class="status">Sgt Carter · Vollzugriff</span></div>
- <div class="admin-grid">
-  <div>
-   <div class="card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
+ let sel=db.users.find(x=>x.id===selectedRecruit && x.role==="recruit");
+ const createRecruitCard=canCreateRecruit()?`<div class="card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
     <label>Name<input name="name" required placeholder="Recruit Name"></label>
     <label>Dienstnummer<input name="serviceNo" required placeholder="R-103"></label>
     <label>Benutzername<input name="username" required placeholder="vorname.nachname"></label>
     <label>Initiales Passwort<input name="password" required minlength="6"></label>
-    <label>FTO<input name="fto" value="Sgt Carter" required></label>
+    <label>FTO<input name="fto" value="${esc(current.name)}" required></label>
     <label>Ausbildungsbeginn<input name="start" value="${new Date().toLocaleDateString("de-DE")}"></label>
     <button class="primary" type="submit">Recruit-Account erstellen</button>
-   </form></div>
+   </form></div>`:`<div class="card"><h3>Recruit-Accounts</h3><p class="muted">Mit deinem aktuellen Zugriff kannst du Ausbildungsstände bearbeiten. Neue Accounts können nur mit Extra-Zugriff angelegt werden.</p></div>`;
+ const trainerAdmin=isOwner()?`<div class="card trainer-admin"><div class="section-head compact"><div><div class="eyebrow">AUSBILDER</div><h3>Ausbilder-Accounts</h3></div><span class="access-badge owner">Nur Hauptadmin</span></div>
+   <form id="createTrainer" class="form-grid">
+    <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
+    <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
+    <label>Rang<input name="rank" value="Sergeant" required></label>
+    <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
+    <label>Initiales Passwort<input name="password" required minlength="6"></label>
+    <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
+    <button class="primary" type="submit">Ausbilder-Account erstellen</button>
+   </form>
+   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.rank)} · ${esc(t.username)}</small></div><select data-access="${t.id}"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
+  </div>`:"";
+ $("#content").innerHTML=`
+ <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>Recruit-Verwaltung</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
+ <div class="admin-grid">
+  <div>
+   ${createRecruitCard}
    <div class="card" style="margin-top:14px"><h3>Recruit-Accounts</h3>
     ${recruits.map(r=>`<div class="recruit-row"><div><b>${esc(r.name)}</b><small>${esc(r.serviceNo)} · ${progress(r)}% · ${esc(r.fto)}</small></div><button class="primary" data-edit="${r.id}">Öffnen</button></div>`).join("")||"<p>Noch keine Recruit-Accounts.</p>"}
    </div>
+   ${trainerAdmin}
   </div>
   <div>${sel?adminRecruit(sel):`<div class="card"><h2>Keinen Recruit ausgewählt</h2></div>`}</div>
  </div>`;
- $("#createRecruit").onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);let username=f.get("username").trim().toLowerCase();if(db.users.some(x=>x.username===username)){alert("Benutzername existiert bereits.");return}let u={id:"r-"+Date.now(),username,password:f.get("password"),name:f.get("name"),serviceNo:f.get("serviceNo"),role:"recruit",rank:"Recruit",fto:f.get("fto"),start:f.get("start"),status:"In Ausbildung",completed:[]};db.users.push(u);saveDB();selectedRecruit=u.id;admin()};
+ $("#createRecruit")?.addEventListener("submit",e=>{e.preventDefault();let f=new FormData(e.target);let username=f.get("username").trim().toLowerCase();if(db.users.some(x=>x.username===username)){alert("Benutzername existiert bereits.");return}let u={id:"r-"+Date.now(),username,password:f.get("password"),name:f.get("name"),serviceNo:f.get("serviceNo"),role:"recruit",rank:"Recruit",fto:f.get("fto"),start:f.get("start"),status:"In Ausbildung",completed:[]};db.users.push(u);saveDB();selectedRecruit=u.id;admin()});
+ $("#createTrainer")?.addEventListener("submit",e=>{e.preventDefault();let f=new FormData(e.target);let username=f.get("username").trim().toLowerCase();if(db.users.some(x=>x.username===username)){alert("Benutzername existiert bereits.");return}db.users.push({id:"t-"+Date.now(),username,password:f.get("password"),name:f.get("name"),serviceNo:f.get("serviceNo"),role:"trainer",access:f.get("access"),rank:f.get("rank"),fto:"—",start:new Date().toLocaleDateString("de-DE"),status:f.get("access")==="extra"?"Ausbilder · Extra-Zugriff":"Ausbilder",completed:[]});saveDB();admin()});
  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{selectedRecruit=b.dataset.edit;admin()});
  document.querySelectorAll("[data-check]").forEach(b=>b.onchange=()=>{toggleChapter(sel.id,+b.dataset.check);admin()});
+ document.querySelectorAll("[data-access]").forEach(x=>x.onchange=()=>{let u=db.users.find(v=>v.id===x.dataset.access);if(!u)return;u.access=x.value;u.status=x.value==="extra"?"Ausbilder · Extra-Zugriff":"Ausbilder";saveDB();admin()});
+ document.querySelectorAll("[data-delete-trainer]").forEach(b=>b.onclick=()=>{if(confirm("Ausbilder-Account wirklich löschen?")){db.users=db.users.filter(x=>x.id!==b.dataset.deleteTrainer);saveDB();admin()}});
  $("#saveRecruit")?.addEventListener("click",()=>{let u=db.users.find(x=>x.id===sel.id);u.fto=$("#editFto").value;u.status=$("#editStatus").value;u.rank=$("#editRank").value;saveDB();admin()});
- $("#deleteRecruit")?.addEventListener("click",()=>{if(confirm("Recruit-Account wirklich löschen?")){db.users=db.users.filter(x=>x.id!==sel.id);saveDB();selectedRecruit=null;admin()}});
+ $("#deleteRecruit")?.addEventListener("click",()=>{if(!canCreateRecruit()){alert("Zum Löschen von Accounts ist Extra-Zugriff erforderlich.");return}if(confirm("Recruit-Account wirklich löschen?")){db.users=db.users.filter(x=>x.id!==sel.id);saveDB();selectedRecruit=null;admin()}});
 }
 function adminRecruit(r){
  let p=progress(r);
@@ -163,7 +190,7 @@ $("#loginForm").onsubmit=e=>{
  current=found;
  localStorage.setItem("apd_logged_in_user", current.username); db.activeUser=current.username; saveDB();
  $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
- $("#topName").textContent=current.name;$("#topRole").textContent=current.role==="admin"?"Administrator / FTO":"Recruit";
+ $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
  nav();setupSearch();dashboard();
  if(!sessionStorage.getItem("apd_seen_splash")){$("#splash").classList.remove("hidden")}
 };
@@ -179,6 +206,6 @@ $("#logoutBtn").onclick=()=>{localStorage.removeItem("apd_logged_in_user");db.ac
   $("#loginView").classList.add("hidden");
   $("#app").classList.remove("hidden");
   $("#topName").textContent=current.name;
-  $("#topRole").textContent=current.role==="admin"?"Administrator / FTO":"Recruit";
+  $("#topRole").textContent=roleLabel(current);
   nav();setupSearch();dashboard();
 })();
