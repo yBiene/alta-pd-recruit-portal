@@ -327,14 +327,14 @@ function admin(){
   </div>`:"";
  $("#content").innerHTML=`
  <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>Recruit-Verwaltung</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
- <div class="admin-grid">
+ <div class="admin-grid ${sel?"":"record-is-closed"}">
   <div>
    ${createRecruitCard}
    <div class="card" style="margin-top:14px"><h3>Recruit-Accounts</h3>
-    ${recruits.map(r=>`<div class="recruit-row"><div><b>${esc(r.name)}</b><small>${esc(r.serviceNo)} · ${progress(r)}% · ${esc(r.fto)}</small></div><button class="primary" data-edit="${r.id}">Öffnen</button></div>`).join("")||"<p>Noch keine Recruit-Accounts.</p>"}
+    ${recruits.map(r=>`<div class="recruit-row"><div><b>${esc(r.name)}</b><small>${esc(r.serviceNo)} · ${progress(r)}% · ${esc(r.fto)}</small></div><div class="recruit-row-actions"><button class="primary" data-edit="${r.id}">Öffnen</button><button class="secondary" data-close-record="${r.id}" ${selectedRecruit===r.id&&!recruitRecordClosed?"":"disabled"}>Schließen</button></div></div>`).join("")||"<p>Noch keine Recruit-Accounts.</p>"}
    </div>
   </div>
-  <div>${sel?adminRecruit(sel):`<div class="card record-closed-card"><div><div class="eyebrow">AUSBILDUNGSAKTE</div><h2>Akte geschlossen</h2><p class="muted">Wähle links bei einem Recruit „Öffnen“, wenn du die Ausbildungsakte bearbeiten möchtest.</p></div><span>📁</span></div>`}</div>
+  ${sel?`<div class="record-workspace">${adminRecruit(sel)}</div>`:""}
  </div>
  ${trainerAdmin?`<div class="trainer-admin-wide">${trainerAdmin}</div>`:""}`;
  $("#createRecruit")?.addEventListener("submit",async e=>{
@@ -354,6 +354,7 @@ function admin(){
   }catch(err){alert("Ausbilder konnte nicht erstellt werden: "+err.message)}
  });
  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{recruitRecordClosed=false;selectedRecruit=b.dataset.edit;admin()});
+ document.querySelectorAll("[data-close-record]").forEach(b=>b.onclick=()=>{if(selectedRecruit!==b.dataset.closeRecord)return;recruitRecordClosed=true;selectedRecruit=null;admin()});
  $("#closeRecruitRecord")?.addEventListener("click",()=>{recruitRecordClosed=true;selectedRecruit=null;admin()});
  document.querySelectorAll("[data-check]").forEach(b=>b.onchange=async()=>{await toggleChapter(sel.id,+b.dataset.check);await refreshData();admin()});
  document.querySelectorAll("[data-test-assign]").forEach(b=>b.onchange=async()=>{

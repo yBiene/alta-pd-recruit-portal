@@ -341,3 +341,12 @@ select{color-scheme:dark;cursor:pointer}
 .record-closed-card{min-height:150px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-style:dashed!important;background:linear-gradient(120deg,#091b29,#071521)!important}
 .record-closed-card>span{font-size:46px;opacity:.32}
 @media(max-width:760px){.record-head{flex-direction:column}.record-close-btn{width:100%}}
+
+/* V4.5.3 – Recruit-Akte kompakt öffnen/schließen */
+.recruit-row-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.recruit-row-actions button{min-width:92px}
+.recruit-row-actions button:disabled{opacity:.38;cursor:not-allowed;filter:saturate(.45)}
+.admin-grid.record-is-closed{grid-template-columns:minmax(420px,560px);justify-content:center}
+.admin-grid.record-is-closed>div:first-child{width:100%}
+.record-workspace{min-width:0}
+@media(max-width:900px){.admin-grid.record-is-closed{grid-template-columns:1fr}.recruit-row-actions{width:100%;justify-content:flex-start}.recruit-row-actions button{flex:1}}
