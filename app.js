@@ -151,7 +151,7 @@ function nav(){
  let html=`<button class="nav-btn active" data-view="dashboard">🏠 Dashboard</button><div class="nav-label">AUSBILDUNG</div>`;
  for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon" aria-hidden="true">${chapterIcons[x.n]||"📘"}</span>${esc(x.title)}</button>`;
  html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button><div class="nav-label">PORTAL</div><button class="nav-btn" data-view="news">📢 Mitteilungen</button><button class="nav-btn" data-view="documents">📂 Dokumente</button>`;
- if(isTrainer(current)) html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn" data-view="admin">🛡️ Recruit-Verwaltung</button>`;
+ if(isTrainer(current)) html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn" data-view="accounts">👤 Account-Verwaltung</button><button class="nav-btn" data-view="admin">📂 Rekruten Ausbildungsakten</button>`;
  $("#nav").innerHTML=html;
  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
  document.querySelectorAll("[data-chapter]").forEach(b=>b.onclick=()=>showChapter(+b.dataset.chapter));
@@ -174,7 +174,8 @@ function timelineHtml(u,limit=8){const a=(u.activity||[]).slice(0,limit);return 
 function showView(v){
  if(v==="dashboard") return dashboard();
  if(v==="command") return commandCenter();
- if(v==="admin") return admin();
+ if(v==="accounts") return accountManagement();
+ if(v==="admin") return recruitRecordsView();
  if(v==="tests") return testsView();
  if(v==="account") return account();
  if(v==="news") return newsView();
@@ -337,6 +338,42 @@ function account(){
   account();
  });
 }
+function accountManagement(){
+ if(!isTrainer(current)) return dashboard();
+ setActive('[data-view="accounts"]'); $("#pageTitle").textContent="Account-Verwaltung";
+ const trainers=db.users.filter(x=>x.role==="trainer");
+ const recruitCreate=canCreateRecruit()?`<section class="card account-create-panel"><div class="eyebrow">REKRUTEN</div><h2>Recruit-Account erstellen</h2><p class="muted">Hier werden ausschließlich neue Zugangsdaten für Rekruten angelegt. Die Ausbildungsakte befindet sich im separaten Menüpunkt.</p><form id="createRecruitAccounts" class="form-grid account-form-spacious">
+  <label>Name<input name="name" required placeholder="Recruit Name"></label>
+  <label>Dienstnummer<input name="serviceNo" required placeholder="R-103"></label>
+  <label>Benutzername<input name="username" required placeholder="vorname.nachname"></label>
+  <label>Standardpasswort<input value="123456" disabled></label>
+  <label>FTO<input name="fto" value="${esc(current.name)}" required></label>
+  <label>Ausbildungsbeginn<input name="start" value="${new Date().toLocaleDateString("de-DE")}"></label>
+  <button class="primary" type="submit">Recruit-Account erstellen</button>
+ </form></section>`:`<section class="card account-create-panel"><div class="eyebrow">REKRUTEN</div><h2>Recruit-Accounts</h2><p class="muted">Neue Recruit-Accounts können nur mit Extra-Zugriff angelegt werden.</p></section>`;
+ const trainerCreate=isOwner()?`<section class="card account-create-panel"><div class="eyebrow">AUSBILDER</div><h2>Ausbilder-Account erstellen</h2><p class="muted">Account und Berechtigungsstufe für einen neuen Ausbilder anlegen.</p><form id="createTrainerAccounts" class="form-grid account-form-spacious">
+  <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
+  <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
+  <label>Rang<select name="rank" required><option>Officer</option><option selected>Sergeant</option><option>Lieutenant</option><option>Captain</option><option>Commander</option></select></label>
+  <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
+  <label>Standardpasswort<input value="123456" disabled></label>
+  <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
+  <button class="primary" type="submit">Ausbilder-Account erstellen</button>
+ </form></section>`:"";
+ $("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>Account-Verwaltung</h1><p class="muted page-intro">Neue Recruit- und Ausbilder-Zugänge anlegen. Ausbildungsstände werden hier bewusst nicht angezeigt.</p></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div><div class="account-management-grid">${recruitCreate}${trainerCreate}</div>`;
+ $("#createRecruitAccounts")?.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(e.target);try{await invokeAccountAction({action:"create",role:"recruit",username:f.get("username"),name:f.get("name"),serviceNo:f.get("serviceNo"),rank:"Recruit",fto:f.get("fto"),start:f.get("start"),access:"standard"});await refreshData();alert("Recruit-Account wurde erstellt.");accountManagement()}catch(err){alert("Account konnte nicht erstellt werden: "+err.message)}});
+ $("#createTrainerAccounts")?.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(e.target);try{await invokeAccountAction({action:"create",role:"trainer",username:f.get("username"),name:f.get("name"),serviceNo:f.get("serviceNo"),rank:f.get("rank"),fto:"—",access:f.get("access")});await refreshData();alert("Ausbilder-Account wurde erstellt.");accountManagement()}catch(err){alert("Ausbilder konnte nicht erstellt werden: "+err.message)}});
+}
+function recruitRecordsView(){
+ admin();
+ if(!isTrainer(current)) return;
+ setActive('[data-view="admin"]'); $("#pageTitle").textContent="Rekruten Ausbildungsakten";
+ const head=$("#content")?.querySelector('.section-head h1'); if(head) head.textContent='Rekruten Ausbildungsakten';
+ $("#content")?.querySelector('.account-create-card')?.remove();
+ $("#content")?.querySelector('.trainer-admin-wide')?.remove();
+ const left=$("#content")?.querySelector('.admin-grid > div:first-child');
+ if(left){ const list=left.querySelector('.card'); if(list){ list.classList.add('recruit-record-list'); const h=list.querySelector('h3'); if(h) h.textContent='Rekruten auswählen'; } }
+}
 function admin(){
  if(!isTrainer(current)) return dashboard();
  setActive('[data-view="admin"]'); $("#pageTitle").textContent="Recruit-Verwaltung";
@@ -344,7 +381,7 @@ function admin(){
  const trainers=db.users.filter(x=>x.role==="trainer");
  if(!recruitRecordClosed && !selectedRecruit && recruits[0]) selectedRecruit=recruits[0].id;
  let sel=db.users.find(x=>x.id===selectedRecruit && x.role==="recruit");
- const createRecruitCard=canCreateRecruit()?`<div class="card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
+ const createRecruitCard=canCreateRecruit()?`<div class="card account-create-card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
     <label>Name<input name="name" required placeholder="Recruit Name"></label>
     <label>Dienstnummer<input name="serviceNo" required placeholder="R-103"></label>
     <label>Benutzername<input name="username" required placeholder="vorname.nachname"></label>

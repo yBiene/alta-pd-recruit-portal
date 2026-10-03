@@ -577,3 +577,20 @@ select{color-scheme:dark;cursor:pointer}
 /* ===== V5.3 mehr Luft + Academy Organisation ===== */
 .v53-spacious-block{display:grid;gap:22px;margin:22px 0 8px}.v53-dashboard-space{margin:26px 0}.v53-grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.v53-panel{padding:22px!important}.v53-panel h2,.v53-panel h3{margin:7px 0 16px}.v53-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px;margin:14px 0 20px}.v53-form label{display:grid;gap:7px;color:#9eb7c7;font-size:12px}.v53-form input,.v53-form select,.v53-form textarea{width:100%;min-height:43px;padding:10px 12px}.v53-form textarea{min-height:92px;resize:vertical}.v53-wide{grid-column:1/-1}.v53-list{display:grid;gap:11px}.v53-row{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:14px 0;border-top:1px solid #183b50}.v53-row:first-child{border-top:0}.v53-row b,.v53-row small{display:block}.v53-row small{margin-top:5px;color:#7e9cad}.v53-row p{margin:7px 0 0;color:#b7cad5}.v53-missing{padding:11px 13px;margin:8px 0;border:1px solid #594a27;border-radius:10px;background:#211d10;color:#f1d889}.v53-ready{padding:14px;border:1px solid #287859;border-radius:10px;background:#0a2b25;color:#70e4ae}.v53-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px}.v53-stats span{padding:12px;border:1px solid #214b66;border-radius:10px;background:#071a28}.v53-stats small,.v53-stats b{display:block}.v53-stats small{color:#7898ad;font-size:10px}.v53-stats b{margin-top:5px}.v53-eval{margin-bottom:8px}.v53-saved{margin-top:14px}.v53-timeline{display:grid;gap:0}.v53-timeline>div{display:grid;grid-template-columns:145px minmax(170px,.8fr) 1fr;gap:14px;padding:13px 0;border-top:1px solid #17384c;align-items:start}.v53-timeline>div:first-child{border-top:0}.v53-timeline span,.v53-timeline small{color:#7898ad}.record-tab-panel>.v53-spacious-block:first-child{margin-top:18px}.record-tab-panel .card.inner-card{margin-top:18px}.record-workspace .record-overview-grid{margin-top:22px}.record-workspace .record-summary{margin-top:14px;margin-bottom:22px}
 @media(max-width:900px){.v53-grid-two{grid-template-columns:1fr}.v53-form{grid-template-columns:1fr}.v53-wide{grid-column:auto}.v53-stats{grid-template-columns:repeat(2,1fr)}.v53-timeline>div{grid-template-columns:1fr;gap:4px}.v53-panel{padding:18px!important}}
+
+/* ===== V5.3.1 Getrennte Account-Verwaltung / Ausbildungsakten ===== */
+.account-management-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px;align-items:start;max-width:1320px;margin:26px auto 0}
+.account-create-panel{padding:28px!important;border-radius:18px!important}
+.account-create-panel h2{margin:7px 0 8px;font-size:24px}
+.account-create-panel .muted{line-height:1.65;margin-bottom:22px}
+.account-form-spacious{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 20px!important}
+.account-form-spacious label{font-size:12px}
+.account-form-spacious input,.account-form-spacious select{min-height:46px!important;margin-top:7px!important}
+.account-form-spacious button{grid-column:1/-1;min-height:48px;margin-top:6px}
+.page-intro{margin-top:8px;max-width:720px;line-height:1.6}
+.recruit-record-list{padding:22px!important}
+.recruit-record-list h3{font-size:20px;margin-bottom:16px}
+.admin-grid:not(.record-is-closed){grid-template-columns:minmax(360px,430px) minmax(0,1fr)!important;gap:34px!important}
+.admin-grid.record-is-closed{grid-template-columns:minmax(460px,650px)!important}
+@media(max-width:1050px){.account-management-grid{grid-template-columns:1fr;gap:22px}.admin-grid:not(.record-is-closed){grid-template-columns:1fr!important}}
+@media(max-width:700px){.account-form-spacious{grid-template-columns:1fr}.account-management-grid{margin-top:16px}.account-create-panel{padding:20px!important}}
