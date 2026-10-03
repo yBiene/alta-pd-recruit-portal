@@ -197,3 +197,17 @@ main{min-width:0;background:radial-gradient(circle at 70% 0,rgba(23,109,176,.11)
   .card{padding:13px}
   .hero h1{font-size:26px}
 }
+
+/* V4.2 – Ausbildungsakte, Ziele, Qualifikationen, FTO-Dashboard */
+.dashboard-two,.record-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}.fto-stats{grid-template-columns:repeat(4,1fr);margin-bottom:14px}.fto-recruit-list{margin-top:12px}.fto-recruit{display:grid;grid-template-columns:minmax(150px,1fr) minmax(120px,1.4fr) 54px;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(130,180,220,.12)}.fto-recruit:last-child{border-bottom:0}.fto-recruit small{display:block;color:var(--muted);margin-top:3px}.mini-progress{height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}.mini-progress i{display:block;height:100%;background:#249bea;border-radius:99px}.qualification-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.qualification{display:grid;grid-template-columns:28px 1fr;gap:1px 8px;align-items:center;padding:10px;border:1px solid rgba(120,180,220,.15);border-radius:10px;background:rgba(7,24,39,.5)}.qualification>span{grid-row:1/3;font-size:19px}.qualification small{color:var(--muted)}.qualification.earned{border-color:rgba(58,195,135,.35);background:rgba(27,111,78,.12)}.qualification.locked{opacity:.58}.activity-card{margin-top:14px}.timeline-row{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:11px 0;border-bottom:1px solid rgba(130,180,220,.12)}.timeline-row:last-child{border-bottom:0}.timeline-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:rgba(36,155,234,.12);border:1px solid rgba(36,155,234,.25)}.timeline-row small{display:block;color:var(--muted);margin-top:4px}.goal-mini,.goal-account{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(130,180,220,.12)}.goal-account small{display:block;color:var(--muted);margin-top:3px}.goal-account.done{opacity:.62}.goal-form{display:flex;gap:8px;margin:10px 0 12px}.goal-form input{flex:1}.goal-admin{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(130,180,220,.12)}.goal-admin label{display:flex;gap:9px;align-items:flex-start;cursor:pointer}.goal-admin.done span{text-decoration:line-through;opacity:.65}.inner-card{background:rgba(6,22,36,.55);box-shadow:none}.notes-admin-section{margin-top:14px}
+@media(max-width:900px){.fto-stats{grid-template-columns:repeat(2,1fr)}.dashboard-two,.record-grid{grid-template-columns:1fr}.qualification-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.fto-stats{grid-template-columns:1fr 1fr}.fto-recruit{grid-template-columns:1fr 48px}.fto-recruit .mini-progress{grid-column:1/3;grid-row:2}.goal-form{flex-direction:column}.qualification-grid{grid-template-columns:1fr}}
+
+
+/* V4.2.1 – Passwortverwaltung */
+.password-card{margin-top:16px}
+.password-warning{margin:12px 0 16px;border-color:#9b6a22;background:rgba(155,106,34,.12)}
+.password-form{margin-top:14px}
+.password-form button{align-self:end}
+.trainer-row [data-reset-password]{white-space:nowrap}
+@media(max-width:760px){.password-form{grid-template-columns:1fr}.trainer-row [data-reset-password]{width:100%}}

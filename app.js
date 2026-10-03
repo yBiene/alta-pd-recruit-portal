@@ -16,7 +16,8 @@ function mapProfile(p){
   id:p.id, username:p.username, name:p.name, serviceNo:p.service_no||"",
   role:p.role, access:p.access_level||"standard", rank:p.rank||"",
   fto:p.fto||"", start:p.training_start||"", status:p.status||"In Ausbildung",
-  completed:[], assignedTests:[], testResults:[], notes:[]
+  mustChangePassword:!!p.must_change_password,
+  completed:[], assignedTests:[], testResults:[], notes:[], goals:[], activity:[]
  };
 }
 async function refreshData(){
@@ -36,13 +37,14 @@ async function refreshData(){
 
  const ids=db.users.map(x=>x.id);
  if(ids.length){
-  const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re},{data:notes,error:ne}]=await Promise.all([
+  const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re},{data:notes,error:ne},{data:goals,error:ge}]=await Promise.all([
    sb.from("training_progress").select("*").in("recruit_id",ids),
    sb.from("test_assignments").select("*").eq("active",true).in("recruit_id",ids),
    sb.from("test_results").select("*").in("recruit_id",ids).order("completed_at",{ascending:true}),
-   sb.from("recruit_notes").select("*").in("recruit_id",ids).order("created_at",{ascending:true})
+   sb.from("recruit_notes").select("*").in("recruit_id",ids).order("created_at",{ascending:true}),
+   sb.from("training_goals").select("*").in("recruit_id",ids).order("created_at",{ascending:true})
   ]);
-  if(pe) throw pe;if(ae) throw ae;if(re) throw re;if(ne) console.warn("Recruit-Vermerke konnten nicht geladen werden:",ne.message);
+  if(pe) throw pe;if(ae) throw ae;if(re) throw re;if(ne) console.warn("Recruit-Vermerke konnten nicht geladen werden:",ne.message);if(ge) console.warn("Ausbildungsziele konnten nicht geladen werden:",ge.message);
   for(const u of db.users){
    u.completed=(prog||[]).filter(x=>x.recruit_id===u.id&&x.completed).map(x=>x.chapter).sort((a,b)=>a-b);
    u.assignedTests=(assign||[]).filter(x=>x.recruit_id===u.id&&x.active).map(x=>x.test_id);
@@ -52,8 +54,15 @@ async function refreshData(){
    }));
    u.notes=(notes||[]).filter(x=>x.recruit_id===u.id).map(x=>({
     id:x.id,text:x.note_text,authorName:x.author_name,authorRank:x.author_rank,
-    date:new Date(x.created_at).toLocaleString("de-DE")
+    createdAt:x.created_at,date:new Date(x.created_at).toLocaleString("de-DE")
    }));
+   u.goals=(goals||[]).filter(x=>x.recruit_id===u.id).map(x=>({id:x.id,text:x.goal_text,done:!!x.completed,createdAt:x.created_at,completedAt:x.completed_at||null,authorName:x.author_name||"Ausbilder"}));
+   const acts=[];
+   (prog||[]).filter(x=>x.recruit_id===u.id&&x.completed).forEach(x=>acts.push({when:x.completed_at||null,icon:"✓",text:`Kapitel ${x.chapter} abgeschlossen`}));
+   u.testResults.forEach(x=>{const raw=(results||[]).find(r=>r.recruit_id===u.id&&r.test_id===x.testId&&new Date(r.completed_at).toLocaleString("de-DE")===x.date);acts.push({when:raw?.completed_at||null,icon:x.passed?"🏅":"📝",text:`${TESTS.find(t=>t.id===x.testId)?.title||x.testId}: ${x.percent}% ${x.passed?"· bestanden":"· nicht bestanden"}`})});
+   u.notes.forEach(x=>acts.push({when:x.createdAt,icon:"📝",text:`Vermerk von ${x.authorRank||"Ausbilder"} ${x.authorName||""}`}));
+   u.goals.forEach(x=>acts.push({when:x.completedAt||x.createdAt,icon:x.done?"🎯":"📌",text:`Ausbildungsziel ${x.done?"erledigt":"gesetzt"}: ${x.text}`}));
+   u.activity=acts.filter(x=>x.when).sort((a,b)=>new Date(b.when)-new Date(a.when));
   }
  }
  current=db.users.find(x=>x.id===user.id)||current;
@@ -143,6 +152,18 @@ function nav(){
 function setActive(sel){document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));document.querySelector(sel)?.classList.add("active")}
 function progress(u){return Math.round(((u.completed||[]).length/22)*100)}
 function stage(u){let p=progress(u);return p===100?"Streifenfreigabe":p>=75?"IV · Beobachtungsfahrt":p>=50?"III · Du führst":p>=25?"II · Zusammenarbeit":"I · Demonstration"}
+function qualifications(u){
+ const has=n=>(u.completed||[]).includes(n);
+ const passed=id=>(u.testResults||[]).some(r=>r.testId===id&&r.passed);
+ return [
+  ["📻","Funk",has(4)&&has(5)], ["💻","CAD / EFA",has(7)&&has(8)],
+  ["🚓","Streifendienst",has(9)&&has(10)], ["🎯","Schießtraining",has(13)&&has(14)],
+  ["🧪","Beweismittel",has(12)&&has(19)], ["🏅","Theorieprüfung",passed("test-a")&&passed("test-b")],
+  ["🛡️","Streifenfreigabe",progress(u)===100]
+ ];
+}
+function qualificationHtml(u){return `<div class="qualification-grid">${qualifications(u).map(q=>`<div class="qualification ${q[2]?"earned":"locked"}"><span>${q[0]}</span><b>${esc(q[1])}</b><small>${q[2]?"Freigegeben":"Offen"}</small></div>`).join("")}</div>`}
+function timelineHtml(u,limit=8){const a=(u.activity||[]).slice(0,limit);return a.length?a.map(x=>`<div class="timeline-row"><span class="timeline-icon">${x.icon}</span><div><b>${esc(x.text)}</b><small>${new Date(x.when).toLocaleString("de-DE")}</small></div></div>`).join(""):`<p class="muted">Noch keine Aktivitäten vorhanden.</p>`}
 function showView(v){
  if(v==="dashboard") return dashboard();
  if(v==="admin") return admin();
@@ -166,6 +187,8 @@ function dashboard(){
   <div class="card stat"><span>FORTSCHRITT</span><b>${p}%</b><div class="progress"><i style="width:${p}%"></i></div></div>
  </div>
  <div class="card"><div class="section-head" style="margin:0 0 12px"><div><div class="eyebrow">AKTUELLE STUFE</div><h2>${stage(u)}</h2></div><span>${u.completed.length} / 22 Kapitel</span></div><div class="progress"><i style="width:${p}%"></i></div></div>
+ ${isTrainer(u)?`<div class="section-head"><div><div class="eyebrow">FTO-ÜBERSICHT</div><h2>Ausbildungsleitung</h2></div></div><div class="grid fto-stats">${(()=>{const rs=db.users.filter(x=>x.role==="recruit"),ready=rs.filter(x=>progress(x)===100).length,open=rs.reduce((a,x)=>a+(x.goals||[]).filter(g=>!g.done).length,0),tests=rs.reduce((a,x)=>a+(x.assignedTests||[]).length,0);return `<div class="card stat"><span>RECRUITS</span><b>${rs.length}</b></div><div class="card stat"><span>STREIFENFREIGABE</span><b>${ready}</b></div><div class="card stat"><span>OFFENE ZIELE</span><b>${open}</b></div><div class="card stat"><span>ZUGEWIESENE TESTS</span><b>${tests}</b></div>`})()}</div><div class="card"><div class="eyebrow">FORTSCHRITT DER RECRUITS</div><div class="fto-recruit-list">${db.users.filter(x=>x.role==="recruit").map(r=>`<div class="fto-recruit"><div><b>${esc(r.name)}</b><small>${esc(r.fto||"—")} · ${stage(r)}</small></div><div class="mini-progress"><i style="width:${progress(r)}%"></i></div><strong>${progress(r)}%</strong></div>`).join("")||"<p class='muted'>Noch keine Recruits.</p>"}</div></div>`:`<div class="dashboard-two"><div class="card"><div class="eyebrow">🎯 OFFENE AUSBILDUNGSZIELE</div><h2>Meine nächsten Ziele</h2>${(u.goals||[]).filter(g=>!g.done).length?(u.goals||[]).filter(g=>!g.done).map(g=>`<div class="goal-mini"><span>📌</span><b>${esc(g.text)}</b></div>`).join(""):"<p class='muted'>Aktuell keine offenen Ausbildungsziele.</p>"}</div><div class="card"><div class="eyebrow">🏅 QUALIFIKATIONEN</div><h2>Freigaben</h2>${qualificationHtml(u)}</div></div>`}
+ <div class="card activity-card"><div class="eyebrow">AKTIVITÄTSVERLAUF</div><h2>Letzte Ausbildungsaktivitäten</h2>${timelineHtml(u,6)}</div>
  <div class="section-head"><div><div class="eyebrow">REKRUTENAUSBILDUNG</div><h2>Ausbildungskapitel</h2></div><span class="muted">Stand Handbuch 03.10.2026</span></div>
  <div class="grid chapter-grid">${titles.map(x=>`<div class="card chapter-card ${u.completed.includes(x.n)?"done":""}" data-open="${x.n}"><div class="chapter-num">KAPITEL ${String(x.n).padStart(2,"0")}</div><h3>${esc(x.title)}</h3></div>`).join("")}</div>`;
  document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>showChapter(+x.dataset.open));
@@ -229,7 +252,18 @@ function account(){
   <button class="primary" id="saveMyAccount">💾 Dienstnummer speichern</button>
   <p class="muted" style="margin-top:10px">Die Dienstnummer kann von jedem Account selbst geändert werden.</p>
  </div>
- ${current.role==="recruit"?`<div class="card notes-card"><div class="section-head compact"><div><div class="eyebrow">📝 AUSBILDUNGSVERMERKE</div><h2>Vermerke meiner Ausbilder</h2></div><span class="note-count">${(current.notes||[]).length}</span></div>${(current.notes||[]).length?current.notes.slice().reverse().map(n=>`<article class="note-entry"><div class="note-meta"><b>${esc(n.authorRank||"Ausbilder")} ${esc(n.authorName||"")}</b><span>${esc(n.date)}</span></div><p>${esc(n.text)}</p></article>`).join(""):`<div class="empty-note">Noch keine Vermerke vorhanden.</div>`}</div>`:""}`;
+ <div class="card password-card">
+  <div class="eyebrow">🔐 SICHERHEIT</div><h2>Passwort ändern</h2>
+  ${current.mustChangePassword?`<div class="notice password-warning"><b>Erstanmeldung:</b> Bitte ersetze das Standardpasswort 123456 jetzt durch dein eigenes Passwort.</div>`:""}
+  <form id="changeMyPassword" class="form-grid password-form">
+   <label>Neues Passwort<input id="newPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="Mindestens 8 Zeichen"></label>
+   <label>Passwort wiederholen<input id="repeatPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="Passwort wiederholen"></label>
+   <button class="primary" type="submit">🔑 Passwort speichern</button>
+  </form>
+  <p class="muted" style="margin-top:10px">Dein aktuelles Passwort kann von niemandem eingesehen werden. Bei Verlust kann der Hauptadmin es auf 123456 zurücksetzen.</p>
+ </div>
+ ${current.role==="recruit"?`<div class="card notes-card"><div class="section-head compact"><div><div class="eyebrow">📝 AUSBILDUNGSVERMERKE</div><h2>Vermerke meiner Ausbilder</h2></div><span class="note-count">${(current.notes||[]).length}</span></div>${(current.notes||[]).length?current.notes.slice().reverse().map(n=>`<article class="note-entry"><div class="note-meta"><b>${esc(n.authorRank||"Ausbilder")} ${esc(n.authorName||"")}</b><span>${esc(n.date)}</span></div><p>${esc(n.text)}</p></article>`).join(""):`<div class="empty-note">Noch keine Vermerke vorhanden.</div>`}</div>`:""}
+ ${current.role==="recruit"?`<div class="dashboard-two"><div class="card"><div class="eyebrow">🎯 AUSBILDUNGSZIELE</div><h2>Meine Ziele</h2>${(current.goals||[]).length?current.goals.map(g=>`<div class="goal-account ${g.done?"done":""}"><span>${g.done?"✓":"○"}</span><div><b>${esc(g.text)}</b><small>${g.done?"Erledigt":"Offen"}</small></div></div>`).join(""):"<p class='muted'>Keine Ziele eingetragen.</p>"}</div><div class="card"><div class="eyebrow">🏅 QUALIFIKATIONEN</div><h2>Meine Freigaben</h2>${qualificationHtml(current)}</div></div><div class="card activity-card"><div class="eyebrow">AKTIVITÄTSVERLAUF</div><h2>Meine Ausbildung</h2>${timelineHtml(current,12)}</div>`:""}`;
  $("#saveMyAccount").onclick=async()=>{
     const value=$("#myServiceNo").value.trim();
     if(!value){alert("Bitte eine Dienstnummer eintragen.");return}
@@ -239,6 +273,20 @@ function account(){
     alert("Dienstnummer gespeichert.");
     account();
  };
+ $("#changeMyPassword")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const pw=$("#newPassword").value, repeat=$("#repeatPassword").value;
+  if(pw.length<8){alert("Das neue Passwort muss mindestens 8 Zeichen lang sein.");return}
+  if(pw!==repeat){alert("Die Passwörter stimmen nicht überein.");return}
+  if(pw==="123456"){alert("Bitte wähle ein eigenes Passwort und nicht das Standardpasswort 123456.");return}
+  const {error}=await sb.auth.updateUser({password:pw});
+  if(error){alert("Passwort konnte nicht geändert werden: "+error.message);return}
+  const {error:flagError}=await sb.rpc("mark_password_changed");
+  if(flagError){alert("Passwort wurde geändert, aber der Status konnte nicht aktualisiert werden: "+flagError.message);return}
+  await refreshData();
+  alert("Passwort erfolgreich geändert.");
+  account();
+ });
 }
 function admin(){
  if(!isTrainer(current)) return dashboard();
@@ -251,7 +299,7 @@ function admin(){
     <label>Name<input name="name" required placeholder="Recruit Name"></label>
     <label>Dienstnummer<input name="serviceNo" required placeholder="R-103"></label>
     <label>Benutzername<input name="username" required placeholder="vorname.nachname"></label>
-    <label>Initiales Passwort<input name="password" required minlength="6"></label>
+    <label>Standardpasswort<input value="123456" disabled></label>
     <label>FTO<input name="fto" value="${esc(current.name)}" required></label>
     <label>Ausbildungsbeginn<input name="start" value="${new Date().toLocaleDateString("de-DE")}"></label>
     <button class="primary" type="submit">Recruit-Account erstellen</button>
@@ -262,11 +310,11 @@ function admin(){
     <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
     <label>Rang<select name="rank" required><option>Officer</option><option selected>Sergeant</option><option>Lieutenant</option><option>Captain</option><option>Commander</option></select></label>
     <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
-    <label>Initiales Passwort<input name="password" required minlength="6"></label>
+    <label>Standardpasswort<input value="123456" disabled></label>
     <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
     <button class="primary" type="submit">Ausbilder-Account erstellen</button>
    </form>
-   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Officer"?"selected":""}>Officer</option><option ${t.rank==="Sergeant"?"selected":""}>Sergeant</option><option ${t.rank==="Lieutenant"?"selected":""}>Lieutenant</option><option ${t.rank==="Captain"?"selected":""}>Captain</option><option ${t.rank==="Commander"?"selected":""}>Commander</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
+   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Officer"?"selected":""}>Officer</option><option ${t.rank==="Sergeant"?"selected":""}>Sergeant</option><option ${t.rank==="Lieutenant"?"selected":""}>Lieutenant</option><option ${t.rank==="Captain"?"selected":""}>Captain</option><option ${t.rank==="Commander"?"selected":""}>Commander</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="secondary" data-reset-password="${t.id}" data-reset-name="${esc(t.name)}">🔑 Passwort zurücksetzen</button><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
   </div>`:"";
  $("#content").innerHTML=`
  <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>Recruit-Verwaltung</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
@@ -283,7 +331,7 @@ function admin(){
  $("#createRecruit")?.addEventListener("submit",async e=>{
   e.preventDefault();const f=new FormData(e.target);
   try{
-   await invokeAccountAction({action:"create",role:"recruit",username:f.get("username"),password:f.get("password"),
+   await invokeAccountAction({action:"create",role:"recruit",username:f.get("username"),
     name:f.get("name"),serviceNo:f.get("serviceNo"),rank:"Recruit",fto:f.get("fto"),start:f.get("start"),access:"standard"});
    await refreshData();selectedRecruit=db.users.find(x=>x.username===String(f.get("username")).trim().toLowerCase())?.id||null;admin();
   }catch(err){alert("Account konnte nicht erstellt werden: "+err.message)}
@@ -291,7 +339,7 @@ function admin(){
  $("#createTrainer")?.addEventListener("submit",async e=>{
   e.preventDefault();const f=new FormData(e.target);
   try{
-   await invokeAccountAction({action:"create",role:"trainer",username:f.get("username"),password:f.get("password"),
+   await invokeAccountAction({action:"create",role:"trainer",username:f.get("username"),
     name:f.get("name"),serviceNo:f.get("serviceNo"),rank:f.get("rank"),fto:"—",access:f.get("access")});
    await refreshData();admin();
   }catch(err){alert("Ausbilder konnte nicht erstellt werden: "+err.message)}
@@ -316,6 +364,11 @@ function admin(){
   try{await invokeAccountAction({action:"trainer_access",userId:x.dataset.access,access:x.value});await refreshData();admin()}
   catch(err){alert(err.message)}
 });
+ document.querySelectorAll("[data-reset-password]").forEach(b=>b.onclick=async()=>{
+  if(!isOwner())return;
+  if(!confirm(`Passwort von ${b.dataset.resetName||"diesem Account"} wirklich auf 123456 zurücksetzen?`))return;
+  try{await invokeAccountAction({action:"reset_password",userId:b.dataset.resetPassword});alert("Passwort wurde auf 123456 zurückgesetzt. Beim nächsten Login muss ein eigenes Passwort vergeben werden.");await refreshData();admin()}catch(err){alert("Passwort konnte nicht zurückgesetzt werden: "+err.message)}
+ });
  document.querySelectorAll("[data-delete-trainer]").forEach(b=>b.onclick=async()=>{
  if(confirm("Ausbilder-Account wirklich löschen?"))try{await invokeAccountAction({action:"delete",userId:b.dataset.deleteTrainer});await refreshData();admin()}catch(err){alert(err.message)}
 });
@@ -323,6 +376,9 @@ function admin(){
  const {error}=await sb.rpc("staff_update_recruit",{target_id:sel.id,new_fto:$("#editFto").value,new_status:$("#editStatus").value,new_rank:$("#editRank").value});
  if(error){alert(error.message);return}await refreshData();admin();
 });
+ $("#addTrainingGoal")?.addEventListener("submit",async e=>{e.preventDefault();const text=$("#trainingGoalText").value.trim();if(!text)return;const {error}=await sb.from("training_goals").insert({recruit_id:sel.id,goal_text:text,author_id:current.id,author_name:current.name});if(error){alert("Ziel konnte nicht gespeichert werden: "+error.message);return}await refreshData();admin()});
+ document.querySelectorAll("[data-goal-toggle]").forEach(x=>x.onchange=async()=>{const {error}=await sb.from("training_goals").update({completed:x.checked,completed_at:x.checked?new Date().toISOString():null}).eq("id",x.dataset.goalToggle);if(error){alert(error.message);return}await refreshData();admin()});
+ document.querySelectorAll("[data-goal-delete]").forEach(b=>b.onclick=async()=>{if(!isOwner()||!confirm("Ausbildungsziel wirklich löschen?"))return;const {error}=await sb.from("training_goals").delete().eq("id",b.dataset.goalDelete);if(error){alert(error.message);return}await refreshData();admin()});
  $("#addRecruitNote")?.addEventListener("submit",async e=>{
   e.preventDefault();
   const text=$("#recruitNoteText").value.trim();
@@ -337,6 +393,11 @@ function admin(){
   const {error}=await sb.from("recruit_notes").delete().eq("id",b.dataset.deleteNote);
   if(error){alert(error.message);return}
   await refreshData();admin();
+ });
+ $("#resetRecruitPassword")?.addEventListener("click",async()=>{
+  if(!isOwner())return;
+  if(!confirm(`Passwort von ${sel.name} wirklich auf 123456 zurücksetzen?`))return;
+  try{await invokeAccountAction({action:"reset_password",userId:sel.id});alert("Passwort wurde auf 123456 zurückgesetzt. Beim nächsten Login muss ein eigenes Passwort vergeben werden.");await refreshData();admin()}catch(err){alert("Passwort konnte nicht zurückgesetzt werden: "+err.message)}
  });
  $("#deleteRecruit")?.addEventListener("click",async()=>{
  if(!canCreateRecruit()){alert("Zum Löschen von Accounts ist Extra-Zugriff erforderlich.");return}
@@ -362,7 +423,10 @@ function adminRecruit(r){
   <div class="chapter-checks">${TESTS.map(t=>`<label class="check"><input type="checkbox" data-test-assign="${t.id}" ${(r.assignedTests||[]).includes(t.id)?"checked":""}><span><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span></label>`).join("")}</div>
   <h3 style="margin-top:22px">Test-Mappe</h3>
   <div>${(r.testResults||[]).length?r.testResults.slice().reverse().map(res=>{let t=TESTS.find(x=>x.id===res.testId);return `<div class="test-result-row"><div><b>${esc(t?.title||res.testId)}</b><small>${esc(res.date||"")} · ${res.score}/${res.total} Punkte · ${res.percent}%</small></div><span class="test-state ${res.passed?"passed":"failed"}">${res.passed?"BESTANDEN":"NICHT BESTANDEN"}</span></div>`}).join(""):"<p class='muted'>Noch keine abgeschlossenen Tests.</p>"}</div>
+  <div class="record-grid"><div class="card inner-card"><div class="eyebrow">🏅 QUALIFIKATIONEN</div><h3>Freigaben</h3>${qualificationHtml(r)}</div><div class="card inner-card"><div class="eyebrow">🎯 AUSBILDUNGSZIELE</div><h3>Offene Ziele</h3><form id="addTrainingGoal" class="goal-form"><input id="trainingGoalText" maxlength="300" required placeholder="z. B. Funkdisziplin im Einsatz verbessern"><button class="primary" type="submit">Ziel hinzufügen</button></form><div class="goal-list">${(r.goals||[]).length?r.goals.map(g=>`<div class="goal-admin ${g.done?"done":""}"><label><input type="checkbox" data-goal-toggle="${g.id}" ${g.done?"checked":""}><span>${esc(g.text)}</span></label>${isOwner()?`<button data-goal-delete="${g.id}" class="note-delete">Löschen</button>`:""}</div>`).join(""):"<p class='muted'>Noch keine Ziele eingetragen.</p>"}</div></div></div>
+  <div class="card inner-card activity-card"><div class="eyebrow">AKTIVITÄTSVERLAUF</div><h3>Ausbildungsakte · Verlauf</h3>${timelineHtml(r,12)}</div>
   <div class="notes-admin-section"><div class="section-head compact"><div><div class="eyebrow">📝 AUSBILDUNGSVERMERKE</div><h3>Vermerke für ${esc(r.name)}</h3></div><span class="note-count">${(r.notes||[]).length}</span></div><form id="addRecruitNote" class="note-form"><textarea id="recruitNoteText" maxlength="1200" required placeholder="z. B. Gute Streifenfahrt, sichere Kommunikation und saubere Maßnahmenbegründung."></textarea><button class="primary" type="submit">➕ Vermerk hinzufügen</button></form><div class="note-list">${(r.notes||[]).length?r.notes.slice().reverse().map(n=>`<article class="note-entry"><div class="note-meta"><b>${esc(n.authorRank||"Ausbilder")} ${esc(n.authorName||"")}</b><span>${esc(n.date)}</span></div><p>${esc(n.text)}</p>${isOwner()?`<button class="note-delete" data-delete-note="${n.id}">Vermerk löschen</button>`:""}</article>`).join(""):`<div class="empty-note">Noch keine Vermerke vorhanden.</div>`}</div></div>
+  ${isOwner()?`<button id="resetRecruitPassword" class="secondary" style="margin-top:18px">🔑 Passwort auf 123456 zurücksetzen</button>`:""}
   <button id="deleteRecruit" style="margin-top:18px;background:transparent;color:#ff7c87;border:1px solid #66333b;border-radius:8px;padding:9px 12px;cursor:pointer">Recruit löschen</button>
  </div>`;
 }
@@ -430,8 +494,8 @@ $("#loginForm").onsubmit=async e=>{
  try{await refreshData()}catch(err){await sb.auth.signOut();$("#loginError").textContent="Portal-Profil konnte nicht geladen werden.";return}
  $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
  $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
- nav();setupSearch();setupMobileMenu();dashboard();
- if(!sessionStorage.getItem("apd_seen_splash")){$("#splash").classList.remove("hidden")}
+ nav();setupSearch();setupMobileMenu();current.mustChangePassword?account():dashboard();
+ if(!current.mustChangePassword&&!sessionStorage.getItem("apd_seen_splash")){$("#splash").classList.remove("hidden")}
 };
 $("#enterPortal").onclick=()=>{$("#splash").classList.add("hidden");sessionStorage.setItem("apd_seen_splash","1")};
 $("#logoutBtn").onclick=async()=>{await sb.auth.signOut();current=null;location.reload()};
@@ -443,6 +507,6 @@ $("#logoutBtn").onclick=async()=>{await sb.auth.signOut();current=null;location.
   await refreshData();
   $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
   $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
-  nav();setupSearch();setupMobileMenu();dashboard();
+  nav();setupSearch();setupMobileMenu();current.mustChangePassword?account():dashboard();
  }catch(err){console.error(err);await sb.auth.signOut()}
 })();
