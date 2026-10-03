@@ -540,3 +540,35 @@ select{color-scheme:dark;cursor:pointer}
 
 /* ===== V5.1 Academy Workflow ===== */
 .academy-pass-v51{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.pass-item{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid #24485f;border-radius:11px;background:#081a27}.pass-item>span{font-size:20px}.pass-item b,.pass-item small{display:block}.pass-item small{margin-top:2px;color:#7898ad;font-size:10px}.pass-item.ok{border-color:#287859;background:#0a2b25}.pass-item.ok small{color:#65dfa9}.academy-board-v51{margin-top:18px}.board-grid-v51{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:9px;overflow-x:auto}.board-col-v51{min-height:190px;padding:9px;border:1px solid #1c4056;border-radius:12px;background:#061722}.board-col-v51 header{display:flex;justify-content:space-between;align-items:end;padding:4px 3px 10px;border-bottom:1px solid #17384c}.board-col-v51 header small{color:#708fa1;font-size:9px}.board-recruit-v51{display:block;width:100%;position:relative;margin-top:8px;padding:10px;border:1px solid #27506a;border-radius:10px;background:#0a2130;color:#e5f5fc;text-align:left;cursor:pointer}.board-recruit-v51:hover{border-color:#4bbcf1}.board-recruit-v51 span{float:right;color:#67d2ff;font-weight:900}.board-recruit-v51 b,.board-recruit-v51 small{display:block}.board-recruit-v51 small{margin-top:4px;color:#7898ad;font-size:9px}.board-empty-v51{padding:18px 5px;color:#5f7c8d;font-size:11px}.live-pill-v51{padding:5px 9px;border:1px solid #2ebf7b;border-radius:99px;color:#64e9a8;background:#0c3226;font-size:10px;font-weight:900}.session-clock-v51{font-size:36px;font-weight:950;letter-spacing:.08em;color:#6ad7ff;margin:12px 0}.session-start-v51,.session-actions-v51{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.session-start-v51 select{min-width:230px}.handoff-last-v51{margin:10px 0;padding:10px 12px;border-left:3px solid #46baf0;background:#092131;border-radius:8px}.handoff-last-v51 p{margin:5px 0 0}.flow-v51{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:14px 0}.flow-v51 span{padding:7px 10px;border:1px solid #314d60;border-radius:99px;color:#7995a5;font-size:10px;font-weight:850}.flow-v51 span.done{border-color:#2d8d67;color:#72e7b1;background:#0a2d25}.flow-v51 i{color:#47677a;font-style:normal}.academy-pass-home-v51{margin:16px 0}@media(max-width:1100px){.academy-pass-v51{grid-template-columns:repeat(2,1fr)}.board-grid-v51{grid-template-columns:repeat(5,220px)}}@media(max-width:650px){.academy-pass-v51{grid-template-columns:1fr}.session-start-v51>*{width:100%}.session-clock-v51{font-size:29px}}
+
+/* V5.2 – einheitliche dunkle Formularfelder */
+#app input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+#app select,
+#app textarea{
+  background:#071a28!important;
+  color:#eaf6ff!important;
+  border:1px solid #28516a!important;
+  border-radius:10px!important;
+  outline:none!important;
+  box-shadow:none!important;
+  color-scheme:dark;
+}
+#app input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+#app select:focus,
+#app textarea:focus{
+  background:#092131!important;
+  border-color:#45b9ef!important;
+  box-shadow:0 0 0 3px rgba(69,185,239,.10)!important;
+}
+#app input::placeholder,#app textarea::placeholder{color:#6f91a6!important;opacity:1}
+#app input:-webkit-autofill,#app input:-webkit-autofill:hover,#app input:-webkit-autofill:focus{
+  -webkit-text-fill-color:#eaf6ff!important;
+  -webkit-box-shadow:0 0 0 1000px #071a28 inset!important;
+  transition:background-color 9999s ease-out 0s;
+}
+.password-form{display:grid!important;grid-template-columns:minmax(190px,1fr) minmax(190px,1fr) auto!important;gap:10px!important;align-items:end!important}
+.password-form label{display:grid!important;gap:6px!important;color:#a8c0cf!important;font-size:12px!important}
+.password-form input{width:100%!important;min-height:42px!important;padding:10px 12px!important;margin:0!important}
+.password-form .primary{min-height:42px!important;white-space:nowrap!important}
+#myServiceNo{display:block;width:100%!important;max-width:290px!important;min-height:42px!important;padding:10px 12px!important;margin:7px 0 10px!important}
+@media(max-width:900px){.password-form{grid-template-columns:1fr!important}.password-form .primary{width:100%!important}}
