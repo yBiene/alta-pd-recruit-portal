@@ -494,3 +494,41 @@ select{color-scheme:dark;cursor:pointer}
     margin-top:60px!important; /* 44px Toolbar + 16px Abstand */
   }
 }
+
+/* ===== V4.9.4 Ausbildungsakte: 22 Kapitel-Freigaben kompakter ===== */
+/* Nur die Karten IN der Ausbildungsakte verkleinern; Dashboard bleibt unveraendert. */
+.record-workspace .chapter-category-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+.record-workspace .chapter-category-card{
+  aspect-ratio:3.6 / 1!important;
+  min-height:68px!important;
+  padding:8px 10px!important;
+  border-radius:10px!important;
+}
+.record-workspace .chapter-category-card span{
+  font-size:11px!important;
+  line-height:1.15!important;
+  max-width:90%!important;
+}
+.record-workspace .chapter-category-card span b{
+  min-width:22px!important;
+  height:22px!important;
+  margin-right:4px!important;
+  border-radius:7px!important;
+  font-size:10px!important;
+}
+.record-workspace .chapter-category-card input{
+  width:14px!important;
+  height:14px!important;
+  transform:none!important;
+}
+@media(max-width:1450px){
+  .record-workspace .chapter-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .record-workspace .chapter-category-card{aspect-ratio:3.25 / 1!important;min-height:66px!important}
+}
+@media(max-width:760px){
+  .record-workspace .chapter-category-grid{grid-template-columns:1fr!important}
+  .record-workspace .chapter-category-card{aspect-ratio:3.6 / 1!important;min-height:64px!important}
+}
