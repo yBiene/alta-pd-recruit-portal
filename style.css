@@ -22,3 +22,77 @@ main{min-width:0;background:radial-gradient(circle at 70% 0,rgba(23,109,176,.11)
 @media(max-width:760px){.trainer-row{grid-template-columns:1fr}.trainer-row select,.danger-btn{width:100%}}
 
 .test-tabs{display:flex;gap:10px;margin:0 0 16px}.secondary{background:#10283d;color:#d9ecff;border:1px solid #31506d;border-radius:9px;padding:10px 15px;font-weight:800;cursor:pointer}.test-grid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:14px}.test-card{display:flex;flex-direction:column}.test-card .primary{margin-top:auto}.question-card{margin-bottom:12px}.question-no{font-size:11px;font-weight:900;letter-spacing:.12em;color:#6eaed8}.answers{display:grid;gap:8px;margin-top:14px}.answer{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #29445f;border-radius:10px;background:#091a2a;cursor:pointer}.answer:hover{border-color:#4e8bb5}.answer input{accent-color:#4ba3d4}.finish-test{width:100%;padding:14px;margin:6px 0 24px}.result-hero{text-align:center;padding:38px}.score-big{font-size:54px;font-weight:900;margin:18px 0 0}.result-hero.passed{border-color:#2e765b}.result-hero.failed{border-color:#7b3a43}.folder-row,.test-result-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:13px 4px;border-bottom:1px solid #20384f}.folder-row small,.test-result-row small{display:block;color:#7896b1;margin-top:4px}.test-state{font-size:10px;font-weight:900;letter-spacing:.08em;padding:6px 9px;border-radius:99px;white-space:nowrap}.test-state.passed{color:#8de0b9;border:1px solid #2e765b}.test-state.failed{color:#ff9da5;border:1px solid #6c3840}.check small{display:block;color:#7896b1;margin-top:3px}@media(max-width:650px){.folder-row,.test-result-row{align-items:flex-start;flex-direction:column}.test-tabs{flex-direction:column}}
+
+
+/* V2.8 – Recruit-/Ausbilder-Verwaltung sauber ausrichten */
+.admin-grid{
+  grid-template-columns:minmax(360px, .9fr) minmax(520px, 1.35fr);
+  gap:20px;
+  align-items:start;
+}
+.admin-grid > div{min-width:0}
+.admin-grid .card{overflow:hidden}
+
+.trainer-row{
+  grid-template-columns:minmax(0,1fr) minmax(190px,230px) auto;
+  gap:12px;
+  align-items:center;
+}
+.trainer-row > div{min-width:0}
+.trainer-row small{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.trainer-row select{width:100%;min-width:0}
+.trainer-row .danger-btn{white-space:nowrap}
+
+/* Recruit-Stammdaten nicht mehr gequetscht */
+.recruit-detail .form-grid,
+.admin-grid > div:nth-child(2) .form-grid{
+  grid-template-columns:repeat(2,minmax(220px,1fr));
+  gap:14px 16px;
+}
+.admin-grid > div:nth-child(2) label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.admin-grid > div:nth-child(2) input,
+.admin-grid > div:nth-child(2) select{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.admin-grid > div:nth-child(2) #saveRecruit{
+  width:max-content;
+  max-width:100%;
+  margin-top:2px;
+}
+.chapter-checks{
+  grid-template-columns:repeat(auto-fit,minmax(245px,1fr));
+  gap:8px;
+}
+
+/* Ergebnisse und lange Texte dürfen die Karte nicht sprengen */
+.test-result-row{
+  min-width:0;
+}
+.test-result-row > div{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+@media(max-width:1150px){
+  .admin-grid{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+  .admin-grid > div:nth-child(2) .form-grid{
+    grid-template-columns:1fr;
+  }
+  .trainer-row{
+    grid-template-columns:1fr;
+  }
+  .trainer-row select,.trainer-row .danger-btn{
+    width:100%;
+  }
+}
