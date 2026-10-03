@@ -1,0 +1,14 @@
+ALTA PD Portal V5.5 – Visual Polish
+
+- Sanfte Seiten- und Popup-Übergänge
+- Hochwertigere Karten-/Button-Hovereffekte
+- Dezente Navy-Lichttiefe im Hintergrund
+- Glass-/Blur-Effekt an Topbar, Suche und Benachrichtigungen
+- Kapitelbilder mit sehr leichtem Hover-Zoom
+- Fortschrittsbalken mit weicher Animation
+- Dezenter Online-/Status-Pulse
+- Weiches Ein-/Ausklappen der Sidebar
+- Verfeinerte Schatten, Rahmen und Abstände
+- Bewegungen werden bei "Reduced Motion" automatisch reduziert
+
+Keine neue Datenbank / kein SQL notwendig.
