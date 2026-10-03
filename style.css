@@ -731,3 +731,22 @@ button:active,.primary:active{transform:scale(.985)}
 .stat:hover{transform:translateY(-2px);border-color:rgba(77,169,227,.42);box-shadow:0 12px 28px rgba(0,0,0,.2)}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 @media(max-width:760px){.card:hover,.chapter-card:hover,.stat:hover{transform:none}.hero:after{display:none}}
+
+/* ===== V5.5.1 – Final Polish & QA ===== */
+:root{--state-ok:#6ee0a9;--state-info:#65bce9;--state-warn:#f3c969;--state-danger:#ff7f88;--state-muted:#7892a8}
+/* Einheitliche Statusdarstellung */
+.status,.state-badge,.status-badge{font-weight:800;letter-spacing:.02em}
+.ok-text,.status.success,.state-badge.success{color:var(--state-ok)!important}.bad-text,.status.danger,.state-badge.danger{color:var(--state-danger)!important}
+/* Saubere Leerzustände */
+.empty-state-v551{padding:28px 22px;text-align:center;border:1px dashed rgba(92,151,193,.24);border-radius:14px;background:rgba(8,25,40,.42);color:#86a2b9}.empty-state-v551 b{display:block;color:#dceeff;margin-bottom:5px}
+/* Tooltips fuer die eingeklappte Navigation */
+@media(min-width:761px){body.sidebar-collapsed .nav-btn[data-tip]{overflow:visible!important}body.sidebar-collapsed .nav-btn[data-tip]:hover:after{content:attr(data-tip);display:block!important;position:absolute;left:68px;top:50%;transform:translateY(-50%);z-index:500;white-space:nowrap;padding:8px 10px;border-radius:8px;background:#0b1d2c;border:1px solid #315675;color:#e8f5ff;font-size:12px;font-weight:750;box-shadow:0 10px 28px rgba(0,0,0,.35);pointer-events:none}}
+/* Fokus / Tastaturbedienung */
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.user-pill:focus-visible{outline:2px solid rgba(91,190,247,.9)!important;outline-offset:2px!important}
+/* Skeleton-Grundstil fuer Ladephasen */
+.skeleton-v551{position:relative;overflow:hidden;background:#0d2233!important;color:transparent!important;border-color:#17354c!important}.skeleton-v551:after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(111,184,229,.08),transparent);animation:v551Skeleton 1.35s infinite}@keyframes v551Skeleton{100%{transform:translateX(100%)}}
+/* 1080p: mehr Luft ohne unnoetig breite Textzeilen */
+@media(min-width:1280px){.content{padding-left:34px!important;padding-right:34px!important}.section-head{margin-bottom:24px}.dashboard-grid,.dashboard-two{gap:22px!important}.card{margin-bottom:4px}}
+@media(min-width:1900px){.content{max-width:1740px;margin-inline:auto;width:100%}}
+/* Mobile Tabellen/Akten sicher scrollbar */
+@media(max-width:760px){.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.table-wrap table{min-width:640px}.section-head{gap:12px;align-items:flex-start}.section-head h1{font-size:clamp(22px,7vw,30px)}.card{border-radius:14px}}

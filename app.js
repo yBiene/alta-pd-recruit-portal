@@ -1210,3 +1210,33 @@ function sidebarTooltipsV544(){
 }
 const _navV544=nav;nav=function(){_navV544();sidebarTooltipsV544();};
 setTimeout(sidebarTooltipsV544,0);
+
+/* ===== V5.5.1 – Final Polish & QA ===== */
+(function(){
+ function labelFor(btn){
+  const raw=(btn.textContent||'').replace(/\s+/g,' ').trim();
+  return raw || btn.getAttribute('aria-label') || 'Menü';
+ }
+ function enhanceChromeV551(){
+  document.querySelectorAll('.sidebar .nav-btn').forEach(btn=>{
+   if(!btn.dataset.tip) btn.dataset.tip=labelFor(btn);
+   if(!btn.title) btn.title=btn.dataset.tip;
+  });
+  const pill=document.querySelector('.user-pill');
+  if(pill){pill.tabIndex=0;pill.setAttribute('role','button');pill.setAttribute('aria-label','Mein Account öffnen');}
+ }
+ const obs=new MutationObserver(()=>enhanceChromeV551());
+ document.addEventListener('DOMContentLoaded',()=>{enhanceChromeV551();const nav=document.querySelector('.sidebar');if(nav)obs.observe(nav,{childList:true,subtree:true});});
+ document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+   document.querySelectorAll('.workflow-pop-v543,.search-results').forEach(x=>x.classList.add('hidden'));
+   const gs=document.querySelector('#globalSearch');if(gs)gs.blur();
+  }
+  if(e.key==='Enter' && document.activeElement?.classList?.contains('user-pill')) document.activeElement.click();
+ });
+ window.addEventListener('error',e=>{
+  if(!e.message || /ResizeObserver loop/i.test(e.message))return;
+  try{toast('⚠ Etwas konnte nicht geladen werden. Bitte erneut versuchen.')}catch{}
+ });
+ window.addEventListener('unhandledrejection',()=>{try{toast('⚠ Aktion fehlgeschlagen. Verbindung prüfen und erneut versuchen.')}catch{}});
+})();
