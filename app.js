@@ -283,7 +283,7 @@ function admin(){
     name:f.get("name"),serviceNo:f.get("serviceNo"),rank:f.get("rank"),fto:"—",access:f.get("access")});
    await refreshData();admin();
   }catch(err){alert("Ausbilder konnte nicht erstellt werden: "+err.message)}
- });saveDB();admin()});
+ });
  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{selectedRecruit=b.dataset.edit;admin()});
  document.querySelectorAll("[data-check]").forEach(b=>b.onchange=async()=>{await toggleChapter(sel.id,+b.dataset.check);await refreshData();admin()});
  document.querySelectorAll("[data-test-assign]").forEach(b=>b.onchange=async()=>{
