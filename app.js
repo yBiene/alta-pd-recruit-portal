@@ -161,19 +161,18 @@ $("#loginForm").onsubmit=e=>{
  let found=db.users.find(x=>x.username.toLowerCase()===u&&x.password===p);
  if(!found){$("#loginError").textContent="Benutzername oder Passwort ist nicht korrekt.";return}
  current=found;
- localStorage.setItem("apd_logged_in_user", current.username);
+ localStorage.setItem("apd_logged_in_user", current.username); db.activeUser=current.username; saveDB();
  $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
  $("#topName").textContent=current.name;$("#topRole").textContent=current.role==="admin"?"Administrator / FTO":"Recruit";
  nav();setupSearch();dashboard();
  if(!sessionStorage.getItem("apd_seen_splash")){$("#splash").classList.remove("hidden")}
 };
 $("#enterPortal").onclick=()=>{$("#splash").classList.add("hidden");sessionStorage.setItem("apd_seen_splash","1")};
-$("#logoutBtn").onclick=()=>{localStorage.removeItem("apd_logged_in_user");current=null;location.reload()};
+$("#logoutBtn").onclick=()=>{localStorage.removeItem("apd_logged_in_user");db.activeUser=null;saveDB();current=null;location.reload()};
 
 (function restoreLogin(){
-  const username=localStorage.getItem("apd_logged_in_user");
+  db=loadDB(); const username=localStorage.getItem("apd_logged_in_user") || db.activeUser;
   if(!username) return;
-  db=loadDB();
   const found=db.users.find(x=>x.username===username);
   if(!found){localStorage.removeItem("apd_logged_in_user");return;}
   current=found;
