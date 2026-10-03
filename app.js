@@ -1130,3 +1130,25 @@ dashboard=function(){
  const html=`<section class="card v54-recruit-home"><div class="eyebrow">🎯 DEIN NÄCHSTER SCHRITT</div><h2>${esc(v54Next(current))}</h2><div class="v54-home-grid"><span><small>Praxisbewertungen</small><b>${pe.length}</b></span><span><small>Offene Beobachtungen</small><b>${obs.length}</b></span><span><small>Academy-Status</small><b>${esc(g?.status||'In Ausbildung')}</b></span></div></section>`;
  const a=c.querySelector('.v53-dashboard-space');if(a)a.insertAdjacentHTML('afterend',html);else c.insertAdjacentHTML('afterbegin',html)
 }
+
+
+/* ===== V5.4.1 Dashboard Layout & Übersicht ===== */
+const _dashboardV541=dashboard;
+dashboard=function(){
+  _dashboardV541();
+  const c=document.querySelector('#content');
+  if(!c)return;
+  c.classList.add('dashboard-v541');
+  const hero=c.querySelector('.hero');
+  const stats=c.querySelector('.stats');
+  if(hero) hero.classList.add('dash-zone','dash-zone-hero');
+  if(stats) stats.classList.add('dash-zone','dash-zone-status');
+  c.querySelectorAll('.today-card,.v53-dashboard-space,.v54-recruit-home,.recruit-next-v5,.academy-pass-home-v51,.dashboard-two,.activity-card,.fto-cockpit-v5,.fto-stats').forEach(el=>el.classList.add('dash-zone'));
+  const chapterGrid=c.querySelector('.chapter-grid');
+  if(chapterGrid){
+    chapterGrid.classList.add('dash-zone','dash-zone-chapters');
+    const head=chapterGrid.previousElementSibling;
+    if(head?.classList.contains('section-head')) head.classList.add('dash-chapter-head');
+  }
+  // Die Dashboard-Inhalte bleiben vollständig erhalten; nur die visuelle Hierarchie wird verbessert.
+};
