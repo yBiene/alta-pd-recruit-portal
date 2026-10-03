@@ -703,3 +703,31 @@ body.sidebar-collapsed .app{grid-template-columns:82px 1fr}body.sidebar-collapse
  body.sidebar-collapsed .nav-btn[title]::after{display:none!important}
  body.sidebar-collapsed .sidebar-bottom{position:relative!important}
 }
+
+/* ===== V5.5 – Visual Polish ===== */
+:root{--v55-blue:#55b8f2;--v55-line:rgba(88,174,229,.22);--v55-glow:rgba(42,151,221,.16)}
+html{scroll-behavior:smooth}
+body{background:radial-gradient(circle at 78% 8%,rgba(24,92,137,.12),transparent 30%),radial-gradient(circle at 18% 82%,rgba(18,66,105,.10),transparent 34%),#06111d}
+.content{animation:v55PageIn .28s ease both}
+@keyframes v55PageIn{from{opacity:.35;transform:translateY(7px)}to{opacity:1;transform:none}}
+.card,.stat,.v53-panel,.chapter-card,.today-card,.academy-pass-home-v51,.fto-person-v5{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease,background-color .2s ease}
+.card:hover,.v53-panel:hover,.today-card:hover,.academy-pass-home-v51:hover{border-color:rgba(74,155,211,.38);box-shadow:0 12px 30px rgba(0,0,0,.18),0 0 0 1px rgba(68,153,213,.05)}
+.chapter-card:hover{transform:translateY(-3px);border-color:rgba(78,174,235,.55);box-shadow:0 16px 34px rgba(0,0,0,.28),0 0 24px rgba(35,143,210,.08)}
+.chapter-card img,.chapter-card-image img{transition:transform .45s cubic-bezier(.2,.7,.2,1),filter .3s ease}
+.chapter-card:hover img,.chapter-card:hover .chapter-card-image img{transform:scale(1.035);filter:saturate(1.06) contrast(1.03)}
+button,.primary,.nav-btn{transition:transform .16s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,color .18s ease}
+button:active,.primary:active{transform:scale(.985)}
+.topbar{background:linear-gradient(180deg,rgba(7,20,34,.94),rgba(7,20,34,.82));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(77,153,207,.16)}
+.user-pill{transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}.user-pill:hover{box-shadow:0 8px 25px rgba(0,0,0,.22),0 0 20px rgba(49,151,217,.08)}
+.status-dot,.online-dot{animation:v55Pulse 2.6s ease-in-out infinite}@keyframes v55Pulse{0%,100%{box-shadow:0 0 0 0 rgba(71,219,153,0)}50%{box-shadow:0 0 0 5px rgba(71,219,153,.08)}}
+.progress-fill,.progress-bar>span,[class*="progress"]>span{transition:width .75s cubic-bezier(.2,.7,.2,1)}
+.sidebar{transition:width .26s ease,padding .26s ease,box-shadow .26s ease}.app{transition:grid-template-columns .26s ease}.sidebar .nav-btn{transition:background .18s ease,border-color .18s ease,transform .18s ease}.sidebar .nav-btn:hover{transform:translateX(2px)}body.sidebar-collapsed .sidebar .nav-btn:hover{transform:translateY(-1px)}
+.sidebar-collapse-btn{transition:transform .22s ease,border-color .18s ease,background .18s ease}.sidebar-collapse-btn:hover{transform:scale(1.06)}
+.searchbox:focus-within{border-color:rgba(83,178,235,.58);box-shadow:0 0 0 3px rgba(47,151,216,.08),0 8px 24px rgba(0,0,0,.16)}
+.search-results,.workflow-pop-v543{animation:v55Pop .18s ease both;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}@keyframes v55Pop{from{opacity:0;transform:translateY(-6px) scale(.985)}to{opacity:1;transform:none}}
+.toast{animation:v55Toast .25s ease both}@keyframes v55Toast{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hero{position:relative;overflow:hidden}.hero:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 15%,rgba(79,173,231,.035) 48%,transparent 70%);transform:translateX(-100%);animation:v55Sheen 8s ease-in-out infinite}@keyframes v55Sheen{0%,70%{transform:translateX(-100%)}90%,100%{transform:translateX(100%)}}
+.section-head{padding-bottom:10px;border-bottom:1px solid rgba(71,139,188,.13)}
+.stat:hover{transform:translateY(-2px);border-color:rgba(77,169,227,.42);box-shadow:0 12px 28px rgba(0,0,0,.2)}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media(max-width:760px){.card:hover,.chapter-card:hover,.stat:hover{transform:none}.hero:after{display:none}}
