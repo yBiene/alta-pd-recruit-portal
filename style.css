@@ -486,3 +486,11 @@ select{color-scheme:dark;cursor:pointer}
   .admin-grid:not(.record-is-closed)>.record-workspace>.card:first-child{margin-top:0!important}
 }
 @media(max-width:760px){.admin-toolbar{grid-template-columns:1fr!important}}
+
+
+/* ===== V4.9.3 Ausbildungsakte exakt auf Hoehe des Recruit-Formulars ===== */
+@media(min-width:1051px){
+  .admin-grid:not(.record-is-closed) .record-workspace{
+    margin-top:60px!important; /* 44px Toolbar + 16px Abstand */
+  }
+}
