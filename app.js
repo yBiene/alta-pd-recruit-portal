@@ -428,7 +428,7 @@ function adminRecruit(r){
   </div>
   <button class="primary" id="saveRecruit">Stammdaten speichern</button> <button class="secondary" id="copyAccess">📋 Zugangsdaten kopieren</button>
   <h3>Kapitel-Freigaben</h3>
-  <div class="chapter-checks">${titles.map(x=>`<label class="check"><input type="checkbox" data-check="${x.n}" ${r.completed.includes(x.n)?"checked":""}><span><b>${x.n}.</b> ${esc(x.title)}</span></label>`).join("")}</div>
+  <div class="chapter-checks chapter-category-grid">${titles.map(x=>`<label class="check chapter-category-card" style="--chapter-bg:url(\'${chapterCardImages[x.n]}\')"><input type="checkbox" data-check="${x.n}" ${r.completed.includes(x.n)?"checked":""}><span><b>${x.n}.</b> ${esc(x.title)}</span></label>`).join("")}</div>
   <h3 style="margin-top:22px">Tests zuweisen</h3>
   <p class="muted">Freigegebene Tests erscheinen beim Recruit unter „Tests“.</p>
   <div class="chapter-checks">${TESTS.map(t=>`<label class="check"><input type="checkbox" data-test-assign="${t.id}" ${(r.assignedTests||[]).includes(t.id)?"checked":""}><span><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span></label>`).join("")}</div>

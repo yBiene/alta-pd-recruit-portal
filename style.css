@@ -273,3 +273,59 @@ select{color-scheme:dark;cursor:pointer}
 .chapter-card-content{min-height:132px;padding:15px 17px}
 .chapter-card-shade{background:linear-gradient(90deg,rgba(3,13,23,.92) 0%,rgba(3,13,23,.64) 52%,rgba(3,13,23,.18) 100%),linear-gradient(0deg,rgba(2,10,18,.72),transparent 60%)}
 .chapter-card-image h3{margin:7px 0 10px;max-width:88%}
+
+
+/* ===== V4.4.3 LAYOUT FIX: Scrollbar, Ausbilder, Kategorien ===== */
+/* Scrollbars an das APD-Design anpassen */
+*{scrollbar-width:thin;scrollbar-color:#2b678c #071522}
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-track{background:#071522;border-radius:999px}
+*::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#285a79,#1b4059);border:2px solid #071522;border-radius:999px}
+*::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#38a6e8,#276b94)}
+.sidebar{scrollbar-gutter:stable;overflow-x:hidden}
+
+/* Rekrutenverwaltung: rechte Arbeitsfläche bekommt deutlich mehr Platz */
+.admin-grid{grid-template-columns:minmax(300px,340px) minmax(0,1fr)!important;gap:20px!important}
+.admin-grid>div,.admin-grid .card{min-width:0}
+
+/* Ausbilder-Accounts: nichts wird rechts abgeschnitten */
+.trainer-list{overflow:visible!important}
+.trainer-row{
+  display:grid!important;
+  grid-template-columns:minmax(180px,1fr) minmax(135px,170px) minmax(190px,230px)!important;
+  grid-template-areas:"identity rank access" "identity reset delete";
+  gap:11px 12px!important;
+  padding:16px!important;
+  min-height:108px!important;
+  overflow:hidden;
+}
+.trainer-row>div:first-child{grid-area:identity;align-self:center;min-width:0}
+.trainer-row>select[data-rank]{grid-area:rank}
+.trainer-row>select[data-access]{grid-area:access}
+.trainer-row>[data-reset-password]{grid-area:reset}
+.trainer-row>[data-delete-trainer]{grid-area:delete}
+.trainer-row select,.trainer-row button{width:100%!important;min-width:0!important;max-width:100%;min-height:42px;white-space:normal!important}
+.trainer-row small{overflow-wrap:anywhere}
+
+/* Kapitel-Freigaben in der Rekrutenverwaltung = dieselben 22 Bilder */
+.chapter-category-grid{grid-template-columns:repeat(2,minmax(230px,1fr))!important;gap:10px!important}
+.chapter-category-card{
+  position:relative;isolation:isolate;overflow:hidden;min-height:86px!important;
+  padding:12px 13px!important;border:1px solid #285875!important;border-radius:13px!important;
+  background:#081a29!important;align-items:center!important;
+}
+.chapter-category-card:before{content:"";position:absolute;inset:0;z-index:-2;background-image:var(--chapter-bg);background-size:cover;background-position:center;transform:scale(1.03)}
+.chapter-category-card:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(3,14,24,.95),rgba(3,14,24,.73) 58%,rgba(3,14,24,.35))}
+.chapter-category-card:hover{border-color:#3ba7e7!important;transform:translateY(-1px)}
+.chapter-category-card input{flex:0 0 auto;transform:scale(1.12)}
+.chapter-category-card span{font-weight:700;text-shadow:0 2px 4px #000;line-height:1.3}
+.chapter-category-card span b{color:#68c8ff}
+
+@media(max-width:1180px){
+ .admin-grid{grid-template-columns:1fr!important}
+ .trainer-row{grid-template-columns:minmax(180px,1fr) minmax(135px,170px) minmax(190px,230px)!important}
+}
+@media(max-width:760px){
+ .trainer-row{grid-template-columns:1fr!important;grid-template-areas:"identity" "rank" "access" "reset" "delete"}
+ .chapter-category-grid{grid-template-columns:1fr!important}
+}
