@@ -136,8 +136,12 @@ function editableChapterHtml(n,html){
  let out=html||"";
  // Modellnachweise in Waffeninformationen vollständig entfernen.
  if(n===18){
-   out=out.replace(/<p[^>]*>[\s\S]*?Modellnachweise[\s\S]*?<\/p>/gi,"");
-   out=out.replace(/Modellnachweise:[\s\S]*?(?=<h[1-6]|$)/gi,"");
+   // Kapitel vollständig behalten; nur Modellnachweis-/URL-Text entfernen.
+   out=out.replace(/Modellnachweise:\s*/gi,"");
+   out=out.replace(/GLOCK G17 Produktinformation,\s*/gi,"");
+   out=out.replace(/Axon TASER 7 Kartuschen,\s*/gi,"");
+   out=out.replace(/GLOCK Gebrauchsanweisung G17–G48,\s*Technische Daten:\s*/gi,"");
+   out=out.replace(/https?:\/\/[^\s<]+/gi,"");
  }
  // Die handschriftlichen Linien in den gewünschten Kapiteln in Eingabefelder umwandeln.
  if([16,17,18].includes(n)){
