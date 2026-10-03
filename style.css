@@ -775,3 +775,93 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(min-width:761px){body.sidebar-collapsed .nav-btn[data-view="leaderboard"]::before{content:'🥇'}}
 @media(max-width:1180px){.lb-row{grid-template-columns:42px minmax(220px,1.6fr) 120px 80px 80px}.lb-row>div:nth-child(5),.lb-row>div:nth-child(6),.lb-row>div:nth-child(8){display:none}.lb-highlights{grid-template-columns:1fr 1fr}}
 @media(max-width:760px){.lb-hero{align-items:flex-start}.lb-week-badge{min-width:105px}.lb-podium-wrap{grid-template-columns:1fr;align-items:stretch}.lb-place-1{order:-1}.lb-podium{min-height:0!important;padding:18px}.lb-highlights{grid-template-columns:1fr}.lb-row{grid-template-columns:36px minmax(0,1fr) 70px;gap:8px}.lb-row>div:nth-child(3),.lb-row>div:nth-child(5),.lb-row>div:nth-child(6),.lb-row>div:nth-child(8){display:none}.lb-person small{max-width:180px}.lb-hero:after{display:none}}
+
+
+/* ===== V5.6.6 – Größeres animiertes APD-Logo ===== */
+.sidebar .brand,
+.sidebar .sidebar-brand,
+.sidebar .brand-wrap {
+  min-height: 94px;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar .brand img,
+.sidebar .sidebar-brand img,
+.sidebar .brand-wrap img,
+.sidebar img.brand-logo,
+.sidebar img.logo {
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  max-width: 58px !important;
+  object-fit: contain !important;
+  transform-origin: center center;
+  filter: drop-shadow(0 0 5px rgba(45,174,255,.22));
+  animation: apdLogoBreath566 3.8s ease-in-out infinite;
+  transition: transform .25s ease, filter .25s ease;
+}
+
+.sidebar .brand img:hover,
+.sidebar .sidebar-brand img:hover,
+.sidebar .brand-wrap img:hover,
+.sidebar img.brand-logo:hover,
+.sidebar img.logo:hover {
+  transform: scale(1.10);
+  filter: drop-shadow(0 0 10px rgba(48,184,255,.48));
+}
+
+@keyframes apdLogoBreath566 {
+  0%,100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px rgba(45,174,255,.18));
+  }
+  50% {
+    transform: scale(1.065);
+    filter: drop-shadow(0 0 10px rgba(45,174,255,.38));
+  }
+}
+
+/* Eingeklappte Sidebar: Logo allein groß und sauber zentriert */
+@media (min-width:761px) {
+  body.sidebar-collapsed .sidebar .brand,
+  body.sidebar-collapsed .sidebar .sidebar-brand,
+  body.sidebar-collapsed .sidebar .brand-wrap {
+    justify-content: center !important;
+    min-height: 94px;
+  }
+  body.sidebar-collapsed .sidebar .brand img,
+  body.sidebar-collapsed .sidebar .sidebar-brand img,
+  body.sidebar-collapsed .sidebar .brand-wrap img,
+  body.sidebar-collapsed .sidebar img.brand-logo,
+  body.sidebar-collapsed .sidebar img.logo {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
+    margin: 0 auto !important;
+  }
+}
+
+@media (max-width:760px) {
+  .sidebar .brand img,
+  .sidebar .sidebar-brand img,
+  .sidebar .brand-wrap img,
+  .sidebar img.brand-logo,
+  .sidebar img.logo {
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar .brand img,
+  .sidebar .sidebar-brand img,
+  .sidebar .brand-wrap img,
+  .sidebar img.brand-logo,
+  .sidebar img.logo {
+    animation: none !important;
+  }
+}
