@@ -1,0 +1,6 @@
+ALTA PD Portal V5.3.3
+- Kategorie Rekruten Ausbildungsakten zeigt zuerst nur die Recruit-Liste.
+- AUSBILDUNGSAKTE öffnet sich erst nach Klick auf „Öffnen“.
+- Nach „Schließen“ bleibt sie geschlossen.
+- Geöffnete Ausbildungsakte sitzt etwas tiefer und hat mehr Abstand.
+- Kein neues SQL erforderlich.

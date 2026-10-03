@@ -1,0 +1,13 @@
+ALTA PD Portal V5.4
+- Praxis-Bewertungsbogen (7 Bereiche, 1-5)
+- Entwicklungsverlauf je Kompetenz
+- Beobachtungspunkte mit Erledigt-Status
+- Automatischer nächster Ausbildungsschritt
+- FTO-Übergaben
+- Abschluss-Freigabekette mit Voraussetzungen
+- Abschluss nur wenn Pflichtpunkte erfüllt sind
+- Hauptadmin gibt final frei
+- Abschlussurkunde zum Drucken/PDF
+- Recruit-Dashboard zeigt nächsten Schritt, Beobachtungen und Academy-Status
+- Luftiges Layout mit größeren Abständen
+Einmal SUPABASE-V5.4-ACADEMY-ENTWICKLUNG.sql ausführen.

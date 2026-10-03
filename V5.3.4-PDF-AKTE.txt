@@ -1,0 +1,16 @@
+ALTA PD Portal V5.3.4
+NEU: Professionelle Ausbildungsakte für Drucken / PDF
+- APD-Kopfbereich und Akteninhaber
+- Dienstnummer, Rang, Status, FTOs, Ausbildungsbeginn und Phase
+- Gesamtfortschritt und Kennzahlen
+- FTO-Abschlussbewertung (Stärken, Verbesserungen, Empfehlung, Ergebnis)
+- Ausbildungsziele und Freigaben/Qualifikationen
+- alle 22 Kapitel mit Status
+- komplette Testergebnisse inkl. Versuche
+- FTO-Praxisberichte mit Schwerpunkten, Positivpunkten, Verbesserungen und nächsten Schritten
+- Ausbildungstermine
+- FTO-Vermerke
+- Academy-Änderungsverlauf
+- Unterschriftsfelder
+- A4-Drucklayout für „Als PDF speichern“
+Kein neues SQL erforderlich.

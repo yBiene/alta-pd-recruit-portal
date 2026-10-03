@@ -776,8 +776,92 @@ function openWorkflowNotifications(){
  document.body.appendChild(d);d.querySelector("button").onclick=()=>d.remove();
 }
 function printRecruitRecord(r){
- const w=window.open("","_blank");if(!w)return;
- w.document.write(`<html><head><title>Ausbildungsakte ${esc(r.name)}</title><style>body{font-family:Arial;padding:35px;color:#17212b}h1{margin-bottom:4px}.muted{color:#667}table{width:100%;border-collapse:collapse;margin:18px 0}td,th{border:1px solid #ccd5dc;padding:8px;text-align:left}.ok{color:#087a48}</style></head><body><h1>ALTA Police Department</h1><h2>Ausbildungsakte · ${esc(r.name)}</h2><p class="muted">Dienstnummer ${esc(r.serviceNo||"—")} · FTO ${esc(r.fto||"—")} · ${progress(r)}%</p><table><tr><th>Kapitel</th><td>${(r.completed||[]).length}/22</td></tr><tr><th>Ausbildungszeit</th><td>${fmtDuration(totalTrainingMinutes(r))}</td></tr><tr><th>Tests bestanden</th><td>${(r.testResults||[]).filter(x=>x.passed).length}/5</td></tr><tr><th>FTO-Berichte</th><td>${(r.reports||[]).length}</td></tr><tr><th>Offene Ziele</th><td>${(r.goals||[]).filter(x=>!x.done).length}</td></tr></table><h3>Abschluss-Check</h3>${graduationChecklist(r)}<h3>Letzte Aktivitäten</h3>${timelineHtml(r,20)}<script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();
+ const w=window.open("","_blank","width=1120,height=900");
+ if(!w){alert("Pop-up wurde blockiert. Bitte Pop-ups für diese Seite erlauben.");return}
+
+ const ev=typeof v53Eval==="function"?v53Eval(r.id):null;
+ const appointments=typeof v53Upcoming==="function"?v53Upcoming(r.id):[];
+ const audit=typeof v53Audit==="function"?v53Audit(r.id):[];
+ const quals=typeof qualifications==="function"?qualifications(r):[];
+ const tests=(r.testResults||[]).slice().reverse();
+ const reports=(r.reports||[]).slice().reverse();
+ const goals=r.goals||[];
+ const notes=(r.notes||[]).slice().reverse();
+ const doneChapters=new Set(r.completed||[]);
+ const pct=progress(r);
+ const passedTests=tests.filter(x=>x.passed).length;
+ const totalMinutes=totalTrainingMinutes(r);
+ const printDate=new Date().toLocaleString("de-DE");
+ const safe=v=>esc(v||"—");
+ const fmt=v=>{try{return v?new Date(v).toLocaleString("de-DE"):"—"}catch{return v||"—"}};
+ const chapterRows=Object.entries(CHAPTERS).map(([n,c])=>`<tr><td class="num">${n}</td><td>${safe(c.title)}</td><td><span class="badge ${doneChapters.has(+n)?"green":"gray"}">${doneChapters.has(+n)?"ABGESCHLOSSEN":"OFFEN"}</span></td></tr>`).join("");
+ const testRows=tests.length?tests.map(x=>{const t=TESTS.find(t=>t.id===x.testId);return `<tr><td>${safe(t?.title||x.testId)}</td><td>${safe(x.date)}</td><td>${x.score}/${x.total}</td><td>${x.percent}%</td><td><span class="badge ${x.passed?"green":"red"}">${x.passed?"BESTANDEN":"NICHT BESTANDEN"}</span></td></tr>`}).join(""):`<tr><td colspan="5" class="empty">Noch keine Testversuche vorhanden.</td></tr>`;
+ const reportRows=reports.length?reports.map((x,i)=>`<article class="entry"><div class="entry-head"><b>Praxisbericht ${reports.length-i}</b><span>${safe(x.date)} · ${fmtDuration(x.duration||0)}</span></div><div class="entry-meta">Ausbilder: <b>${safe(x.author)}</b></div><div class="entry-grid"><div><small>Schwerpunkte</small><p>${safe(x.topics)}</p></div><div><small>Positiv</small><p>${safe(x.positive)}</p></div><div><small>Verbesserungen</small><p>${safe(x.improve)}</p></div><div><small>Nächste Schritte</small><p>${safe(x.next)}</p></div></div></article>`).join(""):`<p class="empty">Noch keine Praxisberichte vorhanden.</p>`;
+ const goalRows=goals.length?goals.map(g=>`<div class="line-item"><span class="check ${g.done?"done":""}">${g.done?"✓":"○"}</span><div><b>${safe(g.text)}</b><small>${g.done?"Erledigt":"Offen"} · eingetragen von ${safe(g.authorName)}</small></div></div>`).join(""):`<p class="empty">Keine Ausbildungsziele eingetragen.</p>`;
+ const qualRows=quals.length?quals.map(q=>`<div class="qual"><span>${q[2]?"✓":"○"}</span><div><b>${safe(q[1])}</b><small>${q[2]?"Freigabe erfüllt":"Noch offen"}</small></div></div>`).join(""):`<p class="empty">Keine Qualifikationen vorhanden.</p>`;
+ const noteRows=notes.length?notes.map(n=>`<div class="note"><div><b>${safe(n.authorRank)} ${safe(n.authorName)}</b><span>${safe(n.date)}</span></div><p>${safe(n.text)}</p></div>`).join(""):`<p class="empty">Keine Vermerke vorhanden.</p>`;
+ const appointmentRows=appointments.length?appointments.map(a=>`<div class="line-item"><span class="calendar">▣</span><div><b>${safe(a.title)}</b><small>${fmt(a.starts_at)} · ${safe(a.location||"Ort offen")}${a.notes?" · "+safe(a.notes):""}</small></div></div>`).join(""):`<p class="empty">Keine kommenden Ausbildungstermine.</p>`;
+ const auditRows=audit.length?audit.slice(0,30).map(a=>`<div class="audit"><span>${fmt(a.created_at)}</span><b>${safe(a.action)}</b><small>${safe(a.actor_name||"System")}${a.details?" · "+safe(a.details):""}</small></div>`).join(""):`<p class="empty">Kein Änderungsverlauf vorhanden.</p>`;
+
+ w.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Ausbildungsakte - ${safe(r.name)}</title>
+ <style>
+ @page{size:A4;margin:12mm}
+ *{box-sizing:border-box}
+ body{margin:0;background:#eef3f8;color:#172536;font:13px/1.45 Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .sheet{max-width:1000px;margin:24px auto;background:white;box-shadow:0 12px 40px #1a2d401f}
+ .hero{background:linear-gradient(135deg,#06192b,#0a3152 62%,#075d91);color:white;padding:30px 34px;display:flex;justify-content:space-between;gap:24px;align-items:center;border-bottom:5px solid #28a9ff}
+ .brand{display:flex;align-items:center;gap:18px}.brand img{width:72px;height:72px;object-fit:contain;background:#fff;border-radius:50%;padding:7px}
+ .brand small{letter-spacing:2.2px;color:#71c8ff;font-weight:700}.brand h1{font-size:27px;margin:4px 0 0}.docno{text-align:right}.docno b{display:block;font-size:14px}.docno span{font-size:11px;color:#c4dded}
+ .content{padding:28px 34px 34px}.identity{display:grid;grid-template-columns:1.4fr .6fr;gap:18px;margin-bottom:20px}
+ .identity-card,.progress-card,.section{border:1px solid #dbe5ed;border-radius:12px;background:#fff}
+ .identity-card{padding:20px}.identity-card .kicker,.section-title small{color:#1687ca;font-size:10px;letter-spacing:1.7px;font-weight:800}
+ .identity-card h2{font-size:25px;margin:3px 0 14px}.meta{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+ .meta div{background:#f5f8fb;border-radius:8px;padding:9px 11px}.meta small,.kpi small,.entry-grid small{display:block;color:#718090;font-size:10px;text-transform:uppercase;letter-spacing:.7px}.meta b{font-size:13px}
+ .progress-card{padding:18px;text-align:center;background:#f7fbfe}.circle{width:105px;height:105px;border-radius:50%;margin:0 auto 10px;display:grid;place-items:center;background:conic-gradient(#169fe8 ${pct}%,#dce7ef 0);position:relative}.circle:after{content:"";position:absolute;width:78px;height:78px;border-radius:50%;background:#f7fbfe}.circle strong{position:relative;z-index:1;font-size:25px;color:#083c60}.progress-card b{font-size:14px}.progress-card p{margin:4px 0;color:#667788}
+ .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}.kpi{padding:13px;border-radius:9px;background:#071d31;color:#fff}.kpi small{color:#74bce7}.kpi b{display:block;font-size:17px;margin-top:3px}
+ .section{padding:18px 20px;margin:0 0 18px;break-inside:avoid}.section-title{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #e7eef4;padding-bottom:9px;margin-bottom:13px}.section-title h3{font-size:17px;margin:2px 0}.section-title span{font-size:11px;color:#718090}
+ table{width:100%;border-collapse:collapse}th{background:#edf5fa;color:#31546c;text-transform:uppercase;font-size:9px;letter-spacing:.6px}th,td{padding:8px 9px;border-bottom:1px solid #e6edf2;text-align:left;vertical-align:top}.num{width:38px;font-weight:bold;color:#1687ca}
+ .badge{display:inline-block;padding:3px 7px;border-radius:99px;font-size:9px;font-weight:800}.green{background:#e0f5e9;color:#167444}.red{background:#ffe7e7;color:#a92f2f}.gray{background:#edf1f4;color:#687785}
+ .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.line-item,.qual{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #edf1f4}.line-item:last-child,.qual:last-child{border-bottom:0}.line-item small,.qual small{display:block;color:#758492;margin-top:2px}.check,.calendar,.qual>span{width:24px;height:24px;border-radius:50%;background:#edf2f5;display:grid;place-items:center;font-weight:bold;flex:none}.check.done,.qual>span:first-child{color:#1687ca}
+ .entry{border:1px solid #e0e8ee;border-radius:9px;padding:13px;margin:10px 0;break-inside:avoid}.entry-head{display:flex;justify-content:space-between}.entry-head span,.entry-meta{color:#718090;font-size:11px}.entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:9px}.entry-grid div{background:#f6f9fb;border-radius:7px;padding:9px}.entry-grid p{margin:3px 0 0;white-space:pre-wrap}
+ .evaluation{background:linear-gradient(135deg,#f5fbff,#edf7fc);border-left:5px solid #168fd2}.eval-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.eval-box{background:white;border:1px solid #dce8ef;border-radius:8px;padding:12px}.eval-box.wide{grid-column:1/-1}.eval-box p{white-space:pre-wrap;margin:5px 0}.result{display:inline-block;margin-top:10px;padding:6px 10px;background:#09253b;color:white;border-radius:6px;font-weight:bold}
+ .note{border-left:3px solid #80b9da;padding:7px 11px;margin:9px 0;background:#f8fafc}.note>div{display:flex;justify-content:space-between;font-size:11px}.note p{margin:5px 0;white-space:pre-wrap}
+ .audit{display:grid;grid-template-columns:130px 1fr;gap:2px 12px;padding:7px 0;border-bottom:1px solid #edf1f4}.audit span{color:#718090;font-size:10px}.audit small{grid-column:2;color:#718090}
+ .signatures{display:grid;grid-template-columns:1fr 1fr;gap:45px;margin-top:38px}.signature{padding-top:28px;border-top:1px solid #536778;text-align:center;color:#5d6b77;font-size:11px}
+ .footer{padding:12px 34px 22px;color:#7b8995;font-size:9px;display:flex;justify-content:space-between}.empty{color:#788894;font-style:italic}
+ .no-print{position:fixed;right:22px;bottom:22px;background:#0b8ed8;color:white;border:0;border-radius:8px;padding:12px 18px;font-weight:bold;cursor:pointer;box-shadow:0 6px 20px #0003}
+ @media print{body{background:#fff}.sheet{margin:0;box-shadow:none;max-width:none}.no-print{display:none}.section{break-inside:auto}.entry,.evaluation,.identity,.kpis{break-inside:avoid}.hero{border-radius:0}}
+ </style></head><body><div class="sheet">
+ <header class="hero"><div class="brand"><img src="apd-logo.png"><div><small>ALTA POLICE DEPARTMENT</small><h1>Offizielle Ausbildungsakte</h1></div></div><div class="docno"><b>RECRUIT TRAINING DIVISION</b><span>Erstellt am ${printDate}</span></div></header>
+ <main class="content">
+  <section class="identity"><div class="identity-card"><div class="kicker">AKTENINHABER / RECRUIT</div><h2>${safe(r.name)}</h2><div class="meta"><div><small>Dienstnummer</small><b>${safe(r.serviceNo)}</b></div><div><small>Benutzername</small><b>${safe(r.username)}</b></div><div><small>Rang</small><b>${safe(r.rank||"Recruit")}</b></div><div><small>Status</small><b>${safe(r.status)}</b></div><div><small>Haupt-FTO</small><b>${safe(r.fto)}</b></div><div><small>Weiterer FTO</small><b>${safe(r.secondaryFto)}</b></div><div><small>Ausbildungsbeginn</small><b>${r.start?new Date(r.start+"T00:00:00").toLocaleDateString("de-DE"):"—"}</b></div><div><small>Ausbildungsphase</small><b>${safe(stage(r))}</b></div></div></div>
+  <div class="progress-card"><div class="circle"><strong>${pct}%</strong></div><b>Gesamtfortschritt</b><p>${r.completed.length} von 22 Kapiteln</p></div></section>
+  <div class="kpis"><div class="kpi"><small>Kapitel</small><b>${r.completed.length}/22</b></div><div class="kpi"><small>Tests bestanden</small><b>${passedTests}/5</b></div><div class="kpi"><small>Praxisberichte</small><b>${reports.length}</b></div><div class="kpi"><small>Ausbildungszeit</small><b>${fmtDuration(totalMinutes)}</b></div><div class="kpi"><small>Offene Ziele</small><b>${goals.filter(g=>!g.done).length}</b></div></div>
+
+  <section class="section evaluation"><div class="section-title"><div><small>FTO-ABSCHLUSSBEWERTUNG</small><h3>Bewertung & Empfehlung</h3></div><span>${ev?`${fmt(ev.updated_at||ev.created_at)} · ${safe(ev.author_name||"FTO")}`:"Noch keine Abschlussbewertung"}</span></div>
+   ${ev?`<div class="eval-grid"><div class="eval-box"><small>STÄRKEN</small><p>${safe(ev.strengths)}</p></div><div class="eval-box"><small>VERBESSERUNGEN</small><p>${safe(ev.improvements)}</p></div><div class="eval-box wide"><small>EMPFEHLUNG</small><p>${safe(ev.recommendation)}</p></div></div><span class="result">${safe(ev.result)}</span>`:`<p class="empty">Es wurde noch keine FTO-Abschlussbewertung hinterlegt.</p>`}
+  </section>
+
+  <div class="two"><section class="section"><div class="section-title"><div><small>AUSBILDUNGSZIELE</small><h3>Ziele & Status</h3></div></div>${goalRows}</section><section class="section"><div class="section-title"><div><small>FREIGABEN</small><h3>Qualifikationen</h3></div></div>${qualRows}</section></div>
+
+  <section class="section"><div class="section-title"><div><small>THEORIE</small><h3>Kapitelübersicht</h3></div><span>${r.completed.length}/22 abgeschlossen</span></div><table><thead><tr><th>Nr.</th><th>Ausbildungsbereich</th><th>Status</th></tr></thead><tbody>${chapterRows}</tbody></table></section>
+
+  <section class="section"><div class="section-title"><div><small>PRÜFUNGEN</small><h3>Test- und Prüfungsergebnisse</h3></div><span>${passedTests} bestanden</span></div><table><thead><tr><th>Test</th><th>Datum</th><th>Punkte</th><th>Ergebnis</th><th>Status</th></tr></thead><tbody>${testRows}</tbody></table></section>
+
+  <section class="section"><div class="section-title"><div><small>PRAXISAUSBILDUNG</small><h3>FTO-Berichte & Ausbildungsfahrten</h3></div><span>${fmtDuration(totalMinutes)} dokumentiert</span></div>${reportRows}</section>
+
+  <section class="section"><div class="section-title"><div><small>TERMINE</small><h3>Geplante Ausbildung</h3></div></div>${appointmentRows}</section>
+
+  <section class="section"><div class="section-title"><div><small>FTO-VERMERKE</small><h3>Ausbildungsnotizen</h3></div><span>${notes.length} Einträge</span></div>${noteRows}</section>
+
+  <section class="section"><div class="section-title"><div><small>AKTENCHRONIK</small><h3>Änderungs- & Ausbildungsverlauf</h3></div></div>${auditRows}</section>
+
+  <div class="signatures"><div class="signature">Recruit · Datum / Unterschrift</div><div class="signature">FTO / Ausbildungsleitung · Datum / Unterschrift</div></div>
+ </main>
+ <footer class="footer"><span>ALTA Police Department · Recruit Training Division</span><span>Ausbildungsakte ${safe(r.serviceNo)} · ${safe(r.name)}</span></footer>
+ </div><button class="no-print" onclick="window.print()">PDF / Drucken</button></body></html>`);
+ w.document.close();
+ setTimeout(()=>{try{w.focus();w.print()}catch{}},700);
 }
 
 document.addEventListener("click",e=>{if(e.target.closest("#notifyBtn,.notify-btn,[data-notifications]")){e.preventDefault();openWorkflowNotifications()}});
@@ -940,3 +1024,109 @@ const _activateRecordTabV53=activateRecordTab;
 activateRecordTab=function(name,scroll=true){document.querySelectorAll('[data-record-panel]').forEach(p=>p.classList.toggle('active',p.dataset.recordPanel===name));document.querySelectorAll('[data-record-jump]').forEach(b=>b.classList.toggle('active',b.dataset.recordJump===name));if(scroll){const box=document.querySelector('.record-workspace');if(box)box.scrollIntoView({behavior:'smooth',block:'start'})}}
 const _dashboardV53=dashboard;
 dashboard=function(){_dashboardV53();if(current?.role!=='recruit')return;const c=$('#content');if(!c)return;const ap=v53Upcoming(current.id).slice(0,3),missing=v53Missing(current);const anchor=c.querySelector('.recruit-next-v5')||c.querySelector('.stats');const html=`<section class="v53-dashboard-space"><div class="v53-grid-two"><div class="card v53-panel"><div class="eyebrow">📅 MEINE TERMINE</div><h2>Nächste Ausbildung</h2>${ap.length?ap.map(x=>`<div class="v53-row"><div><b>${esc(x.title)}</b><small>${v53FmtDate(x.starts_at)} · ${esc(x.location||'Ort offen')}</small></div></div>`).join(''):'<p class="muted">Aktuell keine Ausbildungstermine geplant.</p>'}</div><div class="card v53-panel"><div class="eyebrow">⚠️ NOCH OFFEN</div><h2>Das fehlt dir noch</h2>${missing.length?missing.slice(0,5).map(x=>`<div class="v53-missing">○ ${esc(x)}</div>`).join(''):'<div class="v53-ready">✓ Alle Kernpunkte erfüllt</div>'}</div></div></section>`;if(anchor)anchor.insertAdjacentHTML('afterend',html);else c.insertAdjacentHTML('afterbegin',html)}
+
+
+/* ===== V5.4 Praxisbewertung · Entwicklung · Beobachtung · Übergabe · Abschluss ===== */
+let v54Practice=[],v54Observations=[],v54Handovers=[],v54Graduations=[];
+const V54_SKILLS=[
+ ['radio','Funk'],['safety','Eigensicherung'],['driving','Fahrverhalten'],
+ ['contact','Bürgerkontakt'],['law','Rechtskenntnisse'],['conduct','Auftreten'],['independent','Selbstständigkeit']
+];
+function v54Rows(rid,arr){return arr.filter(x=>x.recruit_id===rid).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))}
+function v54Grad(rid){return v54Graduations.find(x=>x.recruit_id===rid)||null}
+function v54Avg(x){const vals=V54_SKILLS.map(k=>+x[k[0]]||0).filter(Boolean);return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):'—'}
+function v54Next(r){
+ const openObs=v54Rows(r.id,v54Observations).filter(x=>!x.resolved);
+ if(openObs.length)return `Beobachtungspunkt bearbeiten: ${openObs[0].title}`;
+ const missing=v53Missing(r);if(missing.length)return missing[0];
+ if((r.completed||[]).length<22)return `Nächstes offenes Kapitel bearbeiten`;
+ if((r.testResults||[]).filter(x=>x.passed).length<5)return `Nächsten freigegebenen Test abschließen`;
+ return 'Abschlussprüfung / FTO-Empfehlung';
+}
+function v54Requirements(r){
+ const passed=new Set((r.testResults||[]).filter(x=>x.passed).map(x=>x.testId));
+ return [
+  ['Alle 22 Kapitel',(r.completed||[]).length===22,`${(r.completed||[]).length}/22`],
+  ['Alle 5 Tests',['test-a','test-b','test-c','test-d','test-e'].every(x=>passed.has(x)),`${passed.size}/5`],
+  ['Mindestens 1 Praxisbericht',(r.reports||[]).length>0,`${(r.reports||[]).length} vorhanden`],
+  ['Keine offenen Ausbildungsziele',!(r.goals||[]).some(x=>!x.done),`${(r.goals||[]).filter(x=>!x.done).length} offen`],
+  ['Keine offenen Beobachtungspunkte',!v54Rows(r.id,v54Observations).some(x=>!x.resolved),`${v54Rows(r.id,v54Observations).filter(x=>!x.resolved).length} offen`],
+  ['Pflichtfreigaben erfüllt',qualifications(r).slice(0,3).every(x=>x[2]),'Funk · EFA · Streife']
+ ];
+}
+function v54Ready(r){return v54Requirements(r).every(x=>x[1])}
+function v54Stars(n){return '★'.repeat(+n||0)+'☆'.repeat(Math.max(0,5-(+n||0)))}
+function v54Development(rid){
+ const rows=v54Rows(rid,v54Practice).slice().reverse();
+ return V54_SKILLS.map(([key,label])=>{
+  const vals=rows.map(x=>+x[key]||0).filter(Boolean),last=vals.at(-1)||0,first=vals[0]||0;
+  return `<div class="v54-dev-row"><b>${label}</b><div class="v54-dev-track"><i style="width:${last*20}%"></i></div><span>${vals.length?`${first}${vals.length>1?' → '+last:''} / 5`:'—'}</span></div>`;
+ }).join('');
+}
+const _refreshV54=refreshData;
+refreshData=async function(){
+ const ok=await _refreshV54();if(!ok)return ok;
+ try{
+  const ids=db.users.filter(x=>x.role==='recruit').map(x=>x.id);
+  if(ids.length){
+   const [p,o,h,g]=await Promise.all([
+    sb.from('academy_practice_evaluations').select('*').in('recruit_id',ids).order('created_at',{ascending:false}),
+    sb.from('academy_observation_points').select('*').in('recruit_id',ids).order('created_at',{ascending:false}),
+    sb.from('academy_fto_handovers').select('*').in('recruit_id',ids).order('created_at',{ascending:false}),
+    sb.from('academy_graduations').select('*').in('recruit_id',ids)
+   ]);
+   if(p.error)console.warn(p.error.message);if(o.error)console.warn(o.error.message);if(h.error)console.warn(h.error.message);if(g.error)console.warn(g.error.message);
+   v54Practice=p.data||[];v54Observations=o.data||[];v54Handovers=h.data||[];v54Graduations=g.data||[];
+  }
+ }catch(e){console.warn('V5.4:',e.message)}
+ return ok;
+}
+const _adminRecruitV54=adminRecruit;
+adminRecruit=function(r){
+ let html=_adminRecruitV54(r);
+ const pe=v54Rows(r.id,v54Practice),obs=v54Rows(r.id,v54Observations),hands=v54Rows(r.id,v54Handovers),grad=v54Grad(r.id),req=v54Requirements(r);
+ const skillFields=V54_SKILLS.map(([k,l])=>`<label>${l}<select name="${k}" required><option value="">–</option>${[1,2,3,4,5].map(n=>`<option value="${n}">${n} / 5</option>`).join('')}</select></label>`).join('');
+ const practice=`<div class="v54-space">
+ <section class="card inner-card v54-panel"><div class="eyebrow">⭐ PRAXIS-BEWERTUNGSBOGEN</div><h3>Leistung nach Ausbildungsfahrt bewerten</h3>
+ <form id="v54PracticeForm" class="v54-form"><label>Datum<input name="date" type="date" value="${new Date().toISOString().slice(0,10)}" required></label>${skillFields}<label class="v54-wide">Kommentar<textarea name="comment" rows="3" placeholder="Gesamteindruck, besondere Situationen, Empfehlung"></textarea></label><button class="primary v54-wide">Praxisbewertung speichern</button></form>
+ <div class="v54-eval-list">${pe.length?pe.slice(0,8).map(x=>`<article class="v54-eval"><div><b>${esc(x.evaluation_date)} · ${esc(x.author_name||'FTO')}</b><strong>${v54Avg(x)} / 5</strong></div><small>${V54_SKILLS.map(([k,l])=>`${l}: ${x[k]}/5`).join(' · ')}</small>${x.comment?`<p>${esc(x.comment)}</p>`:''}</article>`).join(''):'<p class="muted">Noch keine Praxisbewertungen.</p>'}</div></section>
+ <section class="card inner-card v54-panel"><div class="eyebrow">📈 ENTWICKLUNG</div><h3>Entwicklungsverlauf</h3>${v54Development(r.id)}</section>
+ <section class="card inner-card v54-panel"><div class="eyebrow">🚩 BEOBACHTUNGSPUNKTE</div><h3>Offene Trainingspunkte</h3><form id="v54ObservationForm" class="v54-inline"><input name="title" required maxlength="160" placeholder="z. B. Funkdisziplin im Einsatz"><button class="primary">Punkt hinzufügen</button></form>
+ <div>${obs.length?obs.map(x=>`<div class="v54-observation ${x.resolved?'resolved':''}"><div><b>${x.resolved?'✓':'⚑'} ${esc(x.title)}</b><small>${v53FmtDate(x.created_at)} · ${esc(x.created_by_name||'FTO')}${x.resolved?` · erledigt ${v53FmtDate(x.resolved_at)}`:''}</small></div>${!x.resolved?`<button class="secondary" data-v54-resolve="${x.id}">Erledigt</button>`:''}</div>`).join(''):'<p class="muted">Keine Beobachtungspunkte.</p>'}</div></section></div>`;
+ html=html.replace('<div id="record-practice"></div>',`<div id="record-practice"></div>${practice}`);
+
+ const overview=`<div class="v54-space">
+ <section class="card inner-card v54-next"><div><div class="eyebrow">🎯 NÄCHSTER AUSBILDUNGSSCHRITT</div><h3>${esc(v54Next(r))}</h3><p class="muted">Automatisch aus Ausbildungsstand, offenen Punkten und Freigaben ermittelt.</p></div></section>
+ <section class="card inner-card v54-panel"><div class="eyebrow">🤝 FTO-ÜBERGABE</div><h3>Übergabe an nächsten Ausbilder</h3><form id="v54HandoverForm" class="v54-form"><label>Letzter Stand<textarea name="status" rows="2" required placeholder="Was wurde zuletzt gemacht?"></textarea></label><label>Stärken<textarea name="strengths" rows="2" placeholder="Was läuft sicher?"></textarea></label><label>Offene Punkte<textarea name="open" rows="2" placeholder="Was muss weiter trainiert werden?"></textarea></label><label>Nächster Schritt<textarea name="next" rows="2" placeholder="Empfehlung für den nächsten FTO">${esc(v54Next(r))}</textarea></label><button class="primary v54-wide">Übergabe speichern</button></form>
+ <div>${hands.length?hands.slice(0,4).map(x=>`<article class="v54-handover"><b>${v53FmtDate(x.created_at)} · ${esc(x.author_name||'FTO')}</b><p><strong>Stand:</strong> ${esc(x.current_status)}</p><p><strong>Stärken:</strong> ${esc(x.strengths||'—')}</p><p><strong>Offen:</strong> ${esc(x.open_points||'—')}</p><p><strong>Weiter:</strong> ${esc(x.next_step||'—')}</p></article>`).join(''):'<p class="muted">Noch keine FTO-Übergabe gespeichert.</p>'}</div></section>
+ <section class="card inner-card v54-panel"><div class="eyebrow">🏁 ACADEMY-ABSCHLUSS</div><h3>Freigabekette</h3><div class="v54-req">${req.map(x=>`<div class="${x[1]?'ok':'open'}"><span>${x[1]?'✓':'○'}</span><b>${x[0]}</b><small>${x[2]}</small></div>`).join('')}</div>
+ <div class="v54-grad-status"><b>Status:</b> ${esc(grad?.status||'Nicht beantragt')}</div>
+ <div class="v54-grad-actions">${!grad||grad.status==='Nicht beantragt'?`<button class="primary" id="v54Recommend" ${v54Ready(r)?'':'disabled'}>🎓 Abschluss empfehlen</button>`:''}${isOwner()&&grad?.status==='FTO empfohlen'?`<button class="primary" id="v54Approve">✓ Abschluss freigeben</button>`:''}${grad?.status==='Abgeschlossen'?`<button class="secondary" id="v54Certificate">📜 Abschlussurkunde drucken</button>`:''}</div>
+ ${!v54Ready(r)?`<p class="muted">Freigabe noch gesperrt. Die oben mit ○ markierten Voraussetzungen fehlen.</p>`:''}</section></div>`;
+ html=html.replace('<section class="record-tab-panel" data-record-panel="overview">',`<section class="record-tab-panel" data-record-panel="overview">${overview}`);
+ return html;
+}
+function v54Certificate(r){
+ const g=v54Grad(r.id),w=window.open('','_blank','width=1000,height=760');if(!w)return alert('Pop-up wurde blockiert.');
+ w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Academy Urkunde - ${esc(r.name)}</title><style>@page{size:A4 landscape;margin:0}*{box-sizing:border-box}body{margin:0;background:#071827;font-family:Arial;color:#102437;-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{width:297mm;height:210mm;background:#fff;margin:auto;padding:14mm;position:relative}.frame{height:100%;border:3px solid #0c5682;outline:1px solid #8fc9ea;outline-offset:-9px;padding:20mm;text-align:center}.seal{width:90px}.k{letter-spacing:4px;color:#147db8;font-weight:700}.frame h1{font-size:38px;margin:10px}.name{font-size:31px;font-weight:800;border-bottom:1px solid #8ca0ad;display:inline-block;padding:6px 40px}.text{font-size:16px;max-width:720px;margin:18px auto;line-height:1.7}.meta{display:flex;justify-content:center;gap:40px;margin:22px}.sig{display:grid;grid-template-columns:1fr 1fr;gap:80px;margin-top:34px}.sig div{border-top:1px solid #60717d;padding-top:8px}.no{position:fixed;right:20px;bottom:20px;padding:12px 18px}@media print{.no{display:none}}</style></head><body><div class="page"><div class="frame"><img class="seal" src="apd-logo.png"><div class="k">ALTA POLICE DEPARTMENT</div><h1>ACADEMY ABSCHLUSSURKUNDE</h1><p>Hiermit wird bestätigt, dass</p><div class="name">${esc(r.name)}</div><p class="text">die vorgesehene Recruit-Ausbildung des ALTA Police Department erfolgreich abgeschlossen und die dokumentierten Ausbildungsanforderungen erfüllt hat.</p><div class="meta"><b>Dienstnummer: ${esc(r.serviceNo||'—')}</b><b>Haupt-FTO: ${esc(r.fto||'—')}</b><b>Abschluss: ${g?.approved_at?new Date(g.approved_at).toLocaleDateString('de-DE'):'—'}</b></div><div class="sig"><div>Recruit</div><div>Ausbildungsleitung / Command</div></div></div></div><button class="no" onclick="print()">PDF / Drucken</button></body></html>`);w.document.close();setTimeout(()=>w.print(),500)
+}
+const _adminV54=admin;
+admin=function(){
+ _adminV54();if(!isTrainer(current))return;
+ const r=db.users.find(x=>x.id===selectedRecruit);if(!r)return;
+ const keep=async(tab,fn)=>{await fn();await refreshData();sessionStorage.setItem('alta_record_tab_'+r.id,tab);admin()};
+ $('#v54PracticeForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.target);await keep('practice',async()=>{const row={recruit_id:r.id,evaluation_date:f.get('date'),author_id:current.id,author_name:current.name,comment:f.get('comment')};V54_SKILLS.forEach(([k])=>row[k]=+f.get(k));const {error}=await sb.from('academy_practice_evaluations').insert(row);if(error)throw new Error(error.message);await v53Log(r.id,'Praxisbewertung gespeichert',`Ø ${v54Avg(row)}/5`)})});
+ $('#v54ObservationForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.target);await keep('practice',async()=>{const {error}=await sb.from('academy_observation_points').insert({recruit_id:r.id,title:f.get('title'),created_by:current.id,created_by_name:current.name});if(error)throw new Error(error.message);await v53Log(r.id,'Beobachtungspunkt erstellt',String(f.get('title')))})});
+ document.querySelectorAll('[data-v54-resolve]').forEach(b=>b.onclick=()=>keep('practice',async()=>{const {error}=await sb.from('academy_observation_points').update({resolved:true,resolved_at:new Date().toISOString(),resolved_by:current.id}).eq('id',b.dataset.v54Resolve);if(error)throw new Error(error.message);await v53Log(r.id,'Beobachtungspunkt erledigt','')}));
+ $('#v54HandoverForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.target);await keep('overview',async()=>{const {error}=await sb.from('academy_fto_handovers').insert({recruit_id:r.id,author_id:current.id,author_name:current.name,current_status:f.get('status'),strengths:f.get('strengths'),open_points:f.get('open'),next_step:f.get('next')});if(error)throw new Error(error.message);await v53Log(r.id,'FTO-Übergabe gespeichert',String(f.get('next')))})});
+ $('#v54Recommend')?.addEventListener('click',()=>keep('overview',async()=>{if(!v54Ready(r))return;const {error}=await sb.from('academy_graduations').upsert({recruit_id:r.id,status:'FTO empfohlen',recommended_by:current.id,recommended_by_name:current.name,recommended_at:new Date().toISOString()},{onConflict:'recruit_id'});if(error)throw new Error(error.message);await v53Log(r.id,'Academy-Abschluss empfohlen','FTO-Empfehlung')}));
+ $('#v54Approve')?.addEventListener('click',()=>keep('overview',async()=>{if(!isOwner())return;const {error}=await sb.from('academy_graduations').update({status:'Abgeschlossen',approved_by:current.id,approved_by_name:current.name,approved_at:new Date().toISOString()}).eq('recruit_id',r.id);if(error)throw new Error(error.message);await sb.rpc('staff_update_recruit',{target_id:r.id,new_fto:r.fto,new_status:'Ausbildung abgeschlossen',new_rank:r.rank});await v53Log(r.id,'Academy erfolgreich abgeschlossen','Freigabe durch Ausbildungsleitung')}));
+ $('#v54Certificate')?.addEventListener('click',()=>v54Certificate(r));
+}
+const _dashboardV54=dashboard;
+dashboard=function(){
+ _dashboardV54();if(current?.role!=='recruit')return;const c=$('#content');if(!c)return;
+ const obs=v54Rows(current.id,v54Observations).filter(x=>!x.resolved),pe=v54Rows(current.id,v54Practice),g=v54Grad(current.id);
+ const html=`<section class="card v54-recruit-home"><div class="eyebrow">🎯 DEIN NÄCHSTER SCHRITT</div><h2>${esc(v54Next(current))}</h2><div class="v54-home-grid"><span><small>Praxisbewertungen</small><b>${pe.length}</b></span><span><small>Offene Beobachtungen</small><b>${obs.length}</b></span><span><small>Academy-Status</small><b>${esc(g?.status||'In Ausbildung')}</b></span></div></section>`;
+ const a=c.querySelector('.v53-dashboard-space');if(a)a.insertAdjacentHTML('afterend',html);else c.insertAdjacentHTML('afterbegin',html)
+}
