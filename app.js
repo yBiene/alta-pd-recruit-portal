@@ -333,10 +333,10 @@ function admin(){
    <div class="card" style="margin-top:14px"><h3>Recruit-Accounts</h3>
     ${recruits.map(r=>`<div class="recruit-row"><div><b>${esc(r.name)}</b><small>${esc(r.serviceNo)} · ${progress(r)}% · ${esc(r.fto)}</small></div><button class="primary" data-edit="${r.id}">Öffnen</button></div>`).join("")||"<p>Noch keine Recruit-Accounts.</p>"}
    </div>
-   ${trainerAdmin}
   </div>
   <div>${sel?adminRecruit(sel):`<div class="card"><h2>Keinen Recruit ausgewählt</h2></div>`}</div>
- </div>`;
+ </div>
+ ${trainerAdmin?`<div class="trainer-admin-wide">${trainerAdmin}</div>`:""}`;
  $("#createRecruit")?.addEventListener("submit",async e=>{
   e.preventDefault();const f=new FormData(e.target);
   try{
