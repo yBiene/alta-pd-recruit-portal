@@ -16,8 +16,8 @@ function mapProfile(p){
   id:p.id, username:p.username, name:p.name, serviceNo:p.service_no||"",
   role:p.role, access:p.access_level||"standard", rank:p.rank||"",
   fto:p.fto||"", start:p.training_start||"", status:p.status||"In Ausbildung",
-  mustChangePassword:!!p.must_change_password,
-  completed:[], assignedTests:[], testResults:[], notes:[], goals:[], activity:[]
+  mustChangePassword:!!p.must_change_password, secondaryFto:p.secondary_fto||"", lastLogin:p.last_login||null,
+  completed:[], assignedTests:[], testResults:[], notes:[], goals:[], activity:[], reports:[], favorites:[]
  };
 }
 async function refreshData(){
@@ -37,14 +37,16 @@ async function refreshData(){
 
  const ids=db.users.map(x=>x.id);
  if(ids.length){
-  const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re},{data:notes,error:ne},{data:goals,error:ge}]=await Promise.all([
+  const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re},{data:notes,error:ne},{data:goals,error:ge},{data:reports,error:rpe},{data:favs,error:fe}]=await Promise.all([
    sb.from("training_progress").select("*").in("recruit_id",ids),
    sb.from("test_assignments").select("*").eq("active",true).in("recruit_id",ids),
    sb.from("test_results").select("*").in("recruit_id",ids).order("completed_at",{ascending:true}),
    sb.from("recruit_notes").select("*").in("recruit_id",ids).order("created_at",{ascending:true}),
-   sb.from("training_goals").select("*").in("recruit_id",ids).order("created_at",{ascending:true})
+   sb.from("training_goals").select("*").in("recruit_id",ids).order("created_at",{ascending:true}),
+   sb.from("field_reports").select("*").in("recruit_id",ids).order("created_at",{ascending:true}),
+   sb.from("chapter_favorites").select("*").in("user_id",ids)
   ]);
-  if(pe) throw pe;if(ae) throw ae;if(re) throw re;if(ne) console.warn("Recruit-Vermerke konnten nicht geladen werden:",ne.message);if(ge) console.warn("Ausbildungsziele konnten nicht geladen werden:",ge.message);
+  if(pe) throw pe;if(ae) throw ae;if(re) throw re;if(ne) console.warn("Recruit-Vermerke:",ne.message);if(ge) console.warn("Ausbildungsziele:",ge.message);if(rpe) console.warn("FTO-Berichte:",rpe.message);if(fe) console.warn("Favoriten:",fe.message);
   for(const u of db.users){
    u.completed=(prog||[]).filter(x=>x.recruit_id===u.id&&x.completed).map(x=>x.chapter).sort((a,b)=>a-b);
    u.assignedTests=(assign||[]).filter(x=>x.recruit_id===u.id&&x.active).map(x=>x.test_id);
@@ -57,11 +59,14 @@ async function refreshData(){
     createdAt:x.created_at,date:new Date(x.created_at).toLocaleString("de-DE")
    }));
    u.goals=(goals||[]).filter(x=>x.recruit_id===u.id).map(x=>({id:x.id,text:x.goal_text,done:!!x.completed,createdAt:x.created_at,completedAt:x.completed_at||null,authorName:x.author_name||"Ausbilder"}));
+   u.reports=(reports||[]).filter(x=>x.recruit_id===u.id).map(x=>({id:x.id,date:x.report_date,duration:x.duration_minutes||0,topics:x.topics||"",positive:x.positive_points||"",improve:x.improvement_points||"",next:x.next_steps||"",author:x.author_name||"Ausbilder",createdAt:x.created_at}));
+   u.favorites=(favs||[]).filter(x=>x.user_id===u.id).map(x=>x.chapter);
    const acts=[];
    (prog||[]).filter(x=>x.recruit_id===u.id&&x.completed).forEach(x=>acts.push({when:x.completed_at||null,icon:"✓",text:`Kapitel ${x.chapter} abgeschlossen`}));
    u.testResults.forEach(x=>{const raw=(results||[]).find(r=>r.recruit_id===u.id&&r.test_id===x.testId&&new Date(r.completed_at).toLocaleString("de-DE")===x.date);acts.push({when:raw?.completed_at||null,icon:x.passed?"🏅":"📝",text:`${TESTS.find(t=>t.id===x.testId)?.title||x.testId}: ${x.percent}% ${x.passed?"· bestanden":"· nicht bestanden"}`})});
    u.notes.forEach(x=>acts.push({when:x.createdAt,icon:"📝",text:`Vermerk von ${x.authorRank||"Ausbilder"} ${x.authorName||""}`}));
    u.goals.forEach(x=>acts.push({when:x.completedAt||x.createdAt,icon:x.done?"🎯":"📌",text:`Ausbildungsziel ${x.done?"erledigt":"gesetzt"}: ${x.text}`}));
+   u.reports.forEach(x=>acts.push({when:x.createdAt,icon:"🚓",text:`FTO-Bericht: ${x.topics||"Ausbildungsfahrt"}`}));
    u.activity=acts.filter(x=>x.when).sort((a,b)=>new Date(b.when)-new Date(a.when));
   }
  }
@@ -143,7 +148,7 @@ const TESTS=[
 function nav(){
  let html=`<button class="nav-btn active" data-view="dashboard">🏠 Dashboard</button><div class="nav-label">AUSBILDUNG</div>`;
  for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="num">${x.n}</span>${esc(x.title)}</button>`;
- html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button>`;
+ html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button><div class="nav-label">PORTAL</div><button class="nav-btn" data-view="news">📢 Mitteilungen</button><button class="nav-btn" data-view="documents">📂 Dokumente</button>`;
  if(isTrainer(current)) html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="admin">🛡️ Recruit-Verwaltung</button>`;
  $("#nav").innerHTML=html;
  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
@@ -169,20 +174,22 @@ function showView(v){
  if(v==="admin") return admin();
  if(v==="tests") return testsView();
  if(v==="account") return account();
+ if(v==="news") return newsView();
+ if(v==="documents") return documentsView();
 }
 function dashboard(){
  setActive('[data-view="dashboard"]'); $("#pageTitle").textContent="Dashboard";
  let u=current, p=progress(u);
  $("#content").innerHTML=`
  <div class="hero">
-  <div><div class="eyebrow">WILLKOMMEN ZURÜCK</div><h1>${esc(u.name)}</h1>
+  <div><div class="eyebrow">${greeting().toUpperCase()}</div><h1>${esc(u.rank?u.rank+" ":"")}${esc(u.name)}</h1>
    <span class="status">● ${esc(u.status)}</span>
    <p>Willkommen im Alta PD Ausbildungsportal. Hier findest du die Inhalte des Rekrutenhandbuchs, bebilderte Anleitungen und deinen persönlichen Ausbildungsfortschritt. Dein zuständiger FTO ist <b>${esc(u.fto)}</b>.</p>
   </div><div class="hero-logo"><img src="apd-logo.png" alt="APD"></div>
  </div>
  <div class="grid stats">
   <div class="card stat"><span>DIENSTNUMMER</span><b>${esc(u.serviceNo)}</b></div>
-  <div class="card stat"><span>FTO</span><b>${esc(u.fto)}</b></div>
+  <div class="card stat"><span>FTO</span><b>${esc(u.fto)}</b>${u.secondaryFto?`<small>+ ${esc(u.secondaryFto)}</small>`:""}</div>
   <div class="card stat"><span>AUSBILDUNGSSTATUS</span><b>${esc(u.status)}</b></div>
   <div class="card stat"><span>FORTSCHRITT</span><b>${p}%</b><div class="progress"><i style="width:${p}%"></i></div></div>
  </div>
@@ -219,7 +226,7 @@ function editableChapterHtml(n,html){
 }
 
 function showChapter(n){
- const c=CHAPTERS[n]; if(!c)return;
+ const c=CHAPTERS[n]; if(!c)return; localStorage.setItem("alta_last_chapter",String(n));
  setActive(`[data-chapter="${n}"]`); $("#pageTitle").textContent=`Kapitel ${n}`;
  const done=current.completed.includes(n);
  const chapterImages=(n===6||n===21)?["gebietskarte.png"]:(c.images||[]); const imgs=chapterImages.map(i=>`<img src="${i}" alt="Handbuch-Abbildung ${i}" onclick="window.open(this.src,'_blank')">`).join("");
@@ -233,15 +240,15 @@ function showChapter(n){
     <div class="eyebrow">AUSBILDUNGSSTATUS</div><h2>${done?"Abgeschlossen":"In Ausbildung"}</h2>
     <p class="muted">Zuständiger FTO</p><h3>${esc(current.fto)}</h3>
     <div class="notice">${isTrainer(current)?"Als Ausbilder kannst du den Ausbildungsstand in der Recruit-Verwaltung ändern.":"Der Abschluss wird durch deinen FTO im Verwaltungsbereich bestätigt."}</div>
-    ${isTrainer(current)?`<button class="primary complete-btn ${done?"done":""}" id="quickToggle">${done?"Abschluss zurücknehmen":"Kapitel abschließen"}</button>`:""}
+    ${isTrainer(current)?`<button class="primary complete-btn ${done?"done":""}" id="quickToggle">${done?"Abschluss zurücknehmen":"Kapitel abschließen"}</button>`:""}<button class="secondary" id="favoriteChapter">${(current.favorites||[]).includes(n)?"★ Favorit entfernen":"☆ Als Favorit"}</button>
   </aside>
  </div>`;
- restoreChapterNotes(n); if(isTrainer(current)) $("#quickToggle").onclick=async()=>{await toggleChapter(current.id,n);showChapter(n)};
+ restoreChapterNotes(n); $("#favoriteChapter").onclick=async()=>{const on=(current.favorites||[]).includes(n);if(on)await sb.from("chapter_favorites").delete().eq("user_id",current.id).eq("chapter",n);else await sb.from("chapter_favorites").insert({user_id:current.id,chapter:n});await refreshData();showChapter(n)}; if(isTrainer(current)) $("#quickToggle").onclick=async()=>{await toggleChapter(current.id,n);showChapter(n)};
 }
 function account(){
  setActive('[data-view="account"]');$("#pageTitle").textContent="Mein Konto";
  $("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">ACCOUNT</div><h1>Mein Konto</h1></div><span class="status">${roleLabel(current)}</span></div>
- <div class="card account-card">
+ <div class="digital-id"><img src="apd-logo.png"><div><small>ALTA POLICE DEPARTMENT</small><h2>${esc(current.name)}</h2><b>${esc(current.rank||roleLabel(current))}</b><span>Badge ${esc(current.serviceNo||"—")}</span></div></div><div class="card account-card">
   <div class="profile-line"><img src="apd-logo.png" alt="Alta PD Logo"><div><h2>${esc(current.name)}</h2><p>${esc(current.rank||"")}</p></div></div>
   <div class="form-grid">
    <label>Benutzername<input value="${esc(current.username)}" disabled></label>
@@ -250,7 +257,7 @@ function account(){
    <label>FTO<input value="${esc(current.fto||"—")}" disabled></label>
   </div>
   <button class="primary" id="saveMyAccount">💾 Dienstnummer speichern</button>
-  <p class="muted" style="margin-top:10px">Die Dienstnummer kann von jedem Account selbst geändert werden.</p>
+  <p class="muted" style="margin-top:10px">Die Dienstnummer kann von jedem Account selbst geändert werden. · Letzte Anmeldung: ${current.lastLogin?new Date(current.lastLogin).toLocaleString("de-DE"):"—"}</p><button class="secondary" onclick="window.print()">🖨️ Ausbildungsakte drucken</button>
  </div>
  <div class="card password-card">
   <div class="eyebrow">🔐 SICHERHEIT</div><h2>Passwort ändern</h2>
@@ -374,8 +381,10 @@ function admin(){
 });
  $("#saveRecruit")?.addEventListener("click",async()=>{
  const {error}=await sb.rpc("staff_update_recruit",{target_id:sel.id,new_fto:$("#editFto").value,new_status:$("#editStatus").value,new_rank:$("#editRank").value});
- if(error){alert(error.message);return}await refreshData();admin();
+ if(error){alert(error.message);return}await sb.rpc("staff_update_secondary_fto",{target_id:sel.id,new_secondary_fto:$("#editSecondaryFto")?.value||""});await refreshData();admin();
 });
+ $("#copyAccess")?.addEventListener("click",async()=>{const msg=`🎉 Willkommen beim ALTA PD, ${sel.rank||"Recruit"} ${sel.name}! 🎉\n\n📋 Deine Zugangsdaten:\n🆔 Benutzername: ${sel.username}\n🔑 Passwort: 123456\n🔗 Login: https://ybiene.github.io/alta-pd-recruit-portal/\n\n🎖️ Deine Dienstdaten:\n🪪 Dienstnummer: ${sel.serviceNo||"—"}\n👮 Rang: ${sel.rank||"Recruit"}\n\n⚠️ WICHTIG: Ändere dein Passwort nach dem ersten Login und gib deine Zugangsdaten nicht weiter.\n\nViel Erfolg im Dienst! 👮🚔\nALTA Police Department`;await navigator.clipboard.writeText(msg);alert("Zugangsnachricht kopiert.")});
+ $("#addFieldReport")?.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(e.target);const {error}=await sb.from("field_reports").insert({recruit_id:sel.id,author_id:current.id,author_name:current.name,report_date:f.get("date"),duration_minutes:+f.get("duration")||0,topics:f.get("topics"),positive_points:f.get("positive"),improvement_points:f.get("improve"),next_steps:f.get("next")});if(error){alert(error.message);return}await refreshData();admin()});
  $("#addTrainingGoal")?.addEventListener("submit",async e=>{e.preventDefault();const text=$("#trainingGoalText").value.trim();if(!text)return;const {error}=await sb.from("training_goals").insert({recruit_id:sel.id,goal_text:text,author_id:current.id,author_name:current.name});if(error){alert("Ziel konnte nicht gespeichert werden: "+error.message);return}await refreshData();admin()});
  document.querySelectorAll("[data-goal-toggle]").forEach(x=>x.onchange=async()=>{const {error}=await sb.from("training_goals").update({completed:x.checked,completed_at:x.checked?new Date().toISOString():null}).eq("id",x.dataset.goalToggle);if(error){alert(error.message);return}await refreshData();admin()});
  document.querySelectorAll("[data-goal-delete]").forEach(b=>b.onclick=async()=>{if(!isOwner()||!confirm("Ausbildungsziel wirklich löschen?"))return;const {error}=await sb.from("training_goals").delete().eq("id",b.dataset.goalDelete);if(error){alert(error.message);return}await refreshData();admin()});
@@ -412,10 +421,10 @@ function adminRecruit(r){
   <div class="progress"><i style="width:${p}%"></i></div><p><b>${p}%</b> · ${r.completed.length}/22 Kapitel · ${stage(r)}</p>
   <div class="grid account-grid">
    <label>FTO<input id="editFto" value="${esc(r.fto)}"></label>
-   <label>Status<select id="editStatus"><option ${r.status==="In Ausbildung"?"selected":""}>In Ausbildung</option><option ${r.status==="Pausiert"?"selected":""}>Pausiert</option><option ${r.status==="Streifenfreigabe"?"selected":""}>Streifenfreigabe</option></select></label>
+   <label>Status<select id="editStatus"><option ${r.status==="In Ausbildung"?"selected":""}>In Ausbildung</option><option ${r.status==="Pausiert"?"selected":""}>Pausiert</option><option ${r.status==="Streifenfreigabe"?"selected":""}>Streifenfreigabe</option><option ${r.status==="Ausbildung abgeschlossen"?"selected":""}>Ausbildung abgeschlossen</option><option ${r.status==="Archiviert"?"selected":""}>Archiviert</option></select></label><label>Weiterer FTO<input id="editSecondaryFto" value="${esc(r.secondaryFto||"")}" placeholder="Optional"></label>
    <label>Rang<input id="editRank" value="${esc(r.rank)}"></label>
   </div>
-  <button class="primary" id="saveRecruit">Stammdaten speichern</button>
+  <button class="primary" id="saveRecruit">Stammdaten speichern</button> <button class="secondary" id="copyAccess">📋 Zugangsdaten kopieren</button>
   <h3>Kapitel-Freigaben</h3>
   <div class="chapter-checks">${titles.map(x=>`<label class="check"><input type="checkbox" data-check="${x.n}" ${r.completed.includes(x.n)?"checked":""}><span><b>${x.n}.</b> ${esc(x.title)}</span></label>`).join("")}</div>
   <h3 style="margin-top:22px">Tests zuweisen</h3>
@@ -425,6 +434,7 @@ function adminRecruit(r){
   <div>${(r.testResults||[]).length?r.testResults.slice().reverse().map(res=>{let t=TESTS.find(x=>x.id===res.testId);return `<div class="test-result-row"><div><b>${esc(t?.title||res.testId)}</b><small>${esc(res.date||"")} · ${res.score}/${res.total} Punkte · ${res.percent}%</small></div><span class="test-state ${res.passed?"passed":"failed"}">${res.passed?"BESTANDEN":"NICHT BESTANDEN"}</span></div>`}).join(""):"<p class='muted'>Noch keine abgeschlossenen Tests.</p>"}</div>
   <div class="record-grid"><div class="card inner-card"><div class="eyebrow">🏅 QUALIFIKATIONEN</div><h3>Freigaben</h3>${qualificationHtml(r)}</div><div class="card inner-card"><div class="eyebrow">🎯 AUSBILDUNGSZIELE</div><h3>Offene Ziele</h3><form id="addTrainingGoal" class="goal-form"><input id="trainingGoalText" maxlength="300" required placeholder="z. B. Funkdisziplin im Einsatz verbessern"><button class="primary" type="submit">Ziel hinzufügen</button></form><div class="goal-list">${(r.goals||[]).length?r.goals.map(g=>`<div class="goal-admin ${g.done?"done":""}"><label><input type="checkbox" data-goal-toggle="${g.id}" ${g.done?"checked":""}><span>${esc(g.text)}</span></label>${isOwner()?`<button data-goal-delete="${g.id}" class="note-delete">Löschen</button>`:""}</div>`).join(""):"<p class='muted'>Noch keine Ziele eingetragen.</p>"}</div></div></div>
   <div class="card inner-card activity-card"><div class="eyebrow">AKTIVITÄTSVERLAUF</div><h3>Ausbildungsakte · Verlauf</h3>${timelineHtml(r,12)}</div>
+  <div class="card inner-card"><div class="eyebrow">🚓 FTO-SCHICHTBERICHT</div><h3>Ausbildungsfahrten</h3><form id="addFieldReport" class="form-grid"><label>Datum<input name="date" type="date" value="${new Date().toISOString().slice(0,10)}" required></label><label>Dauer (Min.)<input name="duration" type="number" min="0" value="60"></label><label>Themen<input name="topics" required placeholder="Funk, Verkehrskontrolle …"></label><label>Positive Punkte<input name="positive" placeholder="Was lief gut?"></label><label>Verbesserungsbedarf<input name="improve" placeholder="Was wird weiter geübt?"></label><label>Nächste Schritte<input name="next" placeholder="Nächstes Ausbildungsziel"></label><button class="primary">Bericht speichern</button></form><div>${(r.reports||[]).slice().reverse().map(x=>`<article class="field-report"><b>${esc(x.date)} · ${esc(x.author)}</b><small>${x.duration} Min.</small><p><strong>Themen:</strong> ${esc(x.topics)}</p><p><strong>Positiv:</strong> ${esc(x.positive||"—")}</p><p><strong>Verbesserung:</strong> ${esc(x.improve||"—")}</p><p><strong>Nächste Schritte:</strong> ${esc(x.next||"—")}</p></article>`).join("")||"<p class='muted'>Noch keine Ausbildungsfahrten dokumentiert.</p>"}</div></div>
   <div class="notes-admin-section"><div class="section-head compact"><div><div class="eyebrow">📝 AUSBILDUNGSVERMERKE</div><h3>Vermerke für ${esc(r.name)}</h3></div><span class="note-count">${(r.notes||[]).length}</span></div><form id="addRecruitNote" class="note-form"><textarea id="recruitNoteText" maxlength="1200" required placeholder="z. B. Gute Streifenfahrt, sichere Kommunikation und saubere Maßnahmenbegründung."></textarea><button class="primary" type="submit">➕ Vermerk hinzufügen</button></form><div class="note-list">${(r.notes||[]).length?r.notes.slice().reverse().map(n=>`<article class="note-entry"><div class="note-meta"><b>${esc(n.authorRank||"Ausbilder")} ${esc(n.authorName||"")}</b><span>${esc(n.date)}</span></div><p>${esc(n.text)}</p>${isOwner()?`<button class="note-delete" data-delete-note="${n.id}">Vermerk löschen</button>`:""}</article>`).join(""):`<div class="empty-note">Noch keine Vermerke vorhanden.</div>`}</div></div>
   ${isOwner()?`<button id="resetRecruitPassword" class="secondary" style="margin-top:18px">🔑 Passwort auf 123456 zurücksetzen</button>`:""}
   <button id="deleteRecruit" style="margin-top:18px;background:transparent;color:#ff7c87;border:1px solid #66333b;border-radius:8px;padding:9px 12px;cursor:pointer">Recruit löschen</button>
@@ -437,14 +447,14 @@ function testsView(){
   $("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">PRÜFUNGEN</div><h1>Test-Katalog</h1></div><span class="status">${TESTS.length} Tests</span></div><div class="card"><p>Tests werden unter <b>Recruit-Verwaltung → Recruit öffnen → Tests zuweisen</b> freigegeben.</p></div><div class="grid test-grid">${TESTS.map(t=>`<div class="card test-card"><div class="eyebrow">${t.questions.length} FRAGEN · BESTEHEN AB ${t.pass}%</div><h2>${esc(t.title)}</h2><p>${esc(t.desc)}</p></div>`).join("")}</div>`;return;
  }
  current.assignedTests=current.assignedTests||[];current.testResults=current.testResults||[];
- const assigned=TESTS.filter(t=>current.assignedTests.includes(t.id));
- $("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">PRÜFUNGEN</div><h1>Meine Tests</h1></div><span class="status">${assigned.length} freigegeben</span></div><div class="test-tabs"><button class="primary" id="openTestsTab">Freigegebene Tests</button><button class="secondary" id="folderTab">📁 Mappe</button></div><div class="grid test-grid">${assigned.length?assigned.map(t=>`<div class="card test-card"><div class="eyebrow">${t.questions.length} FRAGEN · BESTEHEN AB ${t.pass}%</div><h2>${esc(t.title)}</h2><p>${esc(t.desc)}</p><button class="primary" data-start-test="${t.id}">${current.testResults.some(r=>r.testId===t.id)?"Erneut üben":"Test starten"}</button></div>`).join(""):"<div class='card'><h2>Keine Tests freigegeben</h2><p class='muted'>Dein Ausbilder hat dir aktuell noch keinen Test zugewiesen.</p></div>"}</div>`;
+ const assigned=TESTS.filter(t=>current.assignedTests.includes(t.id)); const prereq={"test-a":[1,2,3],"test-b":[4,5],"test-c":[6],"test-d":[7,8,9,10],"test-e":[11,12,13,19,22]};
+ $("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">PRÜFUNGEN</div><h1>Meine Tests</h1></div><span class="status">${assigned.length} freigegeben</span></div><div class="test-tabs"><button class="primary" id="openTestsTab">Freigegebene Tests</button><button class="secondary" id="folderTab">📁 Mappe</button></div><div class="grid test-grid">${assigned.length?assigned.map(t=>`<div class="card test-card"><div class="eyebrow">${t.questions.length} FRAGEN · BESTEHEN AB ${t.pass}%</div><h2>${esc(t.title)}</h2><p>${esc(t.desc)}</p>${(prereq[t.id]||[]).every(n=>current.completed.includes(n))?`<button class="primary" data-start-test="${t.id}">${current.testResults.some(r=>r.testId===t.id)?"Erneut üben":"Test starten"}</button>`:`<button class="secondary" disabled>🔒 Kapitel zuerst abschließen</button>`}</div>`).join(""):"<div class='card'><h2>Keine Tests freigegeben</h2><p class='muted'>Dein Ausbilder hat dir aktuell noch keinen Test zugewiesen.</p></div>"}</div>`;
  document.querySelectorAll("[data-start-test]").forEach(b=>b.onclick=()=>startTest(b.dataset.startTest));$("#folderTab").onclick=showTestFolder;
 }
 function startTest(id){
  const t=TESTS.find(x=>x.id===id);if(!t||isTrainer(current)||!(current.assignedTests||[]).includes(id))return testsView();
- $("#pageTitle").textContent=t.title;$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">ÜBUNGSTEST</div><h1>${esc(t.title)}</h1><p>${esc(t.desc)}</p></div><span class="status">${t.questions.length} Fragen</span></div><form id="testForm">${t.questions.map((q,i)=>`<div class="card question-card"><div class="question-no">FRAGE ${i+1} / ${t.questions.length}</div><h3>${esc(q.q)}</h3><div class="answers">${q.a.map((a,j)=>`<label class="answer"><input type="radio" name="q${i}" value="${j}" required><span>${esc(a)}</span></label>`).join("")}</div></div>`).join("")}<button class="primary finish-test" type="submit">Test auswerten</button></form>`;
- $("#testForm").onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target),score=0;t.questions.forEach((q,i)=>{if(+f.get("q"+i)===q.c)score++});let percent=Math.round(score/t.questions.length*100),passed=percent>=t.pass;await sb.from("test_results").insert({recruit_id:current.id,test_id:t.id,score,total:t.questions.length,percent,passed});await refreshData();showTestResult(t,score,percent,passed)};
+ $("#pageTitle").textContent=t.title;$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">ÜBUNGSTEST</div><h1>${esc(t.title)}</h1><p>${esc(t.desc)}</p></div><span class="status" id="testTimer">15:00</span></div><form id="testForm">${t.questions.map((q,i)=>`<div class="card question-card"><div class="question-no">FRAGE ${i+1} / ${t.questions.length}</div><h3>${esc(q.q)}</h3><div class="answers">${q.a.map((a,j)=>`<label class="answer"><input type="radio" name="q${i}" value="${j}" required><span>${esc(a)}</span></label>`).join("")}</div></div>`).join("")}<button class="primary finish-test" type="submit">Test auswerten</button></form>`;
+ let left=900;const timer=setInterval(()=>{left--;const el=$("#testTimer");if(el)el.textContent=`${String(Math.floor(left/60)).padStart(2,"0")}:${String(left%60).padStart(2,"0")}`;if(left<=0){clearInterval(timer);alert("Die Testzeit ist abgelaufen.");$("#testForm")?.requestSubmit()}},1000); $("#testForm").onsubmit=async e=>{clearInterval(timer);e.preventDefault();let f=new FormData(e.target),score=0;t.questions.forEach((q,i)=>{if(+f.get("q"+i)===q.c)score++});let percent=Math.round(score/t.questions.length*100),passed=percent>=t.pass;await sb.from("test_results").insert({recruit_id:current.id,test_id:t.id,score,total:t.questions.length,percent,passed});await refreshData();showTestResult(t,score,percent,passed)};
 }
 function showTestResult(t,score,percent,passed){
  $("#content").innerHTML=`<div class="result-hero card ${passed?"passed":"failed"}"><div class="eyebrow">TEST ABGESCHLOSSEN</div><h1>${passed?"Bestanden":"Nicht bestanden"}</h1><div class="score-big">${score} / ${t.questions.length}</div><h2>${percent}%</h2><p>${passed?"Bestanden und in deiner Mappe gespeichert.":"Versuch gespeichert. Du kannst den Test erneut üben."}</p><button class="primary" id="toFolder">📁 Zur Mappe</button> <button class="secondary" id="backTests">Zu den Tests</button></div>`;$("#toFolder").onclick=showTestFolder;$("#backTests").onclick=testsView;
@@ -464,6 +474,18 @@ async function toggleChapter(uid,n){
  }
  await refreshData();
 }
+
+function greeting(){const h=new Date().getHours();return h<11?"Guten Morgen":h<18?"Guten Tag":"Guten Abend"}
+async function newsView(){
+ setActive('[data-view="news"]');$("#pageTitle").textContent="Mitteilungen";
+ const {data:news,error}=await sb.from("announcements").select("*").order("pinned",{ascending:false}).order("created_at",{ascending:false});
+ const {data:reads}=await sb.from("announcement_reads").select("announcement_id").eq("user_id",current.id); const read=new Set((reads||[]).map(x=>x.announcement_id));
+ $("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">DEPARTMENT NEWS</div><h1>📢 Mitteilungen</h1></div>${isOwner()?'<button class="primary" id="newAnnouncement">+ Mitteilung</button>':''}</div><div id="newsList">${(news||[]).map(n=>`<article class="card news-card ${n.pinned?'pinned':''}"><div class="eyebrow">${n.pinned?'📌 ANGEHEFTET':'MITTEILUNG'} · ${new Date(n.created_at).toLocaleDateString('de-DE')}</div><h2>${esc(n.title)}</h2><p>${esc(n.body)}</p><small>${esc(n.author_name||'ALTA PD')}</small>${!read.has(n.id)?`<button class="secondary" data-read-news="${n.id}">✓ Als gelesen bestätigen</button>`:'<span class="read-badge">✓ Gelesen</span>'}</article>`).join('')||'<div class="card"><p class="muted">Keine Mitteilungen.</p></div>'}</div>`;
+ document.querySelectorAll('[data-read-news]').forEach(b=>b.onclick=async()=>{await sb.from('announcement_reads').upsert({announcement_id:+b.dataset.readNews,user_id:current.id},{onConflict:'announcement_id,user_id'});newsView()});
+ $("#newAnnouncement")?.addEventListener('click',async()=>{const title=prompt('Titel der Mitteilung:');if(!title)return;const body=prompt('Text der Mitteilung:');if(!body)return;const pinned=confirm('Mitteilung oben anheften?');const {error}=await sb.from('announcements').insert({title,body,pinned,author_id:current.id,author_name:current.name});if(error)alert(error.message);else newsView()});
+}
+function documentsView(){setActive('[data-view="documents"]');$("#pageTitle").textContent="Dokumente";$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">INTERNER BEREICH</div><h1>📂 Dokumente & Schnellzugriff</h1></div></div><div class="grid chapter-grid"><div class="card"><h2>⭐ Favoriten</h2>${(current.favorites||[]).length?(current.favorites||[]).map(n=>`<button class="doc-link" data-doc-chapter="${n}">Kapitel ${n} · ${esc(CHAPTERS[n]?.title||'')}</button>`).join(''):'<p class="muted">Noch keine Favoriten. In einem Kapitel kannst du ☆ Als Favorit wählen.</p>'}</div><div class="card"><h2>🕘 Zuletzt angesehen</h2>${localStorage.getItem('alta_last_chapter')?`<button class="doc-link" data-doc-chapter="${localStorage.getItem('alta_last_chapter')}">Kapitel ${localStorage.getItem('alta_last_chapter')} · ${esc(CHAPTERS[localStorage.getItem('alta_last_chapter')]?.title||'')}</button>`:'<p class="muted">Noch kein Kapitel angesehen.</p>'}</div><div class="card"><h2>📚 Rekrutenhandbuch</h2><p>Alle 22 Kapitel sind über die Navigation erreichbar. Favorisiere häufig benötigte Inhalte für den Schnellzugriff.</p></div><div class="card"><h2>🖨️ Ausbildungsakte</h2><p>Unter „Mein Account“ kannst du deine aktuelle Ausbildungsübersicht drucken oder als PDF speichern.</p></div></div>`;document.querySelectorAll('[data-doc-chapter]').forEach(b=>b.onclick=()=>showChapter(+b.dataset.docChapter))}
+
 function setupMobileMenu(){
  const btn=$("#mobileMenuBtn"), sidebar=document.querySelector(".sidebar"), overlay=$("#mobileOverlay");
  if(!btn||!sidebar||!overlay)return;
