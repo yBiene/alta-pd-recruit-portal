@@ -16,7 +16,7 @@ function mapProfile(p){
   id:p.id, username:p.username, name:p.name, serviceNo:p.service_no||"",
   role:p.role, access:p.access_level||"standard", rank:p.rank||"",
   fto:p.fto||"", start:p.training_start||"", status:p.status||"In Ausbildung",
-  completed:[], assignedTests:[], testResults:[]
+  completed:[], assignedTests:[], testResults:[], notes:[]
  };
 }
 async function refreshData(){
@@ -36,18 +36,23 @@ async function refreshData(){
 
  const ids=db.users.map(x=>x.id);
  if(ids.length){
-  const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re}]=await Promise.all([
+  const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re},{data:notes,error:ne}]=await Promise.all([
    sb.from("training_progress").select("*").in("recruit_id",ids),
    sb.from("test_assignments").select("*").eq("active",true).in("recruit_id",ids),
-   sb.from("test_results").select("*").in("recruit_id",ids).order("completed_at",{ascending:true})
+   sb.from("test_results").select("*").in("recruit_id",ids).order("completed_at",{ascending:true}),
+   sb.from("recruit_notes").select("*").in("recruit_id",ids).order("created_at",{ascending:true})
   ]);
-  if(pe) throw pe;if(ae) throw ae;if(re) throw re;
+  if(pe) throw pe;if(ae) throw ae;if(re) throw re;if(ne) console.warn("Recruit-Vermerke konnten nicht geladen werden:",ne.message);
   for(const u of db.users){
    u.completed=(prog||[]).filter(x=>x.recruit_id===u.id&&x.completed).map(x=>x.chapter).sort((a,b)=>a-b);
    u.assignedTests=(assign||[]).filter(x=>x.recruit_id===u.id&&x.active).map(x=>x.test_id);
    u.testResults=(results||[]).filter(x=>x.recruit_id===u.id).map(x=>({
     testId:x.test_id,score:x.score,total:x.total,percent:x.percent,passed:x.passed,
     date:new Date(x.completed_at).toLocaleString("de-DE")
+   }));
+   u.notes=(notes||[]).filter(x=>x.recruit_id===u.id).map(x=>({
+    id:x.id,text:x.note_text,authorName:x.author_name,authorRank:x.author_rank,
+    date:new Date(x.created_at).toLocaleString("de-DE")
    }));
   }
  }
@@ -127,10 +132,10 @@ const TESTS=[
 
 
 function nav(){
- let html=`<button class="nav-btn active" data-view="dashboard">⌂ Dashboard</button><div class="nav-label">AUSBILDUNG</div>`;
+ let html=`<button class="nav-btn active" data-view="dashboard">🏠 Dashboard</button><div class="nav-label">AUSBILDUNG</div>`;
  for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="num">${x.n}</span>${esc(x.title)}</button>`;
- html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">✎ Tests</button>`;
- if(isTrainer(current)) html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="admin">⚙ Recruit-Verwaltung</button>`;
+ html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button>`;
+ if(isTrainer(current)) html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="admin">🛡️ Recruit-Verwaltung</button>`;
  $("#nav").innerHTML=html;
  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
  document.querySelectorAll("[data-chapter]").forEach(b=>b.onclick=()=>showChapter(+b.dataset.chapter));
@@ -215,9 +220,10 @@ function account(){
    <label>Status<input value="${esc(current.status||"")}" disabled></label>
    <label>FTO<input value="${esc(current.fto||"—")}" disabled></label>
   </div>
-  <button class="primary" id="saveMyAccount">Dienstnummer speichern</button>
+  <button class="primary" id="saveMyAccount">💾 Dienstnummer speichern</button>
   <p class="muted" style="margin-top:10px">Die Dienstnummer kann von jedem Account selbst geändert werden.</p>
- </div>`;
+ </div>
+ ${current.role==="recruit"?`<div class="card notes-card"><div class="section-head compact"><div><div class="eyebrow">📝 AUSBILDUNGSVERMERKE</div><h2>Vermerke meiner Ausbilder</h2></div><span class="note-count">${(current.notes||[]).length}</span></div>${(current.notes||[]).length?current.notes.slice().reverse().map(n=>`<article class="note-entry"><div class="note-meta"><b>${esc(n.authorRank||"Ausbilder")} ${esc(n.authorName||"")}</b><span>${esc(n.date)}</span></div><p>${esc(n.text)}</p></article>`).join(""):`<div class="empty-note">Noch keine Vermerke vorhanden.</div>`}</div>`:""}`;
  $("#saveMyAccount").onclick=async()=>{
     const value=$("#myServiceNo").value.trim();
     if(!value){alert("Bitte eine Dienstnummer eintragen.");return}
@@ -248,13 +254,13 @@ function admin(){
    <form id="createTrainer" class="form-grid">
     <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
     <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
-    <label>Rang<input name="rank" value="Sergeant" required></label>
+    <label>Rang<select name="rank" required><option>Officer</option><option selected>Sergeant</option><option>Lieutenant</option><option>Captain</option><option>Commander</option></select></label>
     <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
     <label>Initiales Passwort<input name="password" required minlength="6"></label>
     <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
     <button class="primary" type="submit">Ausbilder-Account erstellen</button>
    </form>
-   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.rank)} · ${esc(t.username)}</small></div><select data-access="${t.id}"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
+   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Officer"?"selected":""}>Officer</option><option ${t.rank==="Sergeant"?"selected":""}>Sergeant</option><option ${t.rank==="Lieutenant"?"selected":""}>Lieutenant</option><option ${t.rank==="Captain"?"selected":""}>Captain</option><option ${t.rank==="Commander"?"selected":""}>Commander</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
   </div>`:"";
  $("#content").innerHTML=`
  <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>Recruit-Verwaltung</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
@@ -296,6 +302,10 @@ function admin(){
   }
   await refreshData();admin();
 });
+ document.querySelectorAll("[data-rank]").forEach(x=>x.onchange=async()=>{
+  try{await invokeAccountAction({action:"trainer_rank",userId:x.dataset.rank,rank:x.value});await refreshData();admin()}
+  catch(err){alert(err.message)}
+});
  document.querySelectorAll("[data-access]").forEach(x=>x.onchange=async()=>{
   try{await invokeAccountAction({action:"trainer_access",userId:x.dataset.access,access:x.value});await refreshData();admin()}
   catch(err){alert(err.message)}
@@ -307,6 +317,21 @@ function admin(){
  const {error}=await sb.rpc("staff_update_recruit",{target_id:sel.id,new_fto:$("#editFto").value,new_status:$("#editStatus").value,new_rank:$("#editRank").value});
  if(error){alert(error.message);return}await refreshData();admin();
 });
+ $("#addRecruitNote")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const text=$("#recruitNoteText").value.trim();
+  if(!text){alert("Bitte einen Vermerk eintragen.");return}
+  const {error}=await sb.from("recruit_notes").insert({recruit_id:sel.id,author_id:current.id,author_name:current.name,author_rank:current.rank||roleLabel(current),note_text:text});
+  if(error){alert("Vermerk konnte nicht gespeichert werden: "+error.message);return}
+  await refreshData();admin();
+ });
+ document.querySelectorAll("[data-delete-note]").forEach(b=>b.onclick=async()=>{
+  if(!isOwner())return;
+  if(!confirm("Vermerk wirklich löschen?"))return;
+  const {error}=await sb.from("recruit_notes").delete().eq("id",b.dataset.deleteNote);
+  if(error){alert(error.message);return}
+  await refreshData();admin();
+ });
  $("#deleteRecruit")?.addEventListener("click",async()=>{
  if(!canCreateRecruit()){alert("Zum Löschen von Accounts ist Extra-Zugriff erforderlich.");return}
  if(confirm("Recruit-Account wirklich löschen?"))try{await invokeAccountAction({action:"delete",userId:sel.id});selectedRecruit=null;await refreshData();admin()}catch(err){alert(err.message)}
@@ -331,6 +356,7 @@ function adminRecruit(r){
   <div class="chapter-checks">${TESTS.map(t=>`<label class="check"><input type="checkbox" data-test-assign="${t.id}" ${(r.assignedTests||[]).includes(t.id)?"checked":""}><span><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span></label>`).join("")}</div>
   <h3 style="margin-top:22px">Test-Mappe</h3>
   <div>${(r.testResults||[]).length?r.testResults.slice().reverse().map(res=>{let t=TESTS.find(x=>x.id===res.testId);return `<div class="test-result-row"><div><b>${esc(t?.title||res.testId)}</b><small>${esc(res.date||"")} · ${res.score}/${res.total} Punkte · ${res.percent}%</small></div><span class="test-state ${res.passed?"passed":"failed"}">${res.passed?"BESTANDEN":"NICHT BESTANDEN"}</span></div>`}).join(""):"<p class='muted'>Noch keine abgeschlossenen Tests.</p>"}</div>
+  <div class="notes-admin-section"><div class="section-head compact"><div><div class="eyebrow">📝 AUSBILDUNGSVERMERKE</div><h3>Vermerke für ${esc(r.name)}</h3></div><span class="note-count">${(r.notes||[]).length}</span></div><form id="addRecruitNote" class="note-form"><textarea id="recruitNoteText" maxlength="1200" required placeholder="z. B. Gute Streifenfahrt, sichere Kommunikation und saubere Maßnahmenbegründung."></textarea><button class="primary" type="submit">➕ Vermerk hinzufügen</button></form><div class="note-list">${(r.notes||[]).length?r.notes.slice().reverse().map(n=>`<article class="note-entry"><div class="note-meta"><b>${esc(n.authorRank||"Ausbilder")} ${esc(n.authorName||"")}</b><span>${esc(n.date)}</span></div><p>${esc(n.text)}</p>${isOwner()?`<button class="note-delete" data-delete-note="${n.id}">Vermerk löschen</button>`:""}</article>`).join(""):`<div class="empty-note">Noch keine Vermerke vorhanden.</div>`}</div></div>
   <button id="deleteRecruit" style="margin-top:18px;background:transparent;color:#ff7c87;border:1px solid #66333b;border-radius:8px;padding:9px 12px;cursor:pointer">Recruit löschen</button>
  </div>`;
 }
@@ -368,6 +394,15 @@ async function toggleChapter(uid,n){
  }
  await refreshData();
 }
+function setupMobileMenu(){
+ const btn=$("#mobileMenuBtn"), sidebar=document.querySelector(".sidebar"), overlay=$("#mobileOverlay");
+ if(!btn||!sidebar||!overlay)return;
+ const close=()=>{sidebar.classList.remove("mobile-open");overlay.classList.add("hidden");document.body.classList.remove("menu-open")};
+ btn.onclick=()=>{const open=sidebar.classList.toggle("mobile-open");overlay.classList.toggle("hidden",!open);document.body.classList.toggle("menu-open",open)};
+ overlay.onclick=close;
+ sidebar.addEventListener("click",e=>{if(window.innerWidth<=760&&e.target.closest(".nav-btn"))close()});
+ window.addEventListener("resize",()=>{if(window.innerWidth>760)close()});
+}
 function setupSearch(){
  $("#globalSearch").addEventListener("input",e=>{
   let q=e.target.value.trim().toLowerCase(), box=$("#searchResults");
@@ -389,7 +424,7 @@ $("#loginForm").onsubmit=async e=>{
  try{await refreshData()}catch(err){await sb.auth.signOut();$("#loginError").textContent="Portal-Profil konnte nicht geladen werden.";return}
  $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
  $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
- nav();setupSearch();dashboard();
+ nav();setupSearch();setupMobileMenu();dashboard();
  if(!sessionStorage.getItem("apd_seen_splash")){$("#splash").classList.remove("hidden")}
 };
 $("#enterPortal").onclick=()=>{$("#splash").classList.add("hidden");sessionStorage.setItem("apd_seen_splash","1")};
@@ -402,6 +437,6 @@ $("#logoutBtn").onclick=async()=>{await sb.auth.signOut();current=null;location.
   await refreshData();
   $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
   $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
-  nav();setupSearch();dashboard();
+  nav();setupSearch();setupMobileMenu();dashboard();
  }catch(err){console.error(err);await sb.auth.signOut()}
 })();
