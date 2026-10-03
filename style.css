@@ -865,3 +865,67 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     animation: none !important;
   }
 }
+
+
+/* ===== V5.6.7 – APD Logo XXL + transparent ===== */
+.sidebar .brand,
+.sidebar .sidebar-brand,
+.sidebar .brand-wrap{
+  min-height:150px !important;
+  overflow:visible !important;
+}
+.sidebar .brand img,
+.sidebar .sidebar-brand img,
+.sidebar .brand-wrap img,
+.sidebar img.brand-logo,
+.sidebar img.logo{
+  width:116px !important;
+  height:116px !important;
+  min-width:116px !important;
+  max-width:116px !important;
+  object-fit:contain !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  opacity:.88;
+  mix-blend-mode:screen;
+  filter:drop-shadow(0 0 8px rgba(45,174,255,.28));
+  animation:apdLogoXXL567 3.8s ease-in-out infinite !important;
+}
+@keyframes apdLogoXXL567{
+  0%,100%{transform:scale(1);opacity:.84;filter:drop-shadow(0 0 6px rgba(45,174,255,.22))}
+  50%{transform:scale(1.055);opacity:1;filter:drop-shadow(0 0 14px rgba(45,174,255,.48))}
+}
+.sidebar .brand img:hover,
+.sidebar .sidebar-brand img:hover,
+.sidebar .brand-wrap img:hover,
+.sidebar img.brand-logo:hover,
+.sidebar img.logo:hover{
+  transform:scale(1.08) !important;
+  opacity:1;
+}
+@media(min-width:761px){
+  body.sidebar-collapsed .sidebar .brand,
+  body.sidebar-collapsed .sidebar .sidebar-brand,
+  body.sidebar-collapsed .sidebar .brand-wrap{min-height:138px !important;justify-content:center !important}
+  body.sidebar-collapsed .sidebar .brand img,
+  body.sidebar-collapsed .sidebar .sidebar-brand img,
+  body.sidebar-collapsed .sidebar .brand-wrap img,
+  body.sidebar-collapsed .sidebar img.brand-logo,
+  body.sidebar-collapsed .sidebar img.logo{
+    width:86px !important;height:86px !important;min-width:86px !important;max-width:86px !important;margin:0 auto !important
+  }
+}
+@media(max-width:760px){
+  .sidebar .brand img,
+  .sidebar .sidebar-brand img,
+  .sidebar .brand-wrap img,
+  .sidebar img.brand-logo,
+  .sidebar img.logo{
+    width:82px !important;height:82px !important;min-width:82px !important;max-width:82px !important
+  }
+  .sidebar .brand,.sidebar .sidebar-brand,.sidebar .brand-wrap{min-height:112px !important}
+}
+@media(prefers-reduced-motion:reduce){
+  .sidebar .brand img,.sidebar .sidebar-brand img,.sidebar .brand-wrap img,.sidebar img.brand-logo,.sidebar img.logo{animation:none !important}
+}
