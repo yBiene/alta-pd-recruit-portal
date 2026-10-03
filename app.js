@@ -146,7 +146,7 @@ const TESTS=[
 
 
 const chapterIcons={1:"📋",2:"🛡️",3:"🦺",4:"📡",5:"📻",6:"🗺️",7:"💻",8:"🔎",9:"🚓",10:"🤝",11:"⚖️",12:"🗂️",13:"🛡️",14:"🎯",15:"🎓",16:"📋",17:"🎙️",18:"🔫",19:"🧪",20:"📝",21:"🗺️",22:"⚠️"};
-const chapterCardImages={1:"image1.png",2:"image2.png",3:"image3.png",4:"image4.png",5:"image5.png",6:"gebietskarte.png",7:"image7.png",8:"image8.png",9:"image9.png",10:"image10.png",11:"image11.png",12:"image12.png",13:"image13.png",14:"image14.png",15:"image15.png",16:"image16.png",17:"image17.png",18:"image18.png",19:"image19.png",20:"image20.png",21:"gebietskarte.png",22:"image22.png"};
+const chapterCardImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-art-${String(i+1).padStart(2,"0")}.webp`]));
 function nav(){
  let html=`<button class="nav-btn active" data-view="dashboard">🏠 Dashboard</button><div class="nav-label">AUSBILDUNG</div>`;
  for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon" aria-hidden="true">${chapterIcons[x.n]||"📘"}</span>${esc(x.title)}</button>`;

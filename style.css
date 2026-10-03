@@ -255,3 +255,21 @@ body{background:#061321}
 .chapter-card-image.done:after,.chapter-card-image:not(.done):after{content:none!important}
 @media(max-width:1250px){.chapter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.chapter-grid{grid-template-columns:1fr}.chapter-card-image,.chapter-card-content{min-height:125px}.chapter-card-image h3{max-width:86%;font-size:17px}.hero-command-meta{left:18px;bottom:14px}.hero-command-meta .shift-pill{font-size:11px;white-space:normal}}
+\n\n/* ===== V4.4.2 COMIC ART + FORM POLISH ===== */
+input:not([type="checkbox"]):not([type="radio"]),select,textarea{
+  box-sizing:border-box;background:#091b2b!important;color:#edf7ff!important;
+  border:1px solid #2a5673!important;border-radius:11px!important;
+  padding:11px 13px!important;outline:none;transition:border-color .18s,box-shadow .18s,background .18s;
+}
+input:not([type="checkbox"]):not([type="radio"]):focus,select:focus,textarea:focus{
+  border-color:#35a9ef!important;box-shadow:0 0 0 3px rgba(53,169,239,.13)!important;background:#0b2134!important;
+}
+input::placeholder,textarea::placeholder{color:#6f8ca4!important;opacity:1}
+select{color-scheme:dark;cursor:pointer}
+.form-grid{gap:15px!important}.form-grid label{display:grid;gap:6px;margin:0!important}
+.admin-toolbar{gap:12px!important}.admin-grid{gap:22px!important}.admin-grid>.card{padding:22px!important}
+.recruit-row,.trainer-row{margin:10px 0!important}
+.chapter-card-image{min-height:132px;border-radius:14px!important}
+.chapter-card-content{min-height:132px;padding:15px 17px}
+.chapter-card-shade{background:linear-gradient(90deg,rgba(3,13,23,.92) 0%,rgba(3,13,23,.64) 52%,rgba(3,13,23,.18) 100%),linear-gradient(0deg,rgba(2,10,18,.72),transparent 60%)}
+.chapter-card-image h3{margin:7px 0 10px;max-width:88%}
