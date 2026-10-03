@@ -339,6 +339,7 @@ function account(){
  });
 }
 function accountManagement(){
+ recruitRecordsOnly=false;
  if(!isTrainer(current)) return dashboard();
  setActive('[data-view="accounts"]'); $("#pageTitle").textContent="Account-Verwaltung";
  const trainers=db.users.filter(x=>x.role==="trainer");
@@ -364,24 +365,21 @@ function accountManagement(){
  $("#createRecruitAccounts")?.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(e.target);try{await invokeAccountAction({action:"create",role:"recruit",username:f.get("username"),name:f.get("name"),serviceNo:f.get("serviceNo"),rank:"Recruit",fto:f.get("fto"),start:f.get("start"),access:"standard"});await refreshData();alert("Recruit-Account wurde erstellt.");accountManagement()}catch(err){alert("Account konnte nicht erstellt werden: "+err.message)}});
  $("#createTrainerAccounts")?.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(e.target);try{await invokeAccountAction({action:"create",role:"trainer",username:f.get("username"),name:f.get("name"),serviceNo:f.get("serviceNo"),rank:f.get("rank"),fto:"—",access:f.get("access")});await refreshData();alert("Ausbilder-Account wurde erstellt.");accountManagement()}catch(err){alert("Ausbilder konnte nicht erstellt werden: "+err.message)}});
 }
+let recruitRecordsOnly=false;
 function recruitRecordsView(){
- admin();
  if(!isTrainer(current)) return;
- setActive('[data-view="admin"]'); $("#pageTitle").textContent="Rekruten Ausbildungsakten";
- const head=$("#content")?.querySelector('.section-head h1'); if(head) head.textContent='Rekruten Ausbildungsakten';
- $("#content")?.querySelector('.account-create-card')?.remove();
- $("#content")?.querySelector('.trainer-admin-wide')?.remove();
- const left=$("#content")?.querySelector('.admin-grid > div:first-child');
- if(left){ const list=left.querySelector('.card'); if(list){ list.classList.add('recruit-record-list'); const h=list.querySelector('h3'); if(h) h.textContent='Rekruten auswählen'; } }
+ recruitRecordsOnly=true;
+ admin();
 }
 function admin(){
  if(!isTrainer(current)) return dashboard();
- setActive('[data-view="admin"]'); $("#pageTitle").textContent="Recruit-Verwaltung";
+ setActive('[data-view="admin"]');
+ $("#pageTitle").textContent=recruitRecordsOnly?"Rekruten Ausbildungsakten":"Recruit-Verwaltung";
  const recruits=db.users.filter(x=>x.role==="recruit");
  const trainers=db.users.filter(x=>x.role==="trainer");
  if(!recruitRecordClosed && !selectedRecruit && recruits[0]) selectedRecruit=recruits[0].id;
  let sel=db.users.find(x=>x.id===selectedRecruit && x.role==="recruit");
- const createRecruitCard=canCreateRecruit()?`<div class="card account-create-card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
+ const createRecruitCard=recruitRecordsOnly?"":canCreateRecruit()?`<div class="card account-create-card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
     <label>Name<input name="name" required placeholder="Recruit Name"></label>
     <label>Dienstnummer<input name="serviceNo" required placeholder="R-103"></label>
     <label>Benutzername<input name="username" required placeholder="vorname.nachname"></label>
@@ -390,7 +388,7 @@ function admin(){
     <label>Ausbildungsbeginn<input name="start" value="${new Date().toLocaleDateString("de-DE")}"></label>
     <button class="primary" type="submit">Recruit-Account erstellen</button>
    </form></div>`:`<div class="card"><h3>Recruit-Accounts</h3><p class="muted">Mit deinem aktuellen Zugriff kannst du Ausbildungsstände bearbeiten. Neue Accounts können nur mit Extra-Zugriff angelegt werden.</p></div>`;
- const trainerAdmin=isOwner()?`<div class="card trainer-admin"><div class="section-head compact"><div><div class="eyebrow">AUSBILDER</div><h3>Ausbilder-Accounts</h3></div><span class="access-badge owner">Nur Hauptadmin</span></div>
+ const trainerAdmin=(!recruitRecordsOnly&&isOwner())?`<div class="card trainer-admin"><div class="section-head compact"><div><div class="eyebrow">AUSBILDER</div><h3>Ausbilder-Accounts</h3></div><span class="access-badge owner">Nur Hauptadmin</span></div>
    <form id="createTrainer" class="form-grid">
     <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
     <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
@@ -403,11 +401,11 @@ function admin(){
    <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Officer"?"selected":""}>Officer</option><option ${t.rank==="Sergeant"?"selected":""}>Sergeant</option><option ${t.rank==="Lieutenant"?"selected":""}>Lieutenant</option><option ${t.rank==="Captain"?"selected":""}>Captain</option><option ${t.rank==="Commander"?"selected":""}>Commander</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="secondary" data-reset-password="${t.id}" data-reset-name="${esc(t.name)}">🔑 Passwort zurücksetzen</button><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
   </div>`:"";
  $("#content").innerHTML=`
- <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>Recruit-Verwaltung</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
+ <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>${recruitRecordsOnly?"Rekruten Ausbildungsakten":"Recruit-Verwaltung"}</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
  <div class="admin-grid ${sel?"":"record-is-closed"}">
   <div>
    ${createRecruitCard}
-   <div class="card" style="margin-top:14px"><h3>Recruit-Accounts</h3>
+   <div class="card recruit-record-list" style="margin-top:${recruitRecordsOnly?"0":"14px"}"><h3>${recruitRecordsOnly?"Rekruten auswählen":"Recruit-Accounts"}</h3>
     ${recruits.map(r=>`<div class="recruit-row"><div><b>${esc(r.name)}</b><small>${esc(r.serviceNo)} · ${progress(r)}% · ${esc(r.fto)}</small></div><div class="recruit-row-actions"><button class="primary" data-edit="${r.id}">Öffnen</button><button class="secondary" data-close-record="${r.id}" ${selectedRecruit===r.id&&!recruitRecordClosed?"":"disabled"}>Schließen</button></div></div>`).join("")||"<p>Noch keine Recruit-Accounts.</p>"}
    </div>
   </div>

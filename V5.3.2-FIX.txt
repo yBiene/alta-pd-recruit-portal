@@ -1,0 +1,8 @@
+ALTA PD Portal V5.3.2
+FIX:
+- Rekruten Ausbildungsakten bleibt ein eigener Bereich.
+- Beim Öffnen/Schließen einer Akte erscheinen keine Formulare „Neuen Recruit anlegen“ mehr.
+- Ausbilder-Accounts erscheinen dort ebenfalls nicht mehr.
+- Auch nach Speichern/Ändern innerhalb einer Akte bleibt die Ansicht im Ausbildungsakten-Bereich.
+- Account-Erstellung bleibt ausschließlich in Account-Verwaltung.
+Kein neues SQL erforderlich.
