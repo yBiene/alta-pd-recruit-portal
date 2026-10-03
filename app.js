@@ -1294,3 +1294,58 @@ setTimeout(sidebarTooltipsV544,0);
   history.replaceState(initial,'',routeHash(initial));
  },700));
 })();
+
+
+/* ===== V5.6 – Final Release: Deep Links, Reload & History QA ===== */
+(function(){
+ const ROUTES=new Set(['dashboard','command','accounts','admin','tests','account','news','documents','calendar','scenario','radio','mapquiz','plan','rides','dienstbuch','messages','achievements']);
+ let applying=false;
+ function stateFor(route,extra={}){return {apdPortal:true,route:route||'dashboard',chapter:extra.chapter||null,recruitId:extra.recruitId||null,recordClosed:extra.recordClosed??null,v56:true}}
+ function hashFor(s){if(s.route==='chapter'&&s.chapter)return '#chapter-'+s.chapter;if(s.route==='admin'&&s.recruitId&&!s.recordClosed)return '#admin-recruit-'+encodeURIComponent(s.recruitId);return '#'+(s.route||'dashboard')}
+ function parseHash(){
+  const raw=(location.hash||'').replace(/^#/,'').trim(); if(!raw)return stateFor('dashboard');
+  let m=raw.match(/^chapter-(\d{1,2})$/); if(m){const n=+m[1];return n>=1&&n<=22?stateFor('chapter',{chapter:n}):null}
+  m=raw.match(/^admin-recruit-(.+)$/); if(m)return stateFor('admin',{recruitId:decodeURIComponent(m[1]),recordClosed:false});
+  return ROUTES.has(raw)?stateFor(raw):null;
+ }
+ function permitted(s){if(!current)return false;if(current.mustChangePassword)return s.route==='account';if(['command','accounts','admin','calendar'].includes(s.route)&&!isTrainer(current))return false;return true}
+ function mark(s,mode='replaceState'){try{history[mode](s,'',hashFor(s))}catch{}}
+ function renderState(s,fromHistory=false){
+  if(!current)return false;
+  if(!s||!permitted(s)){s=stateFor(current.mustChangePassword?'account':'dashboard');mark(s);if(!fromHistory)try{toast('Diese Ansicht ist nicht verfügbar.')}catch{}}
+  applying=true;
+  try{
+   mark(s);
+   if(s.route==='chapter')showChapter(+s.chapter);
+   else if(s.route==='admin'){selectedRecruit=s.recruitId||null;recruitRecordClosed=s.recordClosed??!s.recruitId;showView('admin')}
+   else showView(s.route);
+   savePortalRoute(s.route,{chapter:s.chapter||undefined,scrollY:0});
+   requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}));
+  }finally{applying=false}
+  return true;
+ }
+ let tries=0;
+ const boot=setInterval(()=>{
+  tries++;
+  if(current){
+   clearInterval(boot);
+   if(location.hash)renderState(parseHash(),true);
+   else{
+    const saved=readPortalRoute();
+    const s=saved?.route==='chapter'&&saved.chapter?stateFor('chapter',{chapter:+saved.chapter}):stateFor(saved?.route||'dashboard');
+    mark(s);
+   }
+  }else if(tries>80)clearInterval(boot);
+ },100);
+ window.addEventListener('popstate',()=>{if(current)renderState(history.state?.apdPortal?history.state:parseHash(),true)});
+ window.addEventListener('hashchange',()=>{if(current&&!applying){const s=parseHash();if(s)renderState(s,true)}});
+ document.addEventListener('click',e=>{
+  const open=e.target.closest('[data-edit],[data-command-open],[data-v5-open],[data-v51-open]');
+  const close=e.target.closest('[data-close-record]');
+  if(open)setTimeout(()=>{if(current&&selectedRecruit&&!recruitRecordClosed){const s=stateFor('admin',{recruitId:selectedRecruit,recordClosed:false});if(location.hash!==hashFor(s))mark(s,'pushState');savePortalRoute('admin',{scrollY:0})}},0);
+  else if(close)setTimeout(()=>{if(current){const s=stateFor('admin',{recordClosed:true});if(location.hash!==hashFor(s))mark(s,'pushState');savePortalRoute('admin',{scrollY:0})}},0);
+ });
+ const logout=document.querySelector('#logoutBtn');
+ if(logout)logout.addEventListener('click',()=>{try{sessionStorage.removeItem(APD_ROUTE_KEY)}catch{}try{history.replaceState(null,'',location.pathname+location.search)}catch{}},true);
+})();
+

@@ -750,3 +750,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(min-width:1900px){.content{max-width:1740px;margin-inline:auto;width:100%}}
 /* Mobile Tabellen/Akten sicher scrollbar */
 @media(max-width:760px){.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.table-wrap table{min-width:640px}.section-head{gap:12px;align-items:flex-start}.section-head h1{font-size:clamp(22px,7vw,30px)}.card{border-radius:14px}}
+
+/* ===== V5.6 – Final Release ===== */
+#content{min-width:0}.content>*{scroll-margin-top:92px}@media(max-width:760px){.content>*{scroll-margin-top:76px}}
