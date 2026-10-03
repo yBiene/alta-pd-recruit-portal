@@ -1032,3 +1032,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 /* ===== V5.6.11 – Dashboard Banner ohne Logo ===== */
 .hero{grid-template-columns:1fr!important;}
 .hero>.hero-logo{display:none!important;}
+
+
+/* ===== V5.7 FINAL POLISH ===== */
+:root{--v57-safe-bottom:34px}
+body{padding-bottom:var(--v57-safe-bottom)}
+.v57-system-footer{position:fixed;z-index:60;left:var(--sidebar-w,276px);right:0;bottom:0;height:28px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;background:rgba(5,19,31,.94);border-top:1px solid rgba(67,145,194,.16);backdrop-filter:blur(12px);font-size:10px;letter-spacing:.06em;color:#6f8da3}
+.v57-system-ok{display:flex;align-items:center;gap:7px;color:#79a9c5}.v57-system-ok i{width:6px;height:6px;border-radius:50%;background:#39d98a;box-shadow:0 0 8px rgba(57,217,138,.45)}
+body.sidebar-collapsed .v57-system-footer{left:92px}
+.v57-empty{min-height:132px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:22px;color:#7694aa}.v57-empty>span{font-size:26px;opacity:.7;margin-bottom:8px}.v57-empty>b{color:#b9ccda;font-size:13px}.v57-empty>small{margin-top:5px;max-width:340px}
+.v57-action-pending{pointer-events:none!important;opacity:.72!important;position:relative}.v57-action-pending:after{content:'';display:inline-block;width:11px;height:11px;margin-left:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-2px;animation:v57spin .65s linear infinite}@keyframes v57spin{to{transform:rotate(360deg)}}
+.v57-long-title{font-size:clamp(22px,2.5vw,38px)!important;line-height:1.12!important;overflow-wrap:anywhere}
+.card,.panel,.admin-card,.record-card{overflow-wrap:anywhere}
+input,select,textarea,button{max-width:100%}
+table{max-width:100%}
+@media(max-width:1180px){.content,.main-content,main{min-width:0}.card-grid,.dashboard-grid{min-width:0}.v57-system-footer{left:92px}}
+@media(max-width:760px){body{padding-bottom:54px}.v57-system-footer{left:0;height:26px;padding:0 10px;font-size:9px}.v57-system-footer span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v57-long-title{font-size:clamp(20px,7vw,30px)!important}}
+@media(prefers-reduced-motion:reduce){.v57-action-pending:after{animation:none}}

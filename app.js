@@ -1444,3 +1444,65 @@ function leaderboardViewV565(){
  <section class="card lb-highlights"><div><small>🚀 Höchster Fortschritt</small><b>${bestProgress?esc(bestProgress.r.name)+' · '+bestProgress.pct+'%':'—'}</b></div><div><small>📝 Beste Testbilanz</small><b>${bestTests?esc(bestTests.r.name)+' · '+bestTests.tests+'/5':'—'}</b></div><div><small>🎯 Praxis</small><b>${bestPractice&&bestPractice.practice?esc(bestPractice.r.name)+' · '+bestPractice.practice+' Bewertungen':'—'}</b></div><div><small>⚡ Aktivität der Woche</small><b>${mostActive&&mostActive.activity?esc(mostActive.r.name)+' · '+mostActive.activity+' Aktionen':'—'}</b></div></section>
  ${top.length?`<section class="card lb-table-card"><div class="section-head compact"><div><div class="eyebrow">TOP 10</div><h2>Wochenrangliste</h2></div><span class="status">Montag – Sonntag</span></div><div class="lb-list">${rows}</div><p class="muted lb-note">Das Leaderboard ist eine Motivationsübersicht. Ausbildungsfreigaben und FTO-Bewertungen werden dadurch nicht verändert.</p></section>`:''}`;
 }
+
+
+/* ===== V5.7 FINAL POLISH / QA ===== */
+(function(){
+  const VERSION='5.7';
+
+  function v57EnsureFooter(){
+    if(document.getElementById('v57SystemFooter')) return;
+    const el=document.createElement('div');
+    el.id='v57SystemFooter';
+    el.className='v57-system-footer';
+    el.innerHTML='<span>ALTA PD Academy Portal · v'+VERSION+'</span><span class="v57-system-ok"><i></i> System bereit</span>';
+    document.body.appendChild(el);
+  }
+
+  function v57EmptyStates(){
+    document.querySelectorAll('.card,.panel,.admin-card,.record-card').forEach(card=>{
+      if(card.dataset.v57Checked) return;
+      card.dataset.v57Checked='1';
+      const text=(card.textContent||'').trim();
+      if(!text && card.children.length===0){
+        card.innerHTML='<div class="v57-empty"><span>◫</span><b>Keine Einträge vorhanden</b><small>Hier erscheinen Daten, sobald sie verfügbar sind.</small></div>';
+      }
+    });
+  }
+
+  function v57ProtectActions(){
+    document.addEventListener('click',e=>{
+      const b=e.target.closest('button');
+      if(!b || b.disabled || b.dataset.v57Busy==='1') return;
+      const txt=(b.textContent||'').toLowerCase();
+      const actionWords=['speichern','erstellen','zurücksetzen','löschen','freigeben','abschließen'];
+      if(!actionWords.some(x=>txt.includes(x))) return;
+      b.dataset.v57Busy='1';
+      b.classList.add('v57-action-pending');
+      setTimeout(()=>{b.dataset.v57Busy='0';b.classList.remove('v57-action-pending')},900);
+    },true);
+  }
+
+  function v57NormalizeErrors(){
+    window.addEventListener('unhandledrejection',e=>{
+      const raw=String(e.reason?.message||e.reason||'');
+      if(!raw) return;
+      let msg='Aktion konnte nicht abgeschlossen werden.';
+      if(/duplicate|unique/i.test(raw)) msg='Dieser Eintrag existiert bereits. Bitte Eingaben prüfen.';
+      else if(/permission|policy|rls|403/i.test(raw)) msg='Dafür fehlt die erforderliche Berechtigung.';
+      else if(/network|fetch|offline/i.test(raw)) msg='Keine Verbindung zum Server. Bitte Verbindung prüfen und erneut versuchen.';
+      if(typeof toast==='function') toast(msg,'error');
+    });
+  }
+
+  function v57FitLongText(){
+    document.querySelectorAll('h1,h2,h3,.hero h1,.hero h2,.profile-name,.recruit-name').forEach(el=>{
+      if((el.textContent||'').trim().length>28) el.classList.add('v57-long-title');
+    });
+  }
+
+  const obs=new MutationObserver(()=>{v57EnsureFooter();v57EmptyStates();v57FitLongText()});
+  if(document.body) obs.observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',()=>{v57EnsureFooter();v57EmptyStates();v57FitLongText();v57ProtectActions();v57NormalizeErrors()});
+  if(document.readyState!=='loading'){v57EnsureFooter();v57EmptyStates();v57FitLongText();v57ProtectActions();v57NormalizeErrors()}
+})();
