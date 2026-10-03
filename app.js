@@ -189,6 +189,12 @@ async function restoreChapterNotes(n){
   });
  });
 }
+function editableChapterHtml(n,html){
+ // Kapitelinhalt sicher aus dem Handbuch ausgeben.
+ // Freie Ausbildungsnotizen werden separat über chapter_notes gespeichert.
+ return html || "";
+}
+
 function showChapter(n){
  const c=CHAPTERS[n]; if(!c)return;
  setActive(`[data-chapter="${n}"]`); $("#pageTitle").textContent=`Kapitel ${n}`;
