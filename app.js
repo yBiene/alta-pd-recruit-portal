@@ -616,3 +616,57 @@ const _adminV45=admin;admin=function(){_adminV45();if(!isTrainer(current))return
  const filter=$('#adminFilter'),sort=$('#adminSort');const apply=()=>{const q=($('#adminSearch')?.value||'').toLowerCase(),f=filter?.value||'Alle';rows.forEach(row=>{const id=row.querySelector('[data-edit]')?.dataset.edit,r=db.users.find(x=>x.id===id);if(!r)return;const matchQ=(row.dataset.search||row.textContent.toLowerCase()).includes(q);const s=statusName(r);const matchF=f==='Alle'||(f==='In Ausbildung'&&s==='In Ausbildung')||(f==='Abgeschlossen'&&s==='Abgeschlossen')||(f==='Archiviert'&&s==='Archiviert');row.style.display=matchQ&&matchF?'':'none'});if(sort){const parent=rows[0]?.parentElement;if(parent){[...rows].sort((a,b)=>{const ra=db.users.find(x=>x.id===a.querySelector('[data-edit]')?.dataset.edit),rb=db.users.find(x=>x.id===b.querySelector('[data-edit]')?.dataset.edit);if(sort.value==='Fortschritt')return progress(rb)-progress(ra);if(sort.value==='Dienstnummer')return String(ra?.serviceNo||'').localeCompare(String(rb?.serviceNo||''),'de',{numeric:true});return String(ra?.name||'').localeCompare(String(rb?.name||''),'de')}).forEach(x=>parent.appendChild(x))}}};$('#adminSearch')?.addEventListener('input',apply);filter?.addEventListener('change',apply);sort?.addEventListener('change',apply);apply();installNotificationBell()};
 const _dashboardV45=dashboard;dashboard=function(){_dashboardV45();installNotificationBell();if(current.role==='recruit'){const c=$('#content'),open=(current.goals||[]).filter(g=>!g.done);const anchor=c.querySelector('.dashboard-two')||c.querySelector('.stats');if(anchor){const done=progress(current)===100;anchor.insertAdjacentHTML('beforebegin',`${done?`<div class="graduation-banner"><span>🏅</span><div><small>ALTA POLICE DEPARTMENT</small><h2>AUSBILDUNG VOLLSTÄNDIG</h2><p>Alle 22 Kapitel sind abgeschlossen. Abschlussprüfung und finale Freigabe können geprüft werden.</p></div></div>`:''}<div class="card today-card"><div class="section-head compact"><div><div class="eyebrow">📋 HEUTE IM FOKUS</div><h2>Meine nächsten Aufgaben</h2></div><span class="state-badge">${Math.min(open.length,3)} Aufgaben</span></div>${open.length?open.slice(0,3).map((g,i)=>`<div class="today-task"><span>${i+1}</span><div><b>${esc(g.text)}</b><small>Vom FTO gesetztes Ausbildungsziel</small></div></div>`).join(''):`<p class="muted">Keine offenen Aufgaben – aktuell alles erledigt.</p>`}</div>`)} }};
 const _showViewV45=showView;showView=function(v){const x=_showViewV45(v);setTimeout(installNotificationBell,0);return x};
+
+/* ===== V4.6 Recruit Motivation & Learning UX ===== */
+function recruitXP(u){
+ const passed=(u.testResults||[]).filter(x=>x.passed).length;
+ const goals=(u.goals||[]).filter(x=>x.done).length;
+ const quals=qualifications(u).filter(x=>x[2]).length;
+ return (u.completed||[]).length*120+passed*250+goals*60+quals*100;
+}
+function recruitLevel(u){return Math.max(1,Math.floor(recruitXP(u)/500)+1)}
+function learningStreak(u){
+ const days=[...new Set((u.activity||[]).filter(x=>x.when).map(x=>new Date(x.when).toISOString().slice(0,10)))].sort().reverse();
+ if(!days.length)return 0;let streak=1;
+ for(let i=1;i<days.length;i++){const a=new Date(days[i-1]+'T12:00:00'),b=new Date(days[i]+'T12:00:00');if(Math.round((a-b)/86400000)===1)streak++;else break}
+ return streak;
+}
+function personalBadges(u){
+ const q=qualifications(u).filter(x=>x[2]).map(x=>({icon:x[0],name:x[1]}));
+ if((u.completed||[]).length>=1)q.unshift({icon:'🚀',name:'Erstes Kapitel'});
+ if((u.completed||[]).length>=11)q.push({icon:'⚡',name:'Halbzeit'});
+ if(progress(u)===100)q.push({icon:'🏆',name:'Academy Complete'});
+ if((u.testResults||[]).some(x=>x.passed&&Number(x.score)>=100))q.push({icon:'💯',name:'Perfect Test'});
+ return q.slice(0,10);
+}
+function missionData(u){
+ const passed=(u.testResults||[]).filter(x=>x.passed).length;
+ return [
+  {icon:'📘',text:'Ein Ausbildungskapitel abschließen',done:(u.completed||[]).length>0,sub:`${(u.completed||[]).length}/22 Kapitel`},
+  {icon:'🧠',text:'Einen Wissenstest bestehen',done:passed>0,sub:`${passed} bestanden`},
+  {icon:'⭐',text:'Ein Kapitel als Favorit merken',done:(u.favorites||[]).length>0,sub:`${(u.favorites||[]).length} Favoriten`}
+ ];
+}
+function allPracticeQuestions(){return TESTS.flatMap(t=>t.questions.map(q=>({...q,area:t.title})))}
+function renderPracticeQuiz(host){
+ const qs=allPracticeQuestions(); if(!qs.length)return;
+ const q=qs[Math.floor(Math.random()*qs.length)];
+ host.innerHTML=`<div class="eyebrow">🧠 SCHNELLQUIZ</div><h2>Eine Frage zwischendurch</h2><p class="quiz-area">${esc(q.area)}</p><h3>${esc(q.q)}</h3><div class="practice-options">${q.a.map((a,i)=>`<button class="practice-answer" data-a="${i}">${esc(a)}</button>`).join('')}</div><div class="practice-feedback"></div><button class="secondary practice-next" style="display:none">Nächste Frage →</button>`;
+ host.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const ok=+b.dataset.a===q.c;host.querySelectorAll('[data-a]').forEach(x=>{x.disabled=true;x.classList.toggle('correct',+x.dataset.a===q.c);if(x===b&&!ok)x.classList.add('wrong')});host.querySelector('.practice-feedback').innerHTML=ok?'✓ Richtig – stark!':'↻ Noch nicht ganz. Die richtige Antwort ist markiert.';host.querySelector('.practice-next').style.display='inline-flex'});
+ host.querySelector('.practice-next').onclick=()=>renderPracticeQuiz(host);
+}
+function addMotivationDashboard(){
+ if(current.role!=='recruit')return;const c=$('#content');if(!c||c.querySelector('.motivation-zone'))return;
+ const xp=recruitXP(current),lvl=recruitLevel(current),next=lvl*500,xpIn=xp-(lvl-1)*500,streak=learningStreak(current),badges=personalBadges(current),missions=missionData(current),p=progress(current);
+ const milestone=p>=100?'100% · Ausbildung komplett':p>=75?'75% · Endspurt':p>=50?'50% · Halbzeit erreicht':p>=25?'25% · Erste Etappe geschafft':'Nächstes Ziel · 25%';
+ const html=`<section class="motivation-zone"><div class="motivation-top"><div class="card xp-card"><div class="eyebrow">⭐ AUSBILDUNGS-XP</div><div class="xp-main"><strong>LEVEL ${lvl}</strong><span>${xp} XP</span></div><div class="progress xp-progress"><i style="width:${Math.min(100,(xpIn/500)*100)}%"></i></div><small>${Math.max(0,next-xp)} XP bis Level ${lvl+1}</small></div><div class="card streak-card"><span>🔥</span><div><div class="eyebrow">LERNSERIE</div><h2>${streak} Tag${streak===1?'':'e'}</h2><small>Dein persönlicher Lernrhythmus</small></div></div><div class="card milestone-card"><span>🎯</span><div><div class="eyebrow">MEILENSTEIN</div><h2>${milestone}</h2><small>${current.completed.length} von 22 Kapiteln</small></div></div></div><div class="motivation-grid"><div class="card"><div class="eyebrow">🎯 TAGESMISSIONEN</div><h2>Kleine Ziele, sichtbarer Fortschritt</h2><div class="mission-list">${missions.map(m=>`<div class="mission ${m.done?'done':''}"><span>${m.done?'✓':m.icon}</span><div><b>${esc(m.text)}</b><small>${esc(m.sub)}</small></div></div>`).join('')}</div></div><div class="card badge-card"><div class="eyebrow">🏅 MEINE ABZEICHEN</div><h2>Erreichte Meilensteine</h2><div class="badge-shelf">${badges.length?badges.map(b=>`<div class="learning-badge"><span>${b.icon}</span><b>${esc(b.name)}</b></div>`).join(''):'<p class="muted">Schließe dein erstes Kapitel ab, um dein erstes Abzeichen zu erhalten.</p>'}</div></div><div class="card practice-card"></div></div></section>`;
+ const chapterHead=[...c.querySelectorAll('.section-head')].find(x=>x.textContent.includes('Ausbildungskapitel'));
+ if(chapterHead)chapterHead.insertAdjacentHTML('beforebegin',html);else c.insertAdjacentHTML('beforeend',html);
+ renderPracticeQuiz(c.querySelector('.practice-card'));
+}
+const _dashboardV46=dashboard;dashboard=function(){_dashboardV46();addMotivationDashboard()};
+function chapterIntro(n){
+ if(current.role!=='recruit')return;const key=`alta_intro_${current.id}_${n}`;if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');
+ const c=CHAPTERS[n];if(!c)return;const o=document.createElement('div');o.className='chapter-intro';o.innerHTML=`<div class="chapter-intro-bg" style="background-image:url('${chapterCardImages[n]}')"></div><div class="chapter-intro-shade"></div><div class="chapter-intro-content"><div class="eyebrow">ALTA POLICE DEPARTMENT · AUSBILDUNG</div><div class="intro-number">KAPITEL ${String(n).padStart(2,'0')}</div><h1>${esc(c.title)}</h1><p>${current.completed.includes(n)?'✓ Bereits abgeschlossen':'Bereit für den nächsten Ausbildungsschritt?'}</p><button class="primary">Kapitel starten →</button></div>`;document.body.appendChild(o);const close=()=>{o.classList.add('leaving');setTimeout(()=>o.remove(),220)};o.querySelector('button').onclick=close;o.onclick=e=>{if(e.target===o)close()};
+}
+const _showChapterV46=showChapter;showChapter=async function(n){const r=await _showChapterV46(n);setTimeout(()=>chapterIntro(n),80);return r};
