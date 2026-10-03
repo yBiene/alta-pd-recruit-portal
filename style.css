@@ -355,3 +355,39 @@ select{color-scheme:dark;cursor:pointer}
 @media(min-width:1051px){
   .admin-grid:not(.record-is-closed) .record-workspace{margin-top:58px}
 }
+
+/* ===== V4.5.5 Kapitelbilder: korrektes Seitenverhältnis ===== */
+/* Die Artworks sind 2:1. Die Karten übernehmen dieses Verhältnis, damit Motive nicht flach/gezogen wirken. */
+.chapter-card-image{
+  aspect-ratio:2 / 1;
+  min-height:0!important;
+}
+.chapter-card-content{
+  min-height:0!important;
+  height:100%;
+}
+.chapter-card-image:before{
+  background-size:cover!important;
+  background-position:center center!important;
+  transform:none!important;
+}
+.chapter-card-image:hover:before{transform:scale(1.025)!important}
+
+/* Auch die 22 Bild-Banner in der Recruit-Ausbildungsakte proportional darstellen. */
+.chapter-category-card{
+  aspect-ratio:2.8 / 1;
+  min-height:105px!important;
+}
+.chapter-category-card:before{
+  background-size:cover!important;
+  background-position:center center!important;
+  transform:none!important;
+}
+
+@media(max-width:1180px){
+ .chapter-card-image{aspect-ratio:2.25 / 1}
+ .chapter-category-card{aspect-ratio:2.4 / 1}
+}
+@media(max-width:760px){
+ .chapter-card-image,.chapter-category-card{aspect-ratio:2 / 1}
+}
