@@ -7,7 +7,21 @@ const seed={
   {id:"admin-carter",username:"sgt.carter",password:"APD-Demo-Admin",name:"Sgt Carter",serviceNo:"S-01",role:"admin",rank:"Sergeant",fto:"Sgt Carter",start:"03.10.2026",status:"FTO / Administration",completed:[]},
   {id:"recruit-test",username:"recruit.test",password:"APD-Demo-2026",name:"Recruit Test",serviceNo:"R-102",role:"recruit",rank:"Recruit",fto:"Sgt Carter",start:"03.10.2026",status:"In Ausbildung",completed:[]}
  ]};
-function loadDB(){let x=localStorage.getItem(DBKEY);if(!x){localStorage.setItem(DBKEY,JSON.stringify(seed));return structuredClone(seed)}try{return JSON.parse(x)}catch{return structuredClone(seed)}}
+function loadDB(){
+  let data;
+  try { data = JSON.parse(localStorage.getItem(DBKEY) || '{"users":[]}'); }
+  catch { data = {users:[]}; }
+  if (!data || !Array.isArray(data.users)) data = {users:[]};
+
+  // Demo-/Notfallkonten immer sicherstellen, auch wenn bereits alte Browserdaten existieren.
+  for (const demo of seed.users) {
+    const i = data.users.findIndex(u => u.username === demo.username);
+    if (i === -1) data.users.push({...demo, completed:[...(demo.completed||[])]});
+    else data.users[i] = {...data.users[i], ...demo, completed:data.users[i].completed||[]};
+  }
+  localStorage.setItem(DBKEY, JSON.stringify(data));
+  return data;
+}
 function saveDB(){localStorage.setItem(DBKEY,JSON.stringify(db))}
 let db=loadDB(), current=null, selectedRecruit=null;
 const titles=Object.entries(CHAPTERS).map(([n,c])=>({n:+n,title:c.title}));
