@@ -236,3 +236,22 @@ body{background:#061321}
 @media(max-width:1100px){.trainer-row{grid-template-columns:1fr 1fr!important}.trainer-row>div:first-child{grid-column:1/-1}.account-command{grid-template-columns:1fr}.command-strip{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.account-panels,.account-info-grid,.service-meta{grid-template-columns:1fr}.trainer-row{grid-template-columns:1fr!important}.admin-toolbar{grid-template-columns:1fr}.command-strip{grid-template-columns:1fr 1fr}.bottom-nav{display:grid;position:fixed;left:8px;right:8px;bottom:8px;z-index:8000;grid-template-columns:repeat(4,1fr);background:rgba(5,18,30,.96);border:1px solid #244b65;border-radius:14px;padding:6px;backdrop-filter:blur(14px)}.bottom-nav button{background:transparent;border:0;color:#9fc4da;padding:8px 4px;font-size:10px}.bottom-nav span{display:block;font-size:18px;margin-bottom:2px}.content{padding-bottom:82px!important}}
 @media print{.sidebar,.topbar,.bottom-nav,.chapter-actions,.admin-toolbar,.primary,.secondary,.danger-btn{display:none!important}.content{margin:0!important;padding:0!important}.card,.service-card{break-inside:avoid;box-shadow:none!important}}
+
+/* ===== V4.4.1 DESIGN FIX: Kapitelbilder, Icons, Uhr ===== */
+.chapter-nav-icon{width:27px;height:27px;flex:0 0 27px;display:grid;place-items:center;border:1px solid #28536f;border-radius:7px;background:#0a2133;font-size:14px;filter:saturate(.85)}
+.nav-btn[data-chapter]{gap:10px;align-items:center}.nav-btn[data-chapter] .num{display:none!important}
+.hero-command-meta{position:absolute;left:34px;bottom:22px;display:flex;align-items:center;gap:8px;z-index:4}
+.hero{position:relative}.hero-command-meta .shift-pill{background:rgba(4,20,32,.78);backdrop-filter:blur(8px);padding:8px 12px;box-shadow:0 5px 18px rgba(0,0,0,.18)}
+.chapter-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.chapter-card-image{position:relative;min-height:145px;padding:0!important;isolation:isolate;background:#091b2a;overflow:hidden;border-color:#285875}
+.chapter-card-image:before{content:"";position:absolute;inset:0;background-image:var(--chapter-bg);background-position:center;background-size:cover;transform:scale(1.02);transition:transform .25s ease;z-index:-3}
+.chapter-card-image:hover:before{transform:scale(1.07)}
+.chapter-card-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,15,26,.96) 0%,rgba(4,15,26,.78) 52%,rgba(4,15,26,.24) 100%),linear-gradient(0deg,rgba(3,12,21,.8),transparent 62%);z-index:-2}
+.chapter-card-content{height:100%;min-height:145px;padding:18px 19px;display:flex;flex-direction:column;align-items:flex-start;position:relative;z-index:1}
+.chapter-card-image .chapter-num{display:flex;align-items:center;gap:7px;color:#67c7ff;font-weight:800;letter-spacing:.04em;text-shadow:0 1px 3px #000}
+.chapter-card-icon{font-size:18px}.chapter-card-image h3{font-size:18px;line-height:1.18;max-width:78%;margin:10px 0 14px;text-shadow:0 2px 5px rgba(0,0,0,.9)}
+.chapter-card-state{margin-top:auto;padding:5px 9px;border-radius:999px;background:rgba(9,27,42,.82);border:1px solid rgba(117,164,194,.35);font-size:10px;font-weight:800;color:#b8cad8}
+.chapter-card-image.done .chapter-card-state{background:rgba(20,105,70,.78);border-color:#2e9c6e;color:#9df1c8}
+.chapter-card-image.done:after,.chapter-card-image:not(.done):after{content:none!important}
+@media(max-width:1250px){.chapter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.chapter-grid{grid-template-columns:1fr}.chapter-card-image,.chapter-card-content{min-height:125px}.chapter-card-image h3{max-width:86%;font-size:17px}.hero-command-meta{left:18px;bottom:14px}.hero-command-meta .shift-pill{font-size:11px;white-space:normal}}
