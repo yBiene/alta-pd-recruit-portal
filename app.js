@@ -742,9 +742,11 @@ function derivedNotifications(){
  return out;
 }
 function installNotificationBell(){
- const host=document.querySelector('.top-actions'); if(!host||host.querySelector('.notify-btn')) return;
- const notes=derivedNotifications(); const b=document.createElement('button'); b.className='notify-btn'; b.innerHTML=`🔔${notes.length?`<i>${notes.length}</i>`:''}`; b.title='Benachrichtigungen';
- b.onclick=(e)=>{e.preventDefault();e.stopPropagation();document.querySelector('.notify-pop')?.remove();openWorkflowNotifications()};host.insertBefore(b,host.querySelector('.user-pill'));
+ const host=document.querySelector('.top-actions'); if(!host)return;
+ const notes=derivedNotifications(), unread=(typeof v62Unread==="function"?v62Unread():0), total=notes.length+unread;
+ let b=host.querySelector('.notify-btn');
+ if(!b){b=document.createElement('button');b.className='notify-btn';b.title='Benachrichtigungen & Postfach';b.onclick=(e)=>{e.preventDefault();e.stopPropagation();document.querySelector('.notify-pop')?.remove();openWorkflowNotifications()};host.insertBefore(b,host.querySelector('.user-pill'))}
+ b.innerHTML=`🔔${total?`<i>${total}</i>`:''}`;
 }
 function openRecruitQuickPanel(id){
  document.querySelector('.quick-panel')?.remove();document.querySelector('.quick-backdrop')?.remove();
@@ -832,9 +834,16 @@ function workflowNotifications(){
 }
 function openWorkflowNotifications(){
  document.querySelector(".workflow-pop")?.remove();
- const n=workflowNotifications(); const d=document.createElement("div");d.className="workflow-pop";
- d.innerHTML=`<div class="workflow-pop-head"><b>🔔 Benachrichtigungen</b><button type="button">×</button></div>${n.length?n.map(x=>`<div class="workflow-note">${esc(x)}</div>`).join(""):`<div class="workflow-note">✓ Aktuell nichts offen.</div>`}`;
- document.body.appendChild(d);d.querySelector("button").onclick=()=>d.remove();
+ const n=workflowNotifications(), unread=(typeof v62Unread==="function"?v62Unread():0);
+ const recent=((db.messages||[]).filter(x=>x.recipient_id===current?.id&&!x.read_at)).slice(0,4);
+ const d=document.createElement("div");d.className="workflow-pop";
+ d.innerHTML=`<div class="workflow-pop-head"><b>🔔 Benachrichtigungen</b><button type="button">×</button></div>
+ ${recent.length?`<div class="notify-mail-head"><span>✉️ Postfach</span><b>${unread} ungelesen</b></div>${recent.map(x=>`<button class="notify-mail-row" data-notify-mail="${x.id}"><span>✉️</span><div><b>${esc(x.subject||"Neue Nachricht")}</b><small>${esc(typeof v62UserLabel==="function"?v62UserLabel(x.sender_id):"ALTA PD")}</small></div><strong>›</strong></button>`).join("")}`:""}
+ ${n.length?n.map(x=>`<div class="workflow-note">${esc(x)}</div>`).join(""):(!recent.length?`<div class="workflow-note">✓ Aktuell nichts offen.</div>`:"")}
+ <button class="notify-open-mail" type="button">Postfach öffnen →</button>`;
+ document.body.appendChild(d);d.querySelector(".workflow-pop-head button").onclick=()=>d.remove();
+ d.querySelector(".notify-open-mail").onclick=()=>{d.remove();messagesView()};
+ d.querySelectorAll("[data-notify-mail]").forEach(b=>b.onclick=()=>{d.remove();messagesView();setTimeout(()=>document.querySelector(`[data-mail="${b.dataset.notifyMail}"]`)?.scrollIntoView({behavior:"smooth",block:"center"}),60)});
 }
 function printRecruitRecord(r){
  const w=window.open("","_blank","width=1120,height=900");
@@ -943,7 +952,7 @@ const radioBank=[
 function academyNavPatch(){
  const navEl=$('#nav');if(!navEl||navEl.querySelector('[data-view="scenario"]'))return;
  const portal=[...navEl.querySelectorAll('.nav-label')].find(x=>x.textContent.includes('PORTAL'));
- const html=`<div class="nav-label">ACADEMY TOOLS</div><button class="nav-btn" data-view="scenario">🎬 Einsatz-Simulator</button><button class="nav-btn" data-view="radio">📻 Funk-Trainer</button><button class="nav-btn" data-view="mapquiz">🗺️ Kartenprüfung</button><button class="nav-btn" data-view="plan">📅 Mein Plan</button><button class="nav-btn" data-view="rides">🚓 Ausbildungsfahrten</button><button class="nav-btn" data-view="dienstbuch">📔 Dienstbuch</button><button class="nav-btn" data-view="messages">✉️ Postfach</button><button class="nav-btn" data-view="achievements">🏆 Abzeichen</button><button class="nav-btn" data-view="leaderboard">🥇 Leaderboard</button>`;
+ const html=`<div class="nav-label">ACADEMY TOOLS</div><button class="nav-btn" data-view="scenario">🎬 Einsatz-Simulator</button><button class="nav-btn" data-view="radio">📻 Funk-Trainer</button><button class="nav-btn" data-view="mapquiz">🗺️ Kartenprüfung</button><button class="nav-btn" data-view="plan">📅 Mein Plan</button><button class="nav-btn" data-view="rides">🚓 Ausbildungsfahrten</button><button class="nav-btn" data-view="dienstbuch">📔 Dienstbuch</button><button class="nav-btn" data-view="achievements">🏆 Abzeichen</button><button class="nav-btn" data-view="leaderboard">🥇 Leaderboard</button>`;
  if(portal)portal.insertAdjacentHTML('beforebegin',html);else navEl.insertAdjacentHTML('beforeend',html);
  navEl.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>showView(b.dataset.view));
 }
@@ -992,18 +1001,55 @@ function messagesView(){
  setActive('[data-view="messages"]');$('#pageTitle').textContent='Postfach';
  const mine=(db.messages||[]), incoming=mine.filter(x=>x.recipient_id===current.id), sent=mine.filter(x=>x.sender_id===current.id);
  const people=db.users.filter(x=>x.id!==current.id&&x.role!=="recruit");
- $('#content').innerHTML=moduleHead('✉️ INTERN','ALTA PD Postfach','Interne Nachrichten und Kommunikation rund um die Ausbildung.')+
- `<div class="mail-layout"><div class="card mail-compose"><div class="eyebrow">NEUE NACHRICHT</div><h2>Nachricht verfassen</h2><form id="v62MailForm"><label>Empfänger<select name="recipient" required><option value="">Auswählen…</option>${people.map(u=>`<option value="${u.id}">${esc(u.rank||"")} ${esc(u.name)}</option>`).join("")}</select></label><label>Betreff<input name="subject" maxlength="140" required placeholder="Betreff"></label><label>Nachricht<textarea name="body" rows="7" maxlength="4000" required placeholder="Nachricht schreiben…"></textarea></label><button class="primary">✉️ Senden</button></form></div>
- <div class="card mail-box"><div class="mail-tabs"><button class="primary" data-mailtab="in">Posteingang <span>${v62Unread()}</span></button><button class="secondary" data-mailtab="out">Gesendet</button></div><div id="v62MailList"></div></div></div>`;
- const render=(mode="in")=>{let arr=mode==="in"?incoming:sent;$('#v62MailList').innerHTML=arr.length?arr.map(x=>`<article class="mail-row ${mode==="in"&&!x.read_at?"unread":""}" data-mail="${x.id}"><div class="mail-icon">${x.kind==="record_alert"?"📋":"✉️"}</div><div><div class="mail-meta"><b>${esc(mode==="in"?v62UserLabel(x.sender_id):v62UserLabel(x.recipient_id))}</b><small>${new Date(x.created_at).toLocaleString("de-DE")}</small></div><h3>${esc(x.subject)}</h3><p>${esc(x.body)}</p>${x.recruit_id?`<button class="mail-link" data-open-mail-recruit="${x.recruit_id}">📂 Recruit-Akte öffnen</button>`:""}<div class="mail-actions">${mode==="in"&&!x.read_at?`<button data-read="${x.id}">✓ Als gelesen markieren</button>`:""}<button data-reply="${x.id}">↩ Antworten</button></div></div></article>`).join(""):`<div class="v61-empty">Keine Nachrichten vorhanden.</div>`;
-  document.querySelectorAll("[data-read]").forEach(b=>b.onclick=()=>v62MarkRead(b.dataset.read));
-  document.querySelectorAll("[data-reply]").forEach(b=>b.onclick=()=>v62Reply(b.dataset.reply));
-  document.querySelectorAll("[data-open-mail-recruit]").forEach(b=>b.onclick=()=>{selectedRecruit=b.dataset.openMailRecruit;recruitRecordClosed=false;recruitRecordsOnly=true;admin()});
+ let activeFolder="in", activeId=(incoming[0]||sent[0]||{}).id||null;
+ $('#content').innerHTML=`<div class="mail-desktop">
+   <aside class="mail-sidebar">
+    <div class="mail-brand"><span>APD</span><div><b>ALTA MAIL</b><small>Academy Communications</small></div></div>
+    <button class="mail-compose-btn" id="v621Compose">＋ Neue Nachricht</button>
+    <nav>
+      <button class="active" data-folder="in"><span>📥 Posteingang</span><b>${v62Unread()||""}</b></button>
+      <button data-folder="out"><span>📤 Gesendet</span><b></b></button>
+    </nav>
+    <div class="mail-side-info"><i></i><span>Interne Verbindung<br><small>ALTA PD · Sicher</small></span></div>
+   </aside>
+   <section class="mail-window">
+    <header class="mail-window-bar"><div><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span></div><b>Postfach</b><button id="v621Refresh" title="Aktualisieren">↻</button></header>
+    <div class="mail-toolbar"><div><h2 id="v621FolderTitle">Posteingang</h2><small id="v621FolderCount">${incoming.length} Nachrichten</small></div><div class="mail-search-wrap">⌕ <input id="v621MailSearch" placeholder="Nachrichten durchsuchen…"></div></div>
+    <div class="mail-three">
+      <div class="mail-list-pane" id="v621MailList"></div>
+      <div class="mail-reading-pane" id="v621MailReader"></div>
+    </div>
+   </section>
+  </div>
+  <div class="mail-compose-modal hidden" id="v621ComposeModal"><div class="mail-compose-window"><header><b>Neue Nachricht</b><button type="button" id="v621ComposeClose">×</button></header><form id="v62MailForm"><label>An<select name="recipient" required><option value="">Empfänger auswählen…</option>${people.map(u=>`<option value="${u.id}">${esc(u.rank||"")} ${esc(u.name)}</option>`).join("")}</select></label><label>Betreff<input name="subject" maxlength="140" required placeholder="Betreff"></label><textarea name="body" rows="10" maxlength="4000" required placeholder="Nachricht schreiben…"></textarea><footer><small>Interne ALTA-PD Nachricht</small><button class="primary">Senden ➤</button></footer></form></div></div>`;
+ const folder=()=>activeFolder==="in"?incoming:sent;
+ const renderList=(query="")=>{
+   let arr=folder().filter(x=>!query||`${x.subject||""} ${x.body||""} ${v62UserLabel(activeFolder==="in"?x.sender_id:x.recipient_id)}`.toLowerCase().includes(query.toLowerCase()));
+   if(!arr.some(x=>x.id===activeId))activeId=arr[0]?.id||null;
+   $('#v621FolderTitle').textContent=activeFolder==="in"?"Posteingang":"Gesendet";
+   $('#v621FolderCount').textContent=`${arr.length} Nachricht${arr.length===1?"":"en"}`;
+   $('#v621MailList').innerHTML=arr.length?arr.map(x=>`<button class="mail-list-item ${x.id===activeId?"selected":""} ${activeFolder==="in"&&!x.read_at?"unread":""}" data-select-mail="${x.id}"><div class="mail-list-avatar">${esc((v62UserLabel(activeFolder==="in"?x.sender_id:x.recipient_id)||"AP").split(/\s+/).slice(-2).map(a=>a[0]).join("").toUpperCase())}</div><div><div class="mail-list-top"><b>${esc(v62UserLabel(activeFolder==="in"?x.sender_id:x.recipient_id))}</b><time>${new Date(x.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</time></div><strong>${esc(x.subject)}</strong><p>${esc((x.body||"").slice(0,95))}</p></div></button>`).join(""):`<div class="mail-empty">📭<b>Keine Nachrichten</b><span>Hier ist aktuell alles erledigt.</span></div>`;
+   document.querySelectorAll("[data-select-mail]").forEach(b=>b.onclick=()=>{activeId=b.dataset.selectMail;renderList($('#v621MailSearch').value);renderReader()});
+   renderReader();
  };
- render();document.querySelectorAll("[data-mailtab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-mailtab]").forEach(x=>x.className=x===b?"primary":"secondary");render(b.dataset.mailtab)});
- $('#v62MailForm').onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target);try{await v62SendMessage({recipientId:f.get("recipient"),subject:f.get("subject").trim(),body:f.get("body").trim()});e.target.reset();await refreshData();messagesView();toast("✓ Nachricht gesendet")}catch(err){alert("Nachricht konnte nicht gesendet werden: "+err.message)}};
+ const renderReader=()=>{
+   const x=folder().find(m=>m.id===activeId), r=$('#v621MailReader');
+   if(!x){r.innerHTML=`<div class="mail-reader-empty"><span>✉️</span><h3>Nachricht auswählen</h3><p>Wähle links eine Nachricht aus.</p></div>`;return}
+   const other=v62UserLabel(activeFolder==="in"?x.sender_id:x.recipient_id);
+   r.innerHTML=`<div class="mail-reader-head"><div><div class="mail-reader-avatar">${esc(other.split(/\s+/).slice(-2).map(a=>a[0]).join("").toUpperCase())}</div><div><small>${activeFolder==="in"?"VON":"AN"}</small><b>${esc(other)}</b><span>${new Date(x.created_at).toLocaleString("de-DE")}</span></div></div><div class="mail-reader-actions">${activeFolder==="in"&&!x.read_at?`<button data-read="${x.id}">✓ Gelesen</button>`:""}<button data-reply="${x.id}">↩ Antworten</button></div></div><div class="mail-reader-subject"><small>${x.kind==="record_alert"?"📋 AKTENBENACHRICHTIGUNG":"INTERNE NACHRICHT"}</small><h1>${esc(x.subject)}</h1></div><div class="mail-reader-body">${esc(x.body).replace(/\n/g,"<br>")}</div>${x.recruit_id?`<div class="mail-reader-record"><span>📂 Diese Nachricht gehört zu einer Ausbildungsakte.</span><button data-open-mail-recruit="${x.recruit_id}">Recruit-Akte öffnen →</button></div>`:""}`;
+   r.querySelector("[data-read]")?.addEventListener("click",async e=>{await sb.from("academy_messages").update({read_at:new Date().toISOString()}).eq("id",e.currentTarget.dataset.read).eq("recipient_id",current.id);await refreshData();messagesView()});
+   r.querySelector("[data-reply]")?.addEventListener("click",e=>v62Reply(e.currentTarget.dataset.reply));
+   r.querySelector("[data-open-mail-recruit]")?.addEventListener("click",e=>{selectedRecruit=e.currentTarget.dataset.openMailRecruit;recruitRecordClosed=false;recruitRecordsOnly=true;admin()});
+ };
+ document.querySelectorAll("[data-folder]").forEach(b=>b.onclick=()=>{activeFolder=b.dataset.folder;activeId=folder()[0]?.id||null;document.querySelectorAll("[data-folder]").forEach(x=>x.classList.toggle("active",x===b));renderList()});
+ $('#v621MailSearch').oninput=e=>renderList(e.target.value);
+ $('#v621Refresh').onclick=async()=>{await refreshData();messagesView()};
+ $('#v621Compose').onclick=()=>$('#v621ComposeModal').classList.remove("hidden");
+ $('#v621ComposeClose').onclick=()=>$('#v621ComposeModal').classList.add("hidden");
+ $('#v621ComposeModal').onclick=e=>{if(e.target.id==="v621ComposeModal")e.currentTarget.classList.add("hidden")};
+ $('#v62MailForm').onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target);try{await v62SendMessage({recipientId:f.get("recipient"),subject:f.get("subject").trim(),body:f.get("body").trim()});await refreshData();toast("✓ Nachricht gesendet");messagesView()}catch(err){alert("Nachricht konnte nicht gesendet werden: "+err.message)}};
+ renderList();
 }
-
 function achievementsView(){setActive('[data-view="achievements"]');$('#pageTitle').textContent='Abzeichen';let badges=personalBadges(current),all=[['📘','Erstes Kapitel',(current.completed||[]).length>=1],['🔥','Lernserie',learningStreak(current)>=3],['📻','Funk Ready',qualifications(current)[0][2]],['💻','EFA Ready',qualifications(current)[1][2]],['🚓','Streife',qualifications(current)[2][2]],['🎯','Schießtraining',qualifications(current)[3][2]],['🧪','Beweismittel',qualifications(current)[4][2]],['🏅','Theorie',qualifications(current)[5][2]],['⭐','Halbzeit',progress(current)>=50],['👑','100 Prozent',progress(current)===100]];$('#content').innerHTML=moduleHead('🏆 SAMMLUNG','Meine Abzeichen','Deine persönlichen Ausbildungs-Meilensteine.')+`<div class="achievement-grid">${all.map(x=>`<div class="card achievement ${x[2]?'earned':'locked'}"><span>${x[0]}</span><h3>${x[1]}</h3><small>${x[2]?'Freigeschaltet':'Noch gesperrt'}</small></div>`).join('')}</div>`}
 function addPersonalLearningTools(){if(current?.role!=='recruit')return;const c=$('#content');if(!c||c.querySelector('.v49-tools'))return;const head=[...c.querySelectorAll('.section-head')].find(x=>x.textContent.includes('Ausbildungskapitel'));if(!head)return;let notes=academyGet('learningNotes','');head.insertAdjacentHTML('beforebegin',`<div class="v49-tools grid dashboard-two"><div class="card"><div class="eyebrow">📝 MEIN LERNZETTEL</div><h2>Persönliche Notizen</h2><textarea id="learningNotes" rows="4" placeholder="Merksätze, Funkcodes, Fragen an den FTO...">${esc(notes)}</textarea><small id="noteSaved" class="muted">Automatisch lokal gespeichert</small></div><div class="card"><div class="eyebrow">⚡ SCHNELLSTART</div><h2>Training starten</h2><div class="quick-tool-buttons"><button class="secondary" data-quick-view="scenario">🎬 Szenario</button><button class="secondary" data-quick-view="radio">📻 Funk</button><button class="secondary" data-quick-view="mapquiz">🗺️ Ortskunde</button><button class="secondary" data-quick-view="rides">🚓 Fahrt</button></div></div></div>`);$('#learningNotes').oninput=e=>{academySet('learningNotes',e.target.value);$('#noteSaved').textContent='✓ Gespeichert'};document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>showView(b.dataset.quickView))}
 const _dashboardV49=dashboard;dashboard=function(){_dashboardV49();addPersonalLearningTools()};
