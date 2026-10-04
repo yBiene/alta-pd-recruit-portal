@@ -1509,14 +1509,24 @@ function leaderboardViewV565(){
 })();
 
 
+
+/* ===== V5.8.2 – LIVE ROUTE FINAL ROUTER FIX ===== */
+const _showViewV582=showView;
+showView=function(v){
+  if(v==='command-live') return v58RenderLiveUsers();
+  return _showViewV582(v);
+};
+
 /* ===== V5.8 – COMMAND CENTER / LIVE-BENUTZER ===== */
 let v58PresenceChannel=null;
 let v58PresenceStartedAt=new Date().toISOString();
 let v58PresenceCurrentView='dashboard';
 
 function v58IsCommandUser(){
-  const me=(typeof currentUser!=='undefined'&&currentUser)?currentUser:null;
-  return !!me && (me.role==='admin' || me.role==='trainer' || me.accessLevel==='owner' || me.access_level==='owner');
+  const me=(typeof current!=='undefined'&&current)?current:((typeof currentUser!=='undefined'&&currentUser)?currentUser:null);
+  if(!me)return false;
+  if(typeof isTrainer==='function' && isTrainer(me))return true;
+  return me.role==='admin' || me.role==='trainer' || me.accessLevel==='owner' || me.access_level==='owner';
 }
 function v58PresenceName(){
   const me=(typeof currentUser!=='undefined'&&currentUser)?currentUser:{};
@@ -1546,10 +1556,10 @@ async function v58TrackPresence(view){
   }catch(_){}
 }
 function v58StartPresence(){
-  if(v58PresenceChannel || typeof sb==='undefined' || !sb || typeof currentUser==='undefined' || !currentUser)return;
+  if(v58PresenceChannel || typeof sb==='undefined' || !sb || ((typeof current==='undefined'||!current)&&(typeof currentUser==='undefined'||!currentUser)))return;
   try{
     v58PresenceChannel=sb.channel('alta-pd-portal-presence',{
-      config:{presence:{key:String(currentUser.id||currentUser.username||Math.random())}}
+      config:{presence:{key:String(((typeof current!=='undefined'&&current)?current:currentUser).id||((typeof current!=='undefined'&&current)?current:currentUser).username||Math.random())}}
     });
     v58PresenceChannel
       .on('presence',{event:'sync'},()=>{if(v58PresenceCurrentView==='command-live')v58RenderLiveUsers()})
