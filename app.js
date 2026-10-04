@@ -173,6 +173,7 @@ function qualificationHtml(u){return `<div class="qualification-grid">${qualific
 function timelineHtml(u,limit=8){const a=(u.activity||[]).slice(0,limit);return a.length?a.map(x=>`<div class="timeline-row"><span class="timeline-icon">${x.icon}</span><div><b>${esc(x.text)}</b><small>${new Date(x.when).toLocaleString("de-DE")}</small></div></div>`).join(""):`<p class="muted">Noch keine Aktivitäten vorhanden.</p>`}
 function showView(v){
  if(v==="dashboard") return dashboard();
+ if(v==="command-live") return v58RenderLiveUsers();
  if(v==="command") return commandCenter();
  if(v==="accounts") return accountManagement();
  if(v==="admin") return recruitRecordsView();
@@ -1515,7 +1516,7 @@ let v58PresenceCurrentView='dashboard';
 
 function v58IsCommandUser(){
   const me=(typeof currentUser!=='undefined'&&currentUser)?currentUser:null;
-  return !!me && (me.role==='admin' || me.accessLevel==='owner' || me.access_level==='owner');
+  return !!me && (me.role==='admin' || me.role==='trainer' || me.accessLevel==='owner' || me.access_level==='owner');
 }
 function v58PresenceName(){
   const me=(typeof currentUser!=='undefined'&&currentUser)?currentUser:{};
