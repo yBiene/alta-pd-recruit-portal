@@ -555,7 +555,7 @@ function testsView(){
  $("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">PRÜFUNGEN</div><h1>Meine Tests</h1></div><span class="status">${assigned.length} freigegeben</span></div><div class="test-tabs"><button class="primary" id="openTestsTab">Freigegebene Tests</button><button class="secondary" id="folderTab">📁 Mappe</button></div><div class="grid test-grid">${assigned.length?assigned.map(t=>`<div class="card test-card"><div class="eyebrow">${t.questions.length} FRAGEN · BESTEHEN AB ${t.pass}%</div><h2>${esc(t.title)}</h2><p>${esc(t.desc)}</p>${(prereq[t.id]||[]).every(n=>current.completed.includes(n))?`<button class="primary" data-start-test="${t.id}">${current.testResults.some(r=>r.testId===t.id)?"Erneut üben":"Test starten"}</button>`:`<button class="secondary" disabled>🔒 Kapitel zuerst abschließen</button>`}</div>`).join(""):"<div class='card'><h2>Keine Tests freigegeben</h2><p class='muted'>Dein Ausbilder hat dir aktuell noch keinen Test zugewiesen.</p></div>"}</div>`;
  document.querySelectorAll("[data-start-test]").forEach(b=>b.onclick=()=>startTest(b.dataset.startTest));$("#folderTab").onclick=showTestFolder;
 }
-function startTest(id){
+function startTestLegacy(id){
  const t=TESTS.find(x=>x.id===id);if(!t||isTrainer(current)||!(current.assignedTests||[]).includes(id))return testsView();
  $("#pageTitle").textContent=t.title;$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">ÜBUNGSTEST</div><h1>${esc(t.title)}</h1><p>${esc(t.desc)}</p></div><span class="status" id="testTimer">15:00</span></div><form id="testForm">${t.questions.map((q,i)=>`<div class="card question-card"><div class="question-no">FRAGE ${i+1} / ${t.questions.length}</div><h3>${esc(q.q)}</h3><div class="answers">${q.a.map((a,j)=>`<label class="answer"><input type="radio" name="q${i}" value="${j}" required><span>${esc(a)}</span></label>`).join("")}</div></div>`).join("")}<button class="primary finish-test" type="submit">Test auswerten</button></form>`;
  let left=900;const timer=setInterval(()=>{left--;const el=$("#testTimer");if(el)el.textContent=`${String(Math.floor(left/60)).padStart(2,"0")}:${String(left%60).padStart(2,"0")}`;if(left<=0){clearInterval(timer);alert("Die Testzeit ist abgelaufen.");$("#testForm")?.requestSubmit()}},1000); $("#testForm").onsubmit=async e=>{clearInterval(timer);e.preventDefault();let f=new FormData(e.target),score=0;t.questions.forEach((q,i)=>{if(+f.get("q"+i)===q.c)score++});let percent=Math.round(score/t.questions.length*100),passed=percent>=t.pass;await sb.from("test_results").insert({recruit_id:current.id,test_id:t.id,score,total:t.questions.length,percent,passed});await refreshData();showTestResult(t,score,percent,passed)};
@@ -1669,3 +1669,116 @@ dashboard=function(){
  const content=document.getElementById('content'),hero=content?.querySelector('.hero');
  if(content&&hero&&!document.getElementById('v590DailyHub')){const h=document.createElement('section');h.id='v590DailyHub';h.className='card v590-hub';hero.insertAdjacentElement('afterend',h);v590Hub()}
 };
+
+/* ===== V6.0 – ACADEMY ENGINE ===== */
+const ACADEMY_PHASES=[
+ {n:1,name:'Grundlagen',range:[1,5],test:'test-a'},
+ {n:2,name:'Funk, Orientierung & Streife',range:[6,10],test:'test-b'},
+ {n:3,name:'Recht & Einsatz',range:[11,15],test:'test-c'},
+ {n:4,name:'Vertiefung & Abschluss',range:[16,22],test:'test-d'}
+];
+function aeKey(k){return `alta_ae_${current?.id||'guest'}_${k}`}
+function aeGet(k,d){try{let v=localStorage.getItem(aeKey(k));return v==null?d:JSON.parse(v)}catch(_){return d}}
+function aeSet(k,v){localStorage.setItem(aeKey(k),JSON.stringify(v))}
+function aePhaseForChapter(n){return ACADEMY_PHASES.find(p=>n>=p.range[0]&&n<=p.range[1])||ACADEMY_PHASES[0]}
+function aePassed(id,u=current){return (u?.testResults||[]).some(r=>r.testId===id&&r.passed)}
+function aePhaseUnlocked(p,u=current){
+ if(!u||u.role!=='recruit')return true;
+ if(p.n===1)return true;
+ const prev=ACADEMY_PHASES[p.n-2], completed=Array.from({length:prev.range[1]-prev.range[0]+1},(_,i)=>prev.range[0]+i).every(n=>(u.completed||[]).includes(n));
+ return completed && aePassed(prev.test,u);
+}
+function aeChapterUnlocked(n,u=current){return aePhaseUnlocked(aePhaseForChapter(n),u)}
+function aeReadData(){return aeGet('read',{})}
+function aeReadSeconds(n){return +(aeReadData()[n]||0)}
+function aeMarkReadSeconds(n,sec){let d=aeReadData();d[n]=Math.max(0,(+d[n]||0)+sec);aeSet('read',d)}
+function aeKnowledge(){return aeGet('knowledge',{})}
+function aeKnowledgeOk(n){return !!aeKnowledge()[n]}
+function aeSetKnowledge(n,v){let d=aeKnowledge();d[n]=!!v;aeSet('knowledge',d)}
+function aeReady(n){return aeReadSeconds(n)>=45 && aeKnowledgeOk(n)}
+function aeReadiness(u=current){
+ if(!u)return 0;
+ const chapters=(u.completed||[]).length/22*45;
+ const tests=TESTS.filter(t=>aePassed(t.id,u)).length/TESTS.length*30;
+ const rides=academyGet('rides',[]).reduce((a,x)=>a+(+x.minutes||0),0);
+ const practice=Math.min(1,rides/120)*15;
+ const checks=Object.values(aeKnowledge()).filter(Boolean).length/22*10;
+ return Math.round(chapters+tests+practice+checks);
+}
+function aeRoadmapHtml(u=current){
+ return `<div class="ae-roadmap">${ACADEMY_PHASES.map(p=>{const open=aePhaseUnlocked(p,u), nums=Array.from({length:p.range[1]-p.range[0]+1},(_,i)=>p.range[0]+i),done=nums.filter(n=>(u.completed||[]).includes(n)).length;return `<div class="ae-phase ${open?'open':'locked'}"><div class="ae-phase-num">${open?(done===nums.length?'✓':p.n):'🔒'}</div><div><small>PHASE ${p.n}</small><b>${p.name}</b><span>Kapitel ${p.range[0]}–${p.range[1]} · ${done}/${nums.length}</span></div></div>`}).join('<i>›</i>')}</div>`;
+}
+function aeTodayHtml(u=current){
+ const openCh=titles.find(x=>aeChapterUnlocked(x.n,u)&&!(u.completed||[]).includes(x.n));
+ const assigned=TESTS.find(t=>(u.assignedTests||[]).includes(t.id)&&!aePassed(t.id,u));
+ let tasks=[];
+ if(openCh)tasks.push({i:'📖',t:`Kapitel ${openCh.n}: ${openCh.title}`,a:`showChapter(${openCh.n})`});
+ if(openCh&&!aeKnowledgeOk(openCh.n))tasks.push({i:'🧠',t:`Wissenscheck Kapitel ${openCh.n}`,a:`showChapter(${openCh.n})`});
+ if(assigned)tasks.push({i:'📝',t:`${assigned.title} vorbereiten`,a:`showView('tests')`});
+ tasks.push({i:'📻',t:'5 Minuten Funk-Trainer',a:`showView('radio')`});
+ return `<div class="card ae-today"><div class="eyebrow">HEUTIGER AUSBILDUNGSAUFTRAG</div><h2>Dein nächster Schritt</h2>${tasks.slice(0,4).map((x,i)=>`<button onclick="${x.a}"><span>${x.i}</span><b>${esc(x.t)}</b><small>${i===0?'Empfohlen':'Optional'}</small></button>`).join('')}</div>`;
+}
+function aeQuestionForChapter(n){
+ const banks={
+  1:['Was ist bei Entscheidungen besonders wichtig?',['Begründbarkeit und Nachvollziehbarkeit','Geschwindigkeit ohne Erklärung','Keine Dokumentation'],0],
+  2:['Was sollte vor Dienstbeginn geprüft werden?',['Uniform, Ausrüstung, Funk und Laptop','Nur das Fahrzeug','Nur private Ausrüstung'],0],
+  3:['Was gehört zur Dienstausrüstung?',['Funkgerät','Privates Funkgerät als Pflicht','Privates Tablet als Pflicht'],0],
+  4:['Wofür steht DDS?',['Denken – Drücken – Sprechen','Dienst – Durchsage – Status','Drücken – Dienst – Sichern'],0],
+  5:['Was bedeutet 10-20?',['Standort','Dienstbeginn','Verstärkung'],0],
+  6:['Wofür steht SPM?',['Straße – Postleitzahl – markanter Ort','Status – Person – Maßnahme','Sicherung – Position – Meldung'],0],
+  7:['Welches System enthält Personen, Fahrzeuge und Reports?',['CAD','EFA','EMS'],0],
+  8:['Wofür steht KAP?',['Kennzeichen – Abfrage – passenden Treffer prüfen','Kontrolle – Akte – Person','Kennzeichen – Anhalten – Protokoll'],0],
+  9:['Wann bedient der Fahrer den Laptop?',['Wenn das Fahrzeug sicher steht','Während jeder Fahrt','Nur bei Code 3'],0],
+  10:['Was gehört zu professionellem Bürgerkontakt?',['Ruhige, klare Kommunikation','Keine Erklärung','Funk ignorieren'],0],
+  11:['Was ist vor einer Maßnahme wichtig?',['Grundlage prüfen','Akte schließen','Keine Rückfragen'],0],
+  12:['Was gehört zur Beweismittelarbeit?',['Übergabe dokumentieren','Ohne Eintrag weitergeben','Privat aufbewahren'],0],
+  13:['Was hat bei Einsatzmitteln Vorrang?',['Sichere und begründbare Anwendung','Schnelligkeit','Keine Kommunikation'],0],
+  14:['Wozu dient Training?',['Sicheres, nachvollziehbares Handeln','Nur Punkte sammeln','Dokumentation vermeiden'],0],
+  15:['Wer begleitet die Ausbildung?',['Der zuständige FTO','Nur die Leitstelle','Das DOJ'],0],
+  16:['Wozu dienen Checklisten?',['Vollständige persönliche Einweisung','Nur Archivierung','Nur Fahrzeugwahl'],0],
+  17:['Wozu dient die Leitstelle?',['Koordination und Einsatzplanung','Nur Fahrzeugpflege','Nur Aktenablage'],0],
+  18:['Was ist bei Waffeninformationen wichtig?',['Freigaben und sichere Handhabung','Private Nutzung','Keine Dokumentation'],0],
+  19:['Wofür steht SÜLA?',['Sichern – Übergabe dokumentieren – Laborprüfung – Akte ergänzen','Suchen – Üben – Lage – Abschluss','Sichern – Leitstelle – Anhalten – Akte'],0],
+  20:['Wozu dienen Merkwörter?',['Abläufe sicher erinnern','Tests umgehen','Dokumentation ersetzen'],0],
+  21:['Was hilft bei einer Standortmeldung?',['Straße, PLZ und markanter Ort','Nur Fahrzeugfarbe','Nur Uhrzeit'],0],
+  22:['Wie mit unbekannter Gefahr umgehen?',['Erkennen, melden und bewerten','Sofort betreten','Unnötig testen'],0]
+ }; return banks[n]||banks[1];
+}
+function aeKnowledgeCheck(n){
+ const q=aeQuestionForChapter(n),content=document.getElementById('content');if(!content)return;
+ const modal=document.createElement('div');modal.className='ae-modal';modal.innerHTML=`<div class="ae-modal-box"><div class="eyebrow">WISSENSCHECK · KAPITEL ${n}</div><h2>${esc(q[0])}</h2><div class="ae-answers">${q[1].map((a,i)=>`<button data-a="${i}">${esc(a)}</button>`).join('')}</div><p class="muted">Der Check bestätigt, dass du den Kernpunkt verstanden hast.</p><button class="secondary" data-close>Abbrechen</button></div>`;document.body.appendChild(modal);
+ modal.querySelector('[data-close]').onclick=()=>modal.remove();
+ modal.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{if(+b.dataset.a===q[2]){aeSetKnowledge(n,true);modal.remove();toast?.('✓ Wissenscheck bestanden');showChapter(n)}else{b.classList.add('bad');b.textContent='✕ Noch einmal im Kapitel nachlesen'}});
+}
+let aeChapterSession=null;
+function aeStartChapterSession(n){if(aeChapterSession?.timer)clearInterval(aeChapterSession.timer);aeChapterSession={n,start:Date.now(),timer:setInterval(()=>{},1000)}}
+function aeStopChapterSession(){if(!aeChapterSession)return;clearInterval(aeChapterSession.timer);aeMarkReadSeconds(aeChapterSession.n,Math.min(600,Math.floor((Date.now()-aeChapterSession.start)/1000)));aeChapterSession=null}
+function aeShuffle(arr){let a=arr.slice();for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function aeExamQuestions(t){return aeShuffle(t.questions).map(q=>{let opts=q.a.map((a,i)=>({a,i}));opts=aeShuffle(opts);return {q:q.q,a:opts.map(x=>x.a),c:opts.findIndex(x=>x.i===q.c)}})}
+function aeExamLock(on){document.body.classList.toggle('ae-exam-mode',!!on);sessionStorage.setItem('alta_exam_mode',on?'1':'0')}
+
+const _navAE=nav;
+nav=function(){_navAE();if(current?.role==='recruit')document.querySelectorAll('[data-chapter]').forEach(b=>{let n=+b.dataset.chapter;if(!aeChapterUnlocked(n)){b.classList.add('ae-nav-locked');b.title='Noch nicht freigeschaltet';b.onclick=()=>{toast?.('🔒 Diese Ausbildungsphase ist noch gesperrt.')}}})};
+const _showChapterAE=showChapter;
+showChapter=function(n){
+ aeStopChapterSession();
+ if(current?.role==='recruit'&&!aeChapterUnlocked(n)){toast?.('🔒 Schließe zuerst die vorherige Ausbildungsphase und Prüfung ab.');return dashboard()}
+ _showChapterAE(n);aeStartChapterSession(n);
+ if(current?.role==='recruit'){
+  const side=document.querySelector('.side-card');if(side){const sec=aeReadSeconds(n),ok=aeKnowledgeOk(n);side.insertAdjacentHTML('beforeend',`<div class="ae-learning"><div class="eyebrow">LERNSTATUS</div><div class="ae-learn-row"><span>Lernzeit</span><b>${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}</b></div><div class="ae-learn-row"><span>Wissenscheck</span><b>${ok?'✓ Bestanden':'Offen'}</b></div><button class="${ok?'secondary':'primary'}" id="aeKnowledgeBtn">${ok?'✓ Wissenscheck wiederholen':'🧠 Wissenscheck starten'}</button><small>Empfehlung: Kapitel aufmerksam durcharbeiten, danach den Wissenscheck absolvieren.</small></div>`);document.getElementById('aeKnowledgeBtn').onclick=()=>{aeStopChapterSession();aeKnowledgeCheck(n)}}}
+};
+const _dashboardAE=dashboard;
+dashboard=function(){aeStopChapterSession();_dashboardAE();if(current?.role==='recruit'){const hero=document.querySelector('.hero');if(hero){hero.insertAdjacentHTML('afterend',`<div class="card ae-academy-head"><div><div class="eyebrow">ACADEMY ROADMAP</div><h2>Dein Ausbildungsweg</h2></div><div class="ae-ready"><small>READINESS</small><b>${aeReadiness()}%</b></div></div>${aeRoadmapHtml()}${aeTodayHtml()}`)}}};
+
+function startTest(id){
+ aeStopChapterSession();
+ const t=TESTS.find(x=>x.id===id);if(!t||isTrainer(current)||!(current.assignedTests||[]).includes(id))return testsView();
+ const prereq={"test-a":[1,2,3],"test-b":[4,5],"test-c":[6],"test-d":[7,8,9,10],"test-e":[11,12,13,19,22]};
+ if(!(prereq[id]||[]).every(n=>(current.completed||[]).includes(n))){toast?.('🔒 Voraussetzungen noch nicht erfüllt.');return testsView()}
+ const qs=aeExamQuestions(t);aeExamLock(true);$("#pageTitle").textContent=t.title;
+ $("#content").innerHTML=`<div class="ae-exam-head"><div><div class="eyebrow">🔒 PRÜFUNGSMODUS AKTIV</div><h1>${esc(t.title)}</h1><p>Kapitel, Lernhilfen und Navigation sind bis zur Abgabe gesperrt.</p></div><span class="status" id="testTimer">15:00</span></div><form id="testForm">${qs.map((q,i)=>`<div class="card question-card"><div class="question-no">FRAGE ${i+1} / ${qs.length}</div><h3>${esc(q.q)}</h3><div class="answers">${q.a.map((a,j)=>`<label class="answer"><input type="radio" name="q${i}" value="${j}" required><span>${esc(a)}</span></label>`).join('')}</div></div>`).join('')}<button class="primary finish-test" type="submit">Prüfung verbindlich abgeben</button></form>`;
+ let left=900,timer=setInterval(()=>{left--;let el=$("#testTimer");if(el)el.textContent=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;if(left<=0){clearInterval(timer);$("#testForm")?.requestSubmit()}},1000);
+ $("#testForm").onsubmit=async e=>{e.preventDefault();clearInterval(timer);let f=new FormData(e.target),score=0;qs.forEach((q,i)=>{if(+f.get("q"+i)===q.c)score++});let percent=Math.round(score/qs.length*100),passed=percent>=t.pass;const {error}=await sb.from("test_results").insert({recruit_id:current.id,test_id:t.id,score,total:qs.length,percent,passed});aeExamLock(false);if(error){alert('Speichern fehlgeschlagen: '+error.message);return}await refreshData();showTestResult(t,score,percent,passed)};
+}
+const _showTestResultAE=showTestResult;
+showTestResult=function(t,score,percent,passed){aeExamLock(false);_showTestResultAE(t,score,percent,passed);const h=document.querySelector('.result-hero');if(h&&!passed)h.insertAdjacentHTML('beforeend',`<div class="ae-recommend">🧠 <b>Lernempfehlung:</b> Wiederhole die zugehörigen Kapitel und starte danach einen neuen Versuch. Die Fragen und Antwortreihenfolge werden neu gemischt.</div>`)};
