@@ -1276,3 +1276,9 @@ input,select,textarea{background:#08131e!important;border-color:rgba(130,165,192
 .v640-phase-groups{display:grid;gap:12px}.v640-phase-group{border:1px solid rgba(255,255,255,.075);border-radius:13px;background:rgba(255,255,255,.018);overflow:hidden}.v640-phase-group>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px}.v640-phase-group>summary div{display:grid;gap:3px}.v640-phase-group>summary small{color:var(--muted)}.v640-phase-group>summary>span{font-size:12px;font-weight:800;color:#83c8f4}.v640-phase-group>.chapter-checks{padding:4px 14px 15px}
 @media(max-width:1050px){.v640-record-meta{grid-template-columns:repeat(2,minmax(0,1fr))}.v640-overview-columns{grid-template-columns:1fr}}
 @media(max-width:650px){.v640-record-meta{grid-template-columns:1fr}.v640-record-tabs{position:static;overflow-x:auto;flex-wrap:nowrap}.v640-record-tabs button{white-space:nowrap}.v640-section-title{align-items:flex-start;flex-direction:column}}
+
+/* V6.4.2 – einklappbare Ausbildungsnavigation für Ausbilder + Zugriff */
+.v642-training-toggle{width:100%;border:0;background:transparent;display:flex!important;align-items:center;justify-content:space-between;text-align:left;cursor:pointer;padding-right:9px!important;color:inherit}
+.v642-training-toggle:hover{color:#dcecff}.v642-toggle-icon{font-size:14px;line-height:1;color:#76bde9;transition:transform .18s ease}
+.v642-training-items{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows .2s ease,opacity .16s ease}
+.v642-training-items.collapsed{display:none}

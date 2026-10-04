@@ -155,13 +155,29 @@ const TESTS=[
 const chapterIcons={1:"📋",2:"🛡️",3:"🦺",4:"📡",5:"📻",6:"🗺️",7:"💻",8:"🔎",9:"🚓",10:"🤝",11:"⚖️",12:"🗂️",13:"🛡️",14:"🎯",15:"🎓",16:"📋",17:"🎙️",18:"🔫",19:"🧪",20:"📝",21:"🗺️",22:"⚠️"};
 const chapterCardImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-art-${String(i+1).padStart(2,"0")}.webp?v=4.8.1`]));
 function nav(){
- let html=`<button class="nav-btn active" data-view="dashboard">🏠 Dashboard</button><div class="nav-label">AUSBILDUNG</div>`;
+ const canCollapseTraining=hasExtraTrainerAccess(current);
+ let collapsed=false;
+ try{collapsed=canCollapseTraining&&localStorage.getItem("alta_training_nav_collapsed")==="1"}catch(_){}
+ let html=`<button class="nav-btn active" data-view="dashboard">🏠 Dashboard</button>`;
+ if(canCollapseTraining){
+  html+=`<button class="nav-label v642-training-toggle" id="trainingNavToggle" type="button" aria-expanded="${collapsed?"false":"true"}"><span>AUSBILDUNG</span><span class="v642-toggle-icon">${collapsed?"▸":"▾"}</span></button><div id="trainingNavItems" class="v642-training-items ${collapsed?"collapsed":""}">`;
+ }else{
+  html+=`<div class="nav-label">AUSBILDUNG</div>`;
+ }
  for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon" aria-hidden="true">${chapterIcons[x.n]||"📘"}</span>${esc(x.title)}</button>`;
+ if(canCollapseTraining)html+=`</div>`;
  html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button><div class="nav-label">PORTAL</div><button class="nav-btn" data-view="news">📢 Mitteilungen</button><button class="nav-btn" data-view="documents">📂 Dokumente</button>`;
  if(hasExtraTrainerAccess(current)) html+=`<div class="nav-label">FTO / ADMIN</div>${isOwner(current)?`<button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn v58-command-live-nav" data-view="command-live">🟢 Live-Benutzer</button>`:""}<button class="nav-btn" data-view="accounts">👤 Account-Verwaltung</button><button class="nav-btn" data-view="admin">📂 Rekruten Ausbildungsakten</button>`;
  $("#nav").innerHTML=html;
  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
  document.querySelectorAll("[data-chapter]").forEach(b=>b.onclick=()=>showChapter(+b.dataset.chapter));
+ $("#trainingNavToggle")?.addEventListener("click",e=>{
+  const items=$("#trainingNavItems"),nowCollapsed=!items.classList.contains("collapsed");
+  items.classList.toggle("collapsed",nowCollapsed);
+  e.currentTarget.setAttribute("aria-expanded",String(!nowCollapsed));
+  const icon=e.currentTarget.querySelector(".v642-toggle-icon");if(icon)icon.textContent=nowCollapsed?"▸":"▾";
+  try{localStorage.setItem("alta_training_nav_collapsed",nowCollapsed?"1":"0")}catch(_){}
+ });
 }
 function setActive(sel){document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));document.querySelector(sel)?.classList.add("active")}
 function progress(u){return Math.round(((u.completed||[]).length/22)*100)}
