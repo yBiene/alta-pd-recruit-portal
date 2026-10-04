@@ -151,7 +151,7 @@ function nav(){
  let html=`<button class="nav-btn active" data-view="dashboard">🏠 Dashboard</button><div class="nav-label">AUSBILDUNG</div>`;
  for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon" aria-hidden="true">${chapterIcons[x.n]||"📘"}</span>${esc(x.title)}</button>`;
  html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button><div class="nav-label">PORTAL</div><button class="nav-btn" data-view="news">📢 Mitteilungen</button><button class="nav-btn" data-view="documents">📂 Dokumente</button>`;
- if(isTrainer(current)) html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn" data-view="accounts">👤 Account-Verwaltung</button><button class="nav-btn" data-view="admin">📂 Rekruten Ausbildungsakten</button>`;
+ if(isTrainer(current)) html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn v58-command-live-nav" data-view="command-live">🟢 Live-Benutzer</button><button class="nav-btn" data-view="accounts">👤 Account-Verwaltung</button><button class="nav-btn" data-view="admin">📂 Rekruten Ausbildungsakten</button>`;
  $("#nav").innerHTML=html;
  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
  document.querySelectorAll("[data-chapter]").forEach(b=>b.onclick=()=>showChapter(+b.dataset.chapter));
@@ -1317,7 +1317,7 @@ setTimeout(sidebarTooltipsV544,0);
 
 /* ===== V5.6 – Final Release: Deep Links, Reload & History QA ===== */
 (function(){
- const ROUTES=new Set(['dashboard','command','accounts','admin','tests','account','news','documents','calendar','scenario','radio','mapquiz','plan','rides','dienstbuch','messages','achievements','leaderboard']);
+ const ROUTES=new Set(['dashboard','command','command-live','accounts','admin','tests','account','news','documents','calendar','scenario','radio','mapquiz','plan','rides','dienstbuch','messages','achievements','leaderboard']);
  let applying=false;
  function stateFor(route,extra={}){return {apdPortal:true,route:route||'dashboard',chapter:extra.chapter||null,recruitId:extra.recruitId||null,recordClosed:extra.recordClosed??null,v56:true}}
  function hashFor(s){if(s.route==='chapter'&&s.chapter)return '#chapter-'+s.chapter;if(s.route==='admin'&&s.recruitId&&!s.recordClosed)return '#admin-recruit-'+encodeURIComponent(s.recruitId);return '#'+(s.route||'dashboard')}
@@ -1505,4 +1505,108 @@ function leaderboardViewV565(){
   if(document.body) obs.observe(document.body,{childList:true,subtree:true});
   document.addEventListener('DOMContentLoaded',()=>{v57EnsureFooter();v57EmptyStates();v57FitLongText();v57ProtectActions();v57NormalizeErrors()});
   if(document.readyState!=='loading'){v57EnsureFooter();v57EmptyStates();v57FitLongText();v57ProtectActions();v57NormalizeErrors()}
+})();
+
+
+/* ===== V5.8 – COMMAND CENTER / LIVE-BENUTZER ===== */
+let v58PresenceChannel=null;
+let v58PresenceStartedAt=new Date().toISOString();
+let v58PresenceCurrentView='dashboard';
+
+function v58IsCommandUser(){
+  const me=(typeof currentUser!=='undefined'&&currentUser)?currentUser:null;
+  return !!me && (me.role==='admin' || me.accessLevel==='owner' || me.access_level==='owner');
+}
+function v58PresenceName(){
+  const me=(typeof currentUser!=='undefined'&&currentUser)?currentUser:{};
+  return me.name||me.username||'Unbekannt';
+}
+function v58PresenceViewLabel(v){
+  if(!v)return 'Dashboard';
+  if(String(v).startsWith('chapter-'))return 'Kapitel '+String(v).split('-')[1];
+  const map={'dashboard':'Dashboard','command':'Command Center','command-live':'Live-Benutzer','accounts':'Account-Verwaltung','admin':'Ausbildungsakten','tests':'Tests','account':'Mein Account','leaderboard':'Academy Leaderboard','scenario':'Einsatz-Simulator','radio':'Funk-Trainer','mapquiz':'Kartenprüfung','plan':'Ausbildungsplan','rides':'Ausbildungsfahrt','dienstbuch':'Dienstbuch','messages':'Nachrichten'};
+  return map[v]||String(v).replaceAll('-',' ');
+}
+async function v58TrackPresence(view){
+  v58PresenceCurrentView=view||v58PresenceCurrentView;
+  if(!v58PresenceChannel || typeof currentUser==='undefined' || !currentUser)return;
+  try{
+    await v58PresenceChannel.track({
+      user_id:currentUser.id,
+      name:v58PresenceName(),
+      username:currentUser.username||'',
+      role:currentUser.role||'',
+      rank:currentUser.rank||'',
+      service_no:currentUser.serviceNo||currentUser.service_no||'',
+      view:v58PresenceViewLabel(v58PresenceCurrentView),
+      online_since:v58PresenceStartedAt,
+      last_active:new Date().toISOString()
+    });
+  }catch(_){}
+}
+function v58StartPresence(){
+  if(v58PresenceChannel || typeof sb==='undefined' || !sb || typeof currentUser==='undefined' || !currentUser)return;
+  try{
+    v58PresenceChannel=sb.channel('alta-pd-portal-presence',{
+      config:{presence:{key:String(currentUser.id||currentUser.username||Math.random())}}
+    });
+    v58PresenceChannel
+      .on('presence',{event:'sync'},()=>{if(v58PresenceCurrentView==='command-live')v58RenderLiveUsers()})
+      .on('presence',{event:'join'},()=>{if(v58PresenceCurrentView==='command-live')v58RenderLiveUsers()})
+      .on('presence',{event:'leave'},()=>{if(v58PresenceCurrentView==='command-live')v58RenderLiveUsers()})
+      .subscribe(async status=>{if(status==='SUBSCRIBED')await v58TrackPresence(v58PresenceCurrentView)});
+  }catch(e){console.warn('Presence unavailable',e)}
+}
+function v58PresenceUsers(){
+  if(!v58PresenceChannel)return[];
+  const state=v58PresenceChannel.presenceState()||{};
+  const byId=new Map();
+  Object.values(state).flat().forEach(p=>{
+    const id=p.user_id||p.username||p.presence_ref;
+    if(!id)return;
+    const old=byId.get(id);
+    if(!old || new Date(p.last_active||0)>new Date(old.last_active||0))byId.set(id,p);
+  });
+  return [...byId.values()].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'de'));
+}
+function v58Ago(iso){
+  const s=Math.max(0,Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/1000));
+  if(s<15)return 'gerade eben'; if(s<60)return `vor ${s} Sek.`; const m=Math.floor(s/60); if(m<60)return `vor ${m} Min.`; return `vor ${Math.floor(m/60)} Std.`;
+}
+function v58RenderLiveUsers(){
+  if(!v58IsCommandUser()){if(typeof showView==='function')showView('dashboard');return}
+  v58PresenceCurrentView='command-live';v58TrackPresence('command-live');
+  if(typeof setActive==='function')setActive('[data-view="command-live"]');
+  const pt=document.getElementById('pageTitle');if(pt)pt.textContent='Live-Benutzer';
+  const users=v58PresenceUsers(), recruits=users.filter(x=>x.role==='recruit').length, staff=users.length-recruits;
+  const rows=users.map(u=>`<div class="v58-live-row">
+    <div class="v58-live-avatar"><span></span><img src="apd-logo-v2.png" alt=""></div>
+    <div class="v58-live-person"><b>${typeof esc==='function'?esc(u.name||u.username||'Unbekannt'):u.name}</b><small>${typeof esc==='function'?esc((u.rank||u.role||'—')+(u.service_no?' · #'+u.service_no:'')):''}</small></div>
+    <div><small>Aktueller Bereich</small><b>${typeof esc==='function'?esc(u.view||'Portal'):u.view}</b></div>
+    <div><small>Online seit</small><b>${new Date(u.online_since||Date.now()).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr</b></div>
+    <div><small>Letzte Aktivität</small><b>${v58Ago(u.last_active)}</b></div>
+  </div>`).join('');
+  const content=document.getElementById('content');if(!content)return;
+  content.innerHTML=`<div class="v58-live-head"><div><div class="eyebrow">COMMAND CENTER</div><h1>🟢 Live-Benutzer</h1><p>Aktuell mit dem ALTA PD Portal verbundene Benutzer.</p></div><div class="v58-live-count">${users.length}<small>ONLINE</small></div></div>
+  <div class="v58-live-stats"><div><span class="green"></span><b>${users.length}</b><small>Gesamt online</small></div><div><b>${recruits}</b><small>Rekruten</small></div><div><b>${staff}</b><small>Ausbilder / Command</small></div></div>
+  <section class="card v58-live-card"><div class="section-head compact"><div><div class="eyebrow">LIVE STATUS</div><h2>Angemeldete Benutzer</h2></div><span class="status">Realtime</span></div>
+  <div class="v58-live-list">${rows||'<div class="v58-live-empty">Aktuell ist kein weiterer Benutzer online.</div>'}</div>
+  <p class="muted v58-live-note">Ein Benutzer gilt als online, solange eine aktive Verbindung zum Portal besteht. Geschlossene Tabs und Abmeldungen verschwinden automatisch aus der Liste.</p></section>`;
+}
+(function(){
+  const oldShow=window.showView;
+  if(typeof oldShow==='function'){
+    window.showView=function(v,...args){
+      if(v==='command-live'){v58RenderLiveUsers();return}
+      v58PresenceCurrentView=v||'dashboard';v58TrackPresence(v58PresenceCurrentView);
+      return oldShow.call(this,v,...args);
+    };
+  }
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('[data-view]');
+    if(b)v58TrackPresence(b.dataset.view);
+  },true);
+  ['click','keydown','pointerdown'].forEach(ev=>document.addEventListener(ev,()=>v58TrackPresence(v58PresenceCurrentView),{passive:true}));
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(v58StartPresence,700));
+  if(document.readyState!=='loading')setTimeout(v58StartPresence,700);
 })();
