@@ -722,7 +722,12 @@ $("#loginForm").onsubmit=async e=>{
  try{await refreshData()}catch(err){await sb.auth.signOut();$("#loginError").textContent="Portal-Profil konnte nicht geladen werden.";return}
  $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
  $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
- nav();setupSearch();setupMobileMenu();setupTopAccountLink();current.mustChangePassword?account():(sessionStorage.setItem("alta_pd_last_page_v613","#dashboard"),dashboard());
+ nav();setupSearch();setupMobileMenu();setupTopAccountLink();
+ if(current.mustChangePassword){account()}
+ else{
+  try{sessionStorage.setItem("alta_pd_last_page_v613","#dashboard");history.replaceState({apdPortal:true,v632:true,route:"dashboard"},"","#dashboard")}catch{}
+  dashboard();
+ }
  if(!current.mustChangePassword&&!sessionStorage.getItem("apd_seen_splash")){$("#splash").classList.remove("hidden")}
 };
 $("#enterPortal").onclick=()=>{$("#splash").classList.add("hidden");sessionStorage.setItem("apd_seen_splash","1")};
@@ -735,7 +740,10 @@ $("#logoutBtn").onclick=async()=>{await sb.auth.signOut();current=null;location.
   await refreshData();
   $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
   $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
-  nav();setupSearch();setupMobileMenu();restorePortalRoute();
+  nav();setupSearch();setupMobileMenu();
+  if(current.mustChangePassword){account()}
+  else if(location.hash && location.hash!=="#account"){restorePortalRoute()}
+  else{try{history.replaceState({apdPortal:true,v632:true,route:"dashboard"},"","#dashboard")}catch{}dashboard()}
  }catch(err){console.error(err);await sb.auth.signOut()}
 })();
 
@@ -2114,4 +2122,107 @@ account=function(){_accountV61();v61InstallInboxButton()};
      history.replaceState(history.state,'',location.pathname+location.search+saved);
    }
  }catch(_){}
+})();
+
+
+/* ===== V6.3.2 – AUTHORITATIVE ROUTER: LOGIN / RELOAD / BACK-FORWARD ===== */
+(function(){
+ const KEY="alta_pd_route_v632";
+ const valid=new Set(["dashboard","command","command-live","accounts","admin","tests","account","news","documents","calendar","scenario","radio","mapquiz","plan","rides","dienstbuch","messages","achievements","leaderboard"]);
+ let applying=false, freshLogin=false;
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+ function state(route="dashboard",extra={}){
+  return {apdPortal:true,v632:true,route,chapter:extra.chapter||null,recruitId:extra.recruitId||null,recordClosed:extra.recordClosed??null};
+ }
+ function hash(s){
+  if(s.route==="chapter"&&s.chapter)return "#chapter-"+s.chapter;
+  if(s.route==="admin"&&s.recruitId&&!s.recordClosed)return "#admin-recruit-"+encodeURIComponent(s.recruitId);
+  return "#"+(s.route||"dashboard");
+ }
+ function parse(){
+  const raw=(location.hash||"").replace(/^#/,"");
+  let m=raw.match(/^chapter-(\d+)$/);if(m)return state("chapter",{chapter:+m[1]});
+  m=raw.match(/^admin-recruit-(.+)$/);if(m)return state("admin",{recruitId:decodeURIComponent(m[1]),recordClosed:false});
+  return valid.has(raw)?state(raw):null;
+ }
+ function allowed(s){
+  if(!current)return false;
+  if(current.mustChangePassword)return s.route==="account";
+  if(["command","command-live","accounts","admin","calendar"].includes(s.route)&&!isTrainer(current))return false;
+  return s.route==="chapter"||valid.has(s.route);
+ }
+ function save(s){try{sessionStorage.setItem(KEY,JSON.stringify(s))}catch{}}
+ function load(){try{return JSON.parse(sessionStorage.getItem(KEY)||"null")}catch{return null}}
+ function draw(s){
+  if(!current)return;
+  if(!allowed(s))s=state(current.mustChangePassword?"account":"dashboard");
+  applying=true;
+  try{
+   if(s.route==="chapter"&&s.chapter)showChapter(+s.chapter);
+   else if(s.route==="admin"){
+    selectedRecruit=s.recruitId||null;
+    recruitRecordClosed=s.recordClosed??!s.recruitId;
+    showView("admin");
+   }else showView(s.route);
+   save(s);
+  }finally{applying=false}
+ }
+ function commit(s,mode="pushState"){
+  if(applying||!current)return;
+  if(!allowed(s))s=state(current.mustChangePassword?"account":"dashboard");
+  try{history[mode](s,"",hash(s))}catch{}
+  save(s);
+ }
+ // Wrap final navigation functions so every real page creates browser history.
+ const oldShowView=showView,oldShowChapter=showChapter;
+ showView=function(v){
+  const result=oldShowView(v);
+  if(!applying)commit(state(v,{recruitId:v==="admin"?selectedRecruit:null,recordClosed:v==="admin"?recruitRecordClosed:null}));
+  return result;
+ };
+ showChapter=function(n){
+  const result=oldShowChapter(n);
+  if(!applying)commit(state("chapter",{chapter:+n}));
+  return result;
+ };
+
+ // Browser arrows: render existing state without creating another history entry.
+ window.addEventListener("popstate",e=>{
+  if(!current)return;
+  const s=e.state?.v632?e.state:parse();
+  if(s)draw(s);
+ });
+
+ // Once authenticated:
+ // - fresh login -> Dashboard
+ // - refresh/session restore -> exact URL/page
+ let lastUser=null;
+ const boot=setInterval(()=>{
+  if(!current)return;
+  if(lastUser===current.id)return;
+  lastUser=current.id;
+  clearInterval(boot);
+  setTimeout(()=>{
+   if(current.mustChangePassword){
+    const s=state("account");history.replaceState(s,"",hash(s));draw(s);return;
+   }
+   // If the page has a meaningful route in the URL, this is a reload/deep link: preserve it.
+   const urlState=parse();
+   if(urlState && location.hash && location.hash!=="#account"){
+    history.replaceState(urlState,"",hash(urlState));draw(urlState);return;
+   }
+   // Normal login or stale account route: always Dashboard as the first page.
+   const s=state("dashboard");
+   history.replaceState(s,"",hash(s));save(s);draw(s);
+  },80);
+ },50);
+
+ // Recruit record open/close also gets a distinct history step.
+ document.addEventListener("click",e=>{
+  const open=e.target.closest("[data-edit],[data-command-open],[data-v5-open],[data-v51-open],[data-v630-recruit],[data-open-mail-recruit]");
+  const close=e.target.closest("[data-close-record]");
+  if(open)setTimeout(()=>{if(current&&selectedRecruit&&!recruitRecordClosed&&!applying)commit(state("admin",{recruitId:selectedRecruit,recordClosed:false}))},40);
+  if(close)setTimeout(()=>{if(current&&!applying)commit(state("admin",{recordClosed:true}))},40);
+ },true);
 })();
