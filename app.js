@@ -1645,8 +1645,7 @@ function v590Hub(){
  const passed=(u.testResults||[]).filter(x=>x.passed).length, fav=(u.favorites||u.favouriteChapters||[]);
  host.innerHTML=`<div class="v590-hub-head"><div><div class="eyebrow">MEIN PORTAL HEUTE</div><h2>Auf einen Blick</h2></div><button class="secondary v590-search-open">⌘ Suche</button></div>
  <div class="v590-kpis"><button data-v590-view="tests"><small>BESTANDENE TESTS</small><b>${passed}</b></button><button data-v590-view="rides"><small>PRAXISZEIT</small><b>${fmtDuration(mins)}</b></button><button data-v590-view="documents"><small>FAVORITEN</small><b>${fav.length}</b></button><button data-v590-view="account"><small>PORTALSTATUS</small><b class="ok-text">Bereit</b></button></div>
- <div class="v590-hub-grid"><div class="v590-notify"><h3>🔔 Hinweise</h3>${notes.length?notes.map(n=>`<button data-v590-view="${n.v}"><span>${n.i}</span><b>${esc(n.t)}</b><small>Öffnen →</small></button>`).join(''):'<div class="v590-empty">✓ Keine offenen Hinweise.</div>'}</div>
- <div class="v590-quick"><h3>⚡ Schnellzugriff</h3><div><button data-v590-view="mapquiz">🗺️ Kartenprüfung</button><button data-v590-view="radio">📻 Funk-Trainer</button><button data-v590-view="rides">🚓 Ausbildungsfahrt</button><button data-v590-view="documents">📂 Dokumente</button></div><p><b>System:</b> Online · <b>Version:</b> 5.9</p></div></div>`;
+ <div class="v590-hub-grid v601-hub-single"><div class="v590-notify"><h3>🔔 Hinweise</h3>${notes.length?notes.map(n=>`<button data-v590-view="${n.v}"><span>${n.i}</span><b>${esc(n.t)}</b><small>Öffnen →</small></button>`).join(''):'<div class="v590-empty">✓ Keine offenen Hinweise.</div>'}</div></div>`;
  host.querySelectorAll('[data-v590-view]').forEach(b=>b.onclick=()=>showView(b.dataset.v590View));
  host.querySelector('.v590-search-open')?.addEventListener('click',v590OpenSearch);
 }
@@ -1782,3 +1781,5 @@ function startTest(id){
 }
 const _showTestResultAE=showTestResult;
 showTestResult=function(t,score,percent,passed){aeExamLock(false);_showTestResultAE(t,score,percent,passed);const h=document.querySelector('.result-hero');if(h&&!passed)h.insertAdjacentHTML('beforeend',`<div class="ae-recommend">🧠 <b>Lernempfehlung:</b> Wiederhole die zugehörigen Kapitel und starte danach einen neuen Versuch. Die Fragen und Antwortreihenfolge werden neu gemischt.</div>`)};
+
+/* V6.0.1 Dashboard: Schnellzugriff entfernt */

@@ -1102,3 +1102,5 @@ table{max-width:100%}
 .ae-exam-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:16px;padding:18px;border:1px solid rgba(218,166,62,.35);background:rgba(218,166,62,.055);border-radius:14px}.ae-exam-head h1{margin:4px 0}.ae-recommend{margin-top:16px;padding:12px;border-radius:10px;background:rgba(79,142,196,.1)}
 body.ae-exam-mode #sidebar,body.ae-exam-mode .sidebar,body.ae-exam-mode #nav,body.ae-exam-mode .mobile-bottom-nav{display:none!important}body.ae-exam-mode .app,body.ae-exam-mode main,body.ae-exam-mode .main{margin-left:0!important;max-width:100%!important}body.ae-exam-mode #content{max-width:920px;margin:0 auto}
 @media(max-width:950px){.ae-roadmap{grid-template-columns:1fr}.ae-roadmap>i{display:none}.ae-academy-head{align-items:flex-start}.ae-exam-head{flex-direction:column}}
+
+.v590-hub-grid.v601-hub-single{grid-template-columns:1fr!important}
