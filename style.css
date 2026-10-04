@@ -1155,3 +1155,61 @@ input,select,textarea{background:#08131e!important;border-color:rgba(130,165,192
    url('image26.png?v=6.1.2') center 42%/cover no-repeat!important;
  border-color:rgba(77,163,230,.28)!important;
 }
+
+/* ===== V6.1.4 – REKRUTENAUSWAHL LUFTIGER ===== */
+@media (min-width:1100px){
+  .admin-grid:not(.record-is-closed){
+    grid-template-columns:minmax(430px,500px) minmax(0,1fr)!important;
+    gap:32px!important;
+  }
+}
+.recruit-record-list{
+  padding:24px!important;
+}
+.recruit-record-list h3{
+  margin:0 0 18px!important;
+}
+.recruit-record-list .recruit-row{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:16px!important;
+  padding:18px!important;
+  margin:12px 0!important;
+  min-height:0!important;
+}
+.recruit-record-list .recruit-row>div:first-child{
+  display:block!important;
+  min-width:0!important;
+}
+.recruit-record-list .recruit-row>div:first-child b{
+  display:block!important;
+  font-size:16px!important;
+  line-height:1.25!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+}
+.recruit-record-list .recruit-row>div:first-child small{
+  display:block!important;
+  margin-top:7px!important;
+  line-height:1.45!important;
+  overflow-wrap:anywhere!important;
+}
+.recruit-record-list .recruit-row-actions{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:9px!important;
+}
+.recruit-record-list .recruit-row-actions button{
+  width:100%!important;
+  min-width:0!important;
+  min-height:40px!important;
+}
+@media(max-width:1250px){
+  .admin-grid:not(.record-is-closed){grid-template-columns:minmax(390px,450px) minmax(0,1fr)!important;gap:22px!important}
+}
+@media(max-width:1050px){
+  .admin-grid:not(.record-is-closed){grid-template-columns:1fr!important}
+  .recruit-record-list .recruit-row-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
