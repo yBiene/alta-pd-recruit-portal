@@ -242,7 +242,7 @@ function dashboard(){
  ${isTrainer(u)?`<div class="section-head"><div><div class="eyebrow">FTO-ÜBERSICHT</div><h2>Ausbildungsleitung</h2></div></div><div class="grid fto-stats">${(()=>{const rs=db.users.filter(x=>x.role==="recruit"),ready=rs.filter(x=>progress(x)===100).length,open=rs.reduce((a,x)=>a+(x.goals||[]).filter(g=>!g.done).length,0),tests=rs.reduce((a,x)=>a+(x.assignedTests||[]).length,0);return `<div class="card stat"><span>RECRUITS</span><b>${rs.length}</b></div><div class="card stat"><span>STREIFENFREIGABE</span><b>${ready}</b></div><div class="card stat"><span>OFFENE ZIELE</span><b>${open}</b></div><div class="card stat"><span>ZUGEWIESENE TESTS</span><b>${tests}</b></div>`})()}</div><div class="card"><div class="eyebrow">FORTSCHRITT DER RECRUITS</div><div class="fto-recruit-list">${db.users.filter(x=>x.role==="recruit").map(r=>`<div class="fto-recruit"><div><b>${esc(r.name)}</b><small>${esc(r.fto||"—")} · ${stage(r)}</small></div><div class="mini-progress"><i style="width:${progress(r)}%"></i></div><strong>${progress(r)}%</strong></div>`).join("")||"<p class='muted'>Noch keine Recruits.</p>"}</div></div>`:`<div class="dashboard-two"><div class="card"><div class="eyebrow">🎯 OFFENE AUSBILDUNGSZIELE</div><h2>Meine nächsten Ziele</h2>${(u.goals||[]).filter(g=>!g.done).length?(u.goals||[]).filter(g=>!g.done).map(g=>`<div class="goal-mini"><span>📌</span><b>${esc(g.text)}</b></div>`).join(""):"<p class='muted'>Aktuell keine offenen Ausbildungsziele.</p>"}</div><div class="card"><div class="eyebrow">🏅 QUALIFIKATIONEN</div><h2>Freigaben</h2>${qualificationHtml(u)}</div></div>`}
  <div class="card activity-card"><div class="eyebrow">AKTIVITÄTSVERLAUF</div><h2>Letzte Ausbildungsaktivitäten</h2>${timelineHtml(u,6)}</div>
  <div class="section-head"><div><div class="eyebrow">REKRUTENAUSBILDUNG</div><h2>Ausbildungskapitel</h2></div><span class="muted">Stand Handbuch 03.10.2026</span></div>
- <div class="grid chapter-grid">${titles.map(x=>`<div class="card chapter-card chapter-card-image ${u.completed.includes(x.n)?"done":""}" data-open="${x.n}" style="--chapter-bg:url('${chapterCardImages[x.n]||`image${x.n}.png`}')"><div class="chapter-card-shade"></div><div class="chapter-card-content"><div class="chapter-num"><span class="chapter-card-icon">${chapterIcons[x.n]||"📘"}</span> KAPITEL ${String(x.n).padStart(2,"0")}</div><h3>${esc(x.title)}</h3><span class="chapter-card-state">${u.completed.includes(x.n)?"✓ Abgeschlossen":"Nicht begonnen"}</span></div></div>`).join("")}</div>`;
+ <div class="grid chapter-grid">${titles.map(x=>`<div class="card chapter-card chapter-card-image phase-${x.n<=5?1:x.n<=10?2:x.n<=15?3:4} ${u.completed.includes(x.n)?"done":""}" data-open="${x.n}" style="--chapter-bg:url('${chapterCardImages[x.n]||`image${x.n}.png`}')"><div class="chapter-card-shade"></div><div class="chapter-card-content"><div class="chapter-num"><span class="chapter-card-icon">${chapterIcons[x.n]||"📘"}</span> KAPITEL ${String(x.n).padStart(2,"0")}</div><h3>${esc(x.title)}</h3><span class="chapter-card-state">${u.completed.includes(x.n)?"✓ Abgeschlossen":"Nicht begonnen"}</span></div></div>`).join("")}</div>`;
  document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>showChapter(+x.dataset.open));
 }
 
@@ -1783,3 +1783,66 @@ const _showTestResultAE=showTestResult;
 showTestResult=function(t,score,percent,passed){aeExamLock(false);_showTestResultAE(t,score,percent,passed);const h=document.querySelector('.result-hero');if(h&&!passed)h.insertAdjacentHTML('beforeend',`<div class="ae-recommend">🧠 <b>Lernempfehlung:</b> Wiederhole die zugehörigen Kapitel und starte danach einen neuen Versuch. Die Fragen und Antwortreihenfolge werden neu gemischt.</div>`)};
 
 /* V6.0.1 Dashboard: Schnellzugriff entfernt */
+
+/* ===== V6.1 – WORKFLOW & FTO ASSIST ===== */
+function v61DaysSince(v){if(!v)return 999;let d=new Date(v);return isNaN(d)?999:Math.floor((Date.now()-d.getTime())/86400000)}
+function v61LastActivity(r){let a=(r.activity||[]).map(x=>new Date(x.when)).filter(d=>!isNaN(d));return a.length?new Date(Math.max(...a.map(d=>d.getTime()))):null}
+function v61Issues(r){
+ const out=[], failed=(r.testResults||[]).filter(x=>!x.passed), goals=(r.goals||[]).filter(x=>!x.done);
+ const counts={};failed.forEach(x=>counts[x.testId]=(counts[x.testId]||0)+1);
+ Object.entries(counts).forEach(([id,n])=>{if(n>=2)out.push({sev:'red',icon:'🔴',text:`${TESTS.find(t=>t.id===id)?.title||id} ${n}× nicht bestanden`,view:'tests'})});
+ if(goals.length>=3)out.push({sev:'orange',icon:'🟠',text:`${goals.length} offene Ausbildungsziele`,view:'goals'});
+ const last=v61LastActivity(r);if(last&&v61DaysSince(last)>=7)out.push({sev:'orange',icon:'🟠',text:`Seit ${v61DaysSince(last)} Tagen kein Ausbildungsfortschritt`,view:'overview'});
+ if(progress(r)===100)out.push({sev:'green',icon:'🟢',text:'Voraussetzungen für Abschluss prüfen',view:'overview'});
+ if((r.assignedTests||[]).some(id=>!(r.testResults||[]).some(x=>x.testId===id&&x.passed)))out.push({sev:'blue',icon:'🔵',text:'Zugewiesene Prüfung noch offen',view:'tests'});
+ return out;
+}
+function v61NextRecruitStep(u=current){
+ if(!u||u.role!=='recruit')return null;
+ const ch=titles.find(x=>(typeof aeChapterUnlocked==='function'?aeChapterUnlocked(x.n,u):true)&&!(u.completed||[]).includes(x.n));
+ if(ch)return {icon:'📖',title:`Kapitel ${ch.n} · ${ch.title}`,sub:'Nächster Ausbildungsinhalt',go:()=>showChapter(ch.n)};
+ const t=TESTS.find(x=>(u.assignedTests||[]).includes(x.id)&&!(u.testResults||[]).some(r=>r.testId===x.id&&r.passed));
+ if(t)return {icon:'📝',title:t.title,sub:'Freigegebene Prüfung wartet',go:()=>showView('tests')};
+ if(progress(u)===100)return {icon:'🏅',title:'Abschlussfreigabe',sub:'Deine Theorieausbildung ist vollständig.',go:()=>showView('account')};
+ return {icon:'🎯',title:'Ausbildungsziele prüfen',sub:'Dein FTO legt den nächsten Schritt fest.',go:()=>showView('account')};
+}
+function v61RecruitContinueCard(){
+ if(current?.role!=='recruit')return;let n=v61NextRecruitStep();if(!n)return;
+ let hero=document.querySelector('.hero');if(!hero||document.querySelector('.v61-continue'))return;
+ hero.insertAdjacentHTML('afterend',`<div class="card v61-continue"><div class="v61-continue-icon">${n.icon}</div><div><div class="eyebrow">AUSBILDUNG FORTSETZEN</div><h2>${esc(n.title)}</h2><p>${esc(n.sub)}</p></div><button class="primary" id="v61Continue">▶ Weiterlernen</button></div>`);
+ document.getElementById('v61Continue').onclick=n.go;
+}
+function v61TrainerToday(){
+ if(!isTrainer(current))return;let host=document.querySelector('.hero');if(!host||document.querySelector('.v61-fto-today'))return;
+ const rs=db.users.filter(x=>x.role==='recruit'&&x.status!=='Archiviert'), rows=rs.map(r=>({r,issues:v61Issues(r)})).filter(x=>x.issues.length).sort((a,b)=>{let s={red:4,orange:3,blue:2,green:1};return Math.max(...b.issues.map(i=>s[i.sev]))-Math.max(...a.issues.map(i=>s[i.sev]))}).slice(0,8);
+ host.insertAdjacentHTML('afterend',`<div class="card v61-fto-today"><div class="section-head compact"><div><div class="eyebrow">FTO · HEUTE ZU ERLEDIGEN</div><h2>Handlungsbedarf</h2></div><span class="status">${rows.length} offen</span></div>${rows.length?rows.map(({r,issues})=>`<button data-v61-recruit="${r.id}"><div><b>${esc(r.name)}</b><small>${esc(r.serviceNo||'—')} · ${progress(r)}%</small></div><span class="v61-issue ${issues[0].sev}">${issues[0].icon} ${esc(issues[0].text)}</span><strong>Akte →</strong></button>`).join(''):`<div class="v61-empty">✓ Aktuell kein besonderer Handlungsbedarf.</div>`}</div>`);
+ document.querySelectorAll('[data-v61-recruit]').forEach(b=>b.onclick=()=>{selectedRecruit=b.dataset.v61Recruit;recruitRecordClosed=false;admin()});
+}
+function v61Inbox(){
+ let notes=[];
+ if(current?.role==='recruit'){
+  (current.goals||[]).filter(g=>!g.done).forEach(g=>notes.push({i:'🎯',t:g.text,sub:'Offenes Ausbildungsziel'}));
+  TESTS.filter(t=>(current.assignedTests||[]).includes(t.id)&&!(current.testResults||[]).some(r=>r.testId===t.id&&r.passed)).forEach(t=>notes.push({i:'📝',t:t.title,sub:'Prüfung freigegeben'}));
+ }else if(isTrainer(current)){
+  db.users.filter(x=>x.role==='recruit').forEach(r=>v61Issues(r).forEach(i=>notes.push({i:i.icon,t:r.name,sub:i.text,id:r.id})));
+ }
+ return notes.slice(0,12);
+}
+function v61OpenInbox(){
+ document.querySelector('.v61-inbox-modal')?.remove();let notes=v61Inbox(),m=document.createElement('div');m.className='v61-inbox-modal';m.innerHTML=`<div class="v61-inbox-box"><div class="section-head"><div><div class="eyebrow">AUFGABEN-INBOX</div><h2>${isTrainer(current)?'Academy-Handlungsbedarf':'Meine Aufgaben'}</h2></div><button class="secondary" data-close>✕</button></div>${notes.length?notes.map(x=>`<button class="v61-inbox-row" ${x.id?`data-id="${x.id}"`:''}><span>${x.i}</span><div><b>${esc(x.t)}</b><small>${esc(x.sub)}</small></div><strong>→</strong></button>`).join(''):'<div class="v61-empty">✓ Keine offenen Aufgaben.</div>'}</div>`;document.body.appendChild(m);m.onclick=e=>{if(e.target===m)m.remove()};m.querySelector('[data-close]').onclick=()=>m.remove();m.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{m.remove();selectedRecruit=b.dataset.id;recruitRecordClosed=false;admin()});
+}
+function v61InstallInboxButton(){
+ const host=document.querySelector('.top-actions');if(!host||host.querySelector('.v61-inbox-btn'))return;let n=v61Inbox().length,b=document.createElement('button');b.className='v61-inbox-btn';b.innerHTML=`📥${n?`<i>${n}</i>`:''}`;b.title='Aufgaben-Inbox';b.onclick=v61OpenInbox;host.insertBefore(b,host.firstChild);
+}
+function v61RecordToolbar(){
+ if(!isTrainer(current)||!selectedRecruit)return;let head=document.querySelector('.record-head');if(!head||document.querySelector('.v61-record-toolbar'))return;let r=db.users.find(x=>x.id===selectedRecruit);if(!r)return;
+ head.insertAdjacentHTML('afterend',`<div class="v61-record-toolbar"><button data-j="goals">🎯 + Ziel</button><button data-j="notes">📝 + Notiz</button><button data-j="practice">🚓 Praxis</button><button data-j="tests">📝 Test zuweisen</button><button data-j="chapters">✓ Freigaben</button><button data-j="history">📘 Dienstbuch</button></div>`);
+ document.querySelectorAll('.v61-record-toolbar [data-j]').forEach(b=>b.onclick=()=>document.querySelector(`[data-record-jump="${b.dataset.j}"]`)?.click());
+ let issues=v61Issues(r);if(issues.length)head.parentElement?.insertAdjacentHTML('afterbegin',`<div class="v61-record-alerts">${issues.map(i=>`<span class="${i.sev}">${i.icon} ${esc(i.text)}</span>`).join('')}</div>`);
+}
+const _dashboardV61=dashboard;
+dashboard=function(){_dashboardV61();v61InstallInboxButton();v61RecruitContinueCard();v61TrainerToday()};
+const _adminV61=admin;
+admin=function(){_adminV61();v61InstallInboxButton();v61RecordToolbar()};
+const _accountV61=account;
+account=function(){_accountV61();v61InstallInboxButton()};
