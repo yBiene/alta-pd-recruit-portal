@@ -1528,8 +1528,13 @@ function v58IsCommandUser(){
   if(typeof isTrainer==='function' && isTrainer(me))return true;
   return me.role==='admin' || me.role==='trainer' || me.accessLevel==='owner' || me.access_level==='owner';
 }
+function v58PresenceMe(){
+  if(typeof current!=='undefined' && current) return current;
+  if(typeof currentUser!=='undefined' && currentUser) return currentUser;
+  return null;
+}
 function v58PresenceName(){
-  const me=(typeof currentUser!=='undefined'&&currentUser)?currentUser:{};
+  const me=v58PresenceMe()||{};
   return me.name||me.username||'Unbekannt';
 }
 function v58PresenceViewLabel(v){
@@ -1540,26 +1545,27 @@ function v58PresenceViewLabel(v){
 }
 async function v58TrackPresence(view){
   v58PresenceCurrentView=view||v58PresenceCurrentView;
-  if(!v58PresenceChannel || typeof currentUser==='undefined' || !currentUser)return;
+  const me=v58PresenceMe();
+  if(!v58PresenceChannel || !me)return;
   try{
     await v58PresenceChannel.track({
-      user_id:currentUser.id,
+      user_id:me.id,
       name:v58PresenceName(),
-      username:currentUser.username||'',
-      role:currentUser.role||'',
-      rank:currentUser.rank||'',
-      service_no:currentUser.serviceNo||currentUser.service_no||'',
+      username:me.username||'',
+      role:me.role||'',
+      rank:me.rank||'',
+      service_no:me.serviceNo||me.service_no||'',
       view:v58PresenceViewLabel(v58PresenceCurrentView),
       online_since:v58PresenceStartedAt,
       last_active:new Date().toISOString()
     });
-  }catch(_){}
+  }catch(e){console.warn('Presence track failed',e)}
 }
 function v58StartPresence(){
   if(v58PresenceChannel || typeof sb==='undefined' || !sb || ((typeof current==='undefined'||!current)&&(typeof currentUser==='undefined'||!currentUser)))return;
   try{
     v58PresenceChannel=sb.channel('alta-pd-portal-presence',{
-      config:{presence:{key:String(((typeof current!=='undefined'&&current)?current:currentUser).id||((typeof current!=='undefined'&&current)?current:currentUser).username||Math.random())}}
+      config:{presence:{key:String((v58PresenceMe()||{}).id||(v58PresenceMe()||{}).username||Math.random())}}
     });
     v58PresenceChannel
       .on('presence',{event:'sync'},()=>{if(v58PresenceCurrentView==='command-live')v58RenderLiveUsers()})
@@ -1618,6 +1624,8 @@ function v58RenderLiveUsers(){
     if(b)v58TrackPresence(b.dataset.view);
   },true);
   ['click','keydown','pointerdown'].forEach(ev=>document.addEventListener(ev,()=>v58TrackPresence(v58PresenceCurrentView),{passive:true}));
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(v58StartPresence,700));
-  if(document.readyState!=='loading')setTimeout(v58StartPresence,700);
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(v58StartPresence,700);setTimeout(v58StartPresence,2200)});
+  if(document.readyState!=='loading'){setTimeout(v58StartPresence,700);setTimeout(v58StartPresence,2200)}
+  const v58PresenceRetry=setInterval(()=>{if(v58PresenceMe()){v58StartPresence();if(v58PresenceChannel)clearInterval(v58PresenceRetry)}},1500);
+  setTimeout(()=>clearInterval(v58PresenceRetry),30000);
 })();
