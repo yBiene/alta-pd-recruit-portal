@@ -743,10 +743,13 @@ function derivedNotifications(){
 }
 function installNotificationBell(){
  const host=document.querySelector('.top-actions'); if(!host)return;
- const notes=derivedNotifications(), unread=(typeof v62Unread==="function"?v62Unread():0), total=notes.length+unread;
+ const unread=(typeof v62Unread==="function"?v62Unread():0);
  let b=host.querySelector('.notify-btn');
- if(!b){b=document.createElement('button');b.className='notify-btn';b.title='Benachrichtigungen & Postfach';b.onclick=(e)=>{e.preventDefault();e.stopPropagation();document.querySelector('.notify-pop')?.remove();openWorkflowNotifications()};host.insertBefore(b,host.querySelector('.user-pill'))}
- b.innerHTML=`🔔${total?`<i>${total}</i>`:''}`;
+ if(!b){b=document.createElement('button');b.className='notify-btn';b.title='Benachrichtigungen';b.onclick=(e)=>{e.preventDefault();e.stopPropagation();openWorkflowNotifications()};host.insertBefore(b,host.querySelector('.user-pill'))}
+ b.innerHTML=`🔔${unread?`<i>${unread}</i>`:''}`;
+ let mail=host.querySelector('.v622-mail-top');
+ if(!mail){mail=document.createElement('button');mail.className='v622-mail-top';mail.title='Postfach';mail.onclick=(e)=>{e.preventDefault();e.stopPropagation();messagesView()};host.insertBefore(mail,b)}
+ mail.innerHTML=`<span>✉️</span>${unread?`<i>${unread}</i>`:''}`;
 }
 function openRecruitQuickPanel(id){
  document.querySelector('.quick-panel')?.remove();document.querySelector('.quick-backdrop')?.remove();
@@ -834,7 +837,7 @@ function workflowNotifications(){
 }
 function openWorkflowNotifications(){
  document.querySelector(".workflow-pop")?.remove();
- const n=workflowNotifications(), unread=(typeof v62Unread==="function"?v62Unread():0);
+ const n=[], unread=(typeof v62Unread==="function"?v62Unread():0);
  const recent=((db.messages||[]).filter(x=>x.recipient_id===current?.id&&!x.read_at)).slice(0,4);
  const d=document.createElement("div");d.className="workflow-pop";
  d.innerHTML=`<div class="workflow-pop-head"><b>🔔 Benachrichtigungen</b><button type="button">×</button></div>
