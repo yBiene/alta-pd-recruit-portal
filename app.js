@@ -2108,10 +2108,9 @@ function v61OpenInbox(){
 }
 function v61InstallInboxButton(){ return; }
 function v61RecordToolbar(){
- if(!isTrainer(current)||!selectedRecruit)return;let head=document.querySelector('.record-head');if(!head||document.querySelector('.v61-record-toolbar'))return;let r=db.users.find(x=>x.id===selectedRecruit);if(!r)return;
- head.insertAdjacentHTML('afterend',`<div class="v61-record-toolbar"><button data-j="goals">🎯 + Ziel</button><button data-j="notes">📝 + Notiz</button><button data-j="practice">🚓 Praxis</button><button data-j="tests">📝 Test zuweisen</button><button data-j="chapters">✓ Freigaben</button><button data-j="history">📘 Dienstbuch</button></div>`);
- document.querySelectorAll('.v61-record-toolbar [data-j]').forEach(b=>b.onclick=()=>document.querySelector(`[data-record-jump="${b.dataset.j}"]`)?.click());
- let issues=v61Issues(r);if(issues.length)head.parentElement?.insertAdjacentHTML('afterbegin',`<div class="v61-record-alerts">${issues.map(i=>`<span class="${i.sev}">${i.icon} ${esc(i.text)}</span>`).join('')}</div>`);
+ // V6.4.3: Die alte Schnellaktionsleiste wurde entfernt.
+ // Ziel, Notiz, Praxis, Tests, Freigaben und Dienstbuch sind bereits direkt in der Ausbildungsakte vorhanden.
+ return;
 }
 const _dashboardV61=dashboard;
 dashboard=function(){_dashboardV61();v61InstallInboxButton();v61RecruitContinueCard();v61TrainerToday()};
