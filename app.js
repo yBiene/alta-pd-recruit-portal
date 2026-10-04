@@ -356,7 +356,7 @@ function accountManagement(){
   <label>Dienstnummer<input name="serviceNo" required placeholder="R-103"></label>
   <label>Benutzername<input name="username" required placeholder="vorname.nachname"></label>
   <label>Standardpasswort<input value="123456" disabled></label>
-  <label>FTO<input name="fto" value="${esc(current.name)}" required></label>
+  <label>Leiter FTO<input name="fto" value="${esc(current.name)}" required></label>
   <label>Ausbildungsbeginn<input name="start" value="${new Date().toLocaleDateString("de-DE")}"></label>
   <button class="primary" type="submit">Recruit-Account erstellen</button>
  </form></section>`:`<section class="card account-create-panel"><div class="eyebrow">REKRUTEN</div><h2>Recruit-Accounts</h2><p class="muted">Neue Recruit-Accounts können nur mit Extra-Zugriff angelegt werden.</p></section>`;
@@ -559,7 +559,7 @@ function adminRecruit(r){
   <p class="muted">${esc(r.serviceNo)} · ${esc(r.username)} · Ausbildungszeit <b>${fmtDuration(totalTrainingMinutes(r))}</b></p><div class="record-actions"><button class="secondary" id="printRecruitRecord" type="button">🖨️ Akte drucken</button><span class="readiness-pill ${readiness(r)[1]}">${readiness(r)[0]}</span></div>
   <div class="progress"><i style="width:${p}%"></i></div><p><b>${p}%</b> · ${r.completed.length}/22 Kapitel · ${stage(r)}</p>
   <div class="grid account-grid">
-   <label>FTO<input id="editFto" value="${esc(r.fto)}"></label>
+   <label>Leiter FTO<input id="editFto" value="${esc(r.fto)}"></label>
    <label>Status<select id="editStatus"><option ${r.status==="In Ausbildung"?"selected":""}>In Ausbildung</option><option ${r.status==="Pausiert"?"selected":""}>Pausiert</option><option ${r.status==="Streifenfreigabe"?"selected":""}>Streifenfreigabe</option><option ${r.status==="Ausbildung abgeschlossen"?"selected":""}>Ausbildung abgeschlossen</option><option ${r.status==="Archiviert"?"selected":""}>Archiviert</option></select></label><label>Weiterer FTO<input id="editSecondaryFto" value="${esc(r.secondaryFto||"")}" placeholder="Optional"></label>
    <label>Rang<input id="editRank" value="${esc(r.rank)}"></label>
   </div>
