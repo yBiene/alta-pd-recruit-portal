@@ -1217,3 +1217,13 @@ input,select,textarea{background:#08131e!important;border-color:rgba(130,165,192
 /* ===== V6.1.5 – FTO LEITUNG ===== */
 .fto-lead-badge{display:inline-flex;align-items:center;gap:7px;margin-top:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(215,169,75,.30);background:rgba(215,169,75,.08);color:#e6c477;font-size:12px;font-weight:800;letter-spacing:.02em}
 .fto-lead-badge.command{margin-top:10px}
+
+/* ===== V6.1.6 – UX / PHASEN / ACCOUNT ===== */
+.password-form{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:12px!important;align-items:end!important}
+.password-form label{min-width:0!important}.password-form input{width:100%!important;box-sizing:border-box!important}
+.password-form>button{grid-column:1/-1!important;justify-self:start!important;width:auto!important;max-width:100%!important;margin:0!important}
+.phase-release-card{margin-bottom:20px!important}.phase-release-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:12px}
+.phase-release-grid button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px;text-align:left}.phase-release-grid button small{color:var(--muted,#91a0b2)}.phase-release-grid button span{margin-top:5px;font-size:11px;color:#8fb5d0}.phase-release-grid button.released{border-color:rgba(84,189,131,.32)!important;background:rgba(84,189,131,.07)!important}.phase-release-grid button.released span{color:#7dd3a1}
+.history-more{margin-top:8px;border-top:1px solid rgba(255,255,255,.07)}.history-more summary{cursor:pointer;padding:12px 4px;color:#8fc5ea;font-weight:700}.history-more[open] summary{margin-bottom:4px}
+.knowledge-progress{height:5px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;margin:10px 0 16px}.knowledge-progress i{display:block;height:100%;background:linear-gradient(90deg,var(--apd-blue,#4da3e6),var(--apd-cyan,#42c4cf))}
+@media(max-width:800px){.password-form{grid-template-columns:1fr!important}.password-form>button{grid-column:auto!important;width:100%!important}.phase-release-grid{grid-template-columns:1fr 1fr}}
