@@ -1060,3 +1060,25 @@ table{max-width:100%}
 @media(min-width:761px){body.sidebar-collapsed .v58-command-live-nav::before{content:'🟢'}}
 @media(max-width:900px){.v58-live-row{grid-template-columns:44px 1fr 120px}.v58-live-row>div:nth-child(4),.v58-live-row>div:nth-child(5){display:none}}
 @media(max-width:600px){.v58-live-stats{grid-template-columns:1fr}.v58-live-row{grid-template-columns:42px 1fr}.v58-live-row>div:nth-child(3){display:none}.v58-live-head{align-items:flex-start}.v58-live-count{width:74px;height:65px}}
+
+/* ===== V5.8.5 – Kartenprüfung: vollständige Karte sichtbar ===== */
+.map-trainer{align-items:start!important}
+.map-test-image-wrap{
+ width:100%;min-width:0;
+ display:flex;align-items:center;justify-content:center;
+ background:#07111d;border:1px solid rgba(255,255,255,.08);
+ border-radius:14px;padding:10px;overflow:hidden;
+}
+.map-test-image{
+ display:block!important;width:100%!important;height:auto!important;
+ max-width:100%!important;max-height:none!important;
+ object-fit:contain!important;object-position:center!important;
+ border-radius:9px;
+}
+@media(min-width:1100px){
+ .map-trainer{grid-template-columns:minmax(0,1.55fr) minmax(320px,.75fr)!important}
+}
+@media(max-width:900px){
+ .map-trainer{grid-template-columns:1fr!important}
+ .map-test-image-wrap{padding:6px}
+}
