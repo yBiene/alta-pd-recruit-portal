@@ -76,6 +76,7 @@ async function refreshData(){
 function isOwner(u=current){return !!u && u.role==="admin"&&u.access==="owner"}
 function isTrainer(u=current){return !!u && (u.role==="admin"||u.role==="trainer")}
 function canCreateRecruit(u=current){return isOwner(u)||(u?.role==="trainer"&&u.access==="extra")}
+function hasExtraTrainerAccess(u=current){return isOwner(u)||(u?.role==="trainer"&&u.access==="extra")}
 function roleLabel(u){
  if(!u)return "";
  if(isOwner(u))return "Hauptadmin / FTO";
@@ -151,7 +152,7 @@ function nav(){
  let html=`<button class="nav-btn active" data-view="dashboard">🏠 Dashboard</button><div class="nav-label">AUSBILDUNG</div>`;
  for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon" aria-hidden="true">${chapterIcons[x.n]||"📘"}</span>${esc(x.title)}</button>`;
  html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button><div class="nav-label">PORTAL</div><button class="nav-btn" data-view="news">📢 Mitteilungen</button><button class="nav-btn" data-view="documents">📂 Dokumente</button>`;
- if(isTrainer(current)) html+=`<div class="nav-label">FTO / ADMIN</div><button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn v58-command-live-nav" data-view="command-live">🟢 Live-Benutzer</button><button class="nav-btn" data-view="accounts">👤 Account-Verwaltung</button><button class="nav-btn" data-view="admin">📂 Rekruten Ausbildungsakten</button>`;
+ if(hasExtraTrainerAccess(current)) html+=`<div class="nav-label">FTO / ADMIN</div>${isOwner(current)?`<button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn v58-command-live-nav" data-view="command-live">🟢 Live-Benutzer</button>`:""}<button class="nav-btn" data-view="accounts">👤 Account-Verwaltung</button><button class="nav-btn" data-view="admin">📂 Rekruten Ausbildungsakten</button>`;
  $("#nav").innerHTML=html;
  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view));
  document.querySelectorAll("[data-chapter]").forEach(b=>b.onclick=()=>showChapter(+b.dataset.chapter));
@@ -341,7 +342,7 @@ function account(){
 }
 function accountManagement(){
  recruitRecordsOnly=false;
- if(!isTrainer(current)) return dashboard();
+ if(!hasExtraTrainerAccess(current)) return dashboard();
  setActive('[data-view="accounts"]'); $("#pageTitle").textContent="Account-Verwaltung";
  const trainers=db.users.filter(x=>x.role==="trainer");
  const recruitCreate=canCreateRecruit()?`<section class="card account-create-panel"><div class="eyebrow">REKRUTEN</div><h2>Recruit-Account erstellen</h2><p class="muted">Hier werden ausschließlich neue Zugangsdaten für Rekruten angelegt. Die Ausbildungsakte befindet sich im separaten Menüpunkt.</p><form id="createRecruitAccounts" class="form-grid account-form-spacious">
@@ -387,14 +388,14 @@ function accountManagement(){
 }
 let recruitRecordsOnly=false;
 function recruitRecordsView(){
- if(!isTrainer(current)) return;
+ if(!hasExtraTrainerAccess(current)) return;
  recruitRecordsOnly=true;
  recruitRecordClosed=true;
  selectedRecruit=null;
  admin();
 }
 function admin(){
- if(!isTrainer(current)) return dashboard();
+ if(!hasExtraTrainerAccess(current)) return dashboard();
  setActive('[data-view="admin"]');
  $("#pageTitle").textContent=recruitRecordsOnly?"Rekruten Ausbildungsakten":"Recruit-Verwaltung";
  const recruits=db.users.filter(x=>x.role==="recruit");
@@ -1522,12 +1523,7 @@ let v58PresenceChannel=null;
 let v58PresenceStartedAt=new Date().toISOString();
 let v58PresenceCurrentView='dashboard';
 
-function v58IsCommandUser(){
-  const me=(typeof current!=='undefined'&&current)?current:((typeof currentUser!=='undefined'&&currentUser)?currentUser:null);
-  if(!me)return false;
-  if(typeof isTrainer==='function' && isTrainer(me))return true;
-  return me.role==='admin' || me.role==='trainer' || me.accessLevel==='owner' || me.access_level==='owner';
-}
+function v58IsCommandUser(){ return isOwner(current); }
 function v58PresenceMe(){
   if(typeof current!=='undefined' && current) return current;
   if(typeof currentUser!=='undefined' && currentUser) return currentUser;
