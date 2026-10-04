@@ -228,6 +228,39 @@ function commandCenter(){
  document.querySelectorAll("[data-command-open]").forEach(b=>b.onclick=()=>{selectedRecruit=b.dataset.commandOpen;recruitRecordClosed=false;admin()});
 }
 
+
+function v630IssueRows(){
+ const now=Date.now(),day=86400000,rows=[];
+ db.users.filter(r=>r.role==="recruit").forEach(r=>{
+  const open=(r.goals||[]).filter(g=>!g.done);
+  const fails=(r.testResults||[]).filter(t=>!t.passed);
+  const last=(r.activity||[])[0]?.when;
+  if(open.length>=3)rows.push({sev:3,icon:"🎯",r,text:`${open.length} offene Ausbildungsziele`});
+  if(fails.length>=2)rows.push({sev:3,icon:"🧪",r,text:`${fails.length} nicht bestandene Tests`});
+  if(last&&now-new Date(last).getTime()>=7*day)rows.push({sev:2,icon:"⏱️",r,text:"Seit mindestens 7 Tagen keine Ausbildungsaktivität"});
+  if(progress(r)===100)rows.push({sev:1,icon:"✅",r,text:"Ausbildungsfortschritt 100 % – Abschluss prüfen"});
+ });
+ return rows.sort((a,b)=>b.sev-a.sev||a.r.name.localeCompare(b.r.name,"de"));
+}
+function v630AcademyFeed(limit=10){
+ const a=[];
+ db.users.filter(r=>r.role==="recruit").forEach(r=>{
+  (r.notes||[]).forEach(x=>a.push({when:x.createdAt,icon:"📝",r,text:`${x.authorRank||""} ${x.authorName||"Ausbilder"}: Vermerk hinzugefügt`}));
+  (r.goals||[]).forEach(x=>a.push({when:x.createdAt,icon:"🎯",r,text:`${x.authorRank||""} ${x.authorName||"Ausbilder"}: Ausbildungsziel erstellt`}));
+  (r.reports||[]).forEach(x=>a.push({when:x.createdAt,icon:"🚓",r,text:`${x.authorRank||""} ${x.author||"Ausbilder"}: Ausbildungsfahrt bewertet`}));
+  (r.testResults||[]).forEach(x=>a.push({when:x.date,icon:x.passed?"✅":"🧪",r,text:`Test ${x.passed?"bestanden":"nicht bestanden"} · ${x.percent}%`}));
+ });
+ return a.filter(x=>x.when).sort((a,b)=>new Date(b.when)-new Date(a.when)).slice(0,limit);
+}
+function v630OpenRecruit(id,tab="overview"){
+ selectedRecruit=id;recruitRecordClosed=false;recruitRecordsOnly=true;recordActiveTab=tab;
+ try{sessionStorage.setItem("alta_record_active_tab",tab)}catch{}
+ admin();
+}
+function v630HandoverSummary(r){
+ const open=(r.goals||[]).filter(g=>!g.done),lastReport=(r.reports||[]).slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+ return `FTO-Übergabe · ${r.name}\nFortschritt: ${progress(r)}% (${(r.completed||[]).length}/22 Kapitel)\nStatus: ${r.status||"—"}\nOffene Ziele: ${open.length}${open.length?`\n• ${open.slice(0,4).map(x=>x.text).join("\n• ")}`:""}\nLetzte Ausbildungsfahrt: ${lastReport?`${lastReport.date||"—"} · ${lastReport.topics||"ohne Themenangabe"}`:"noch keine dokumentiert"}\nTests bestanden: ${(r.testResults||[]).filter(x=>x.passed).length}/5`;
+}
 function dashboard(){
  setActive('[data-view="dashboard"]'); $("#pageTitle").textContent="Dashboard";
  let u=current, p=progress(u);
@@ -246,10 +279,19 @@ function dashboard(){
  </div>
  <div class="card"><div class="section-head" style="margin:0 0 12px"><div><div class="eyebrow">AKTUELLE STUFE</div><h2>${stage(u)}</h2></div><span>${u.completed.length} / 22 Kapitel</span></div><div class="progress"><i style="width:${p}%"></i></div></div>
  ${isTrainer(u)?`<div class="section-head"><div><div class="eyebrow">FTO-ÜBERSICHT</div><h2>${isFtoLead(u)?"Leitung der FTO":"Ausbildungsleitung"}</h2>${isFtoLead(u)?`<span class="fto-lead-badge">🎖️ Sgt Carter · Leitung der FTO</span>`:""}</div></div><div class="grid fto-stats">${(()=>{const rs=db.users.filter(x=>x.role==="recruit"),ready=rs.filter(x=>progress(x)===100).length,open=rs.reduce((a,x)=>a+(x.goals||[]).filter(g=>!g.done).length,0),tests=rs.reduce((a,x)=>a+(x.assignedTests||[]).length,0);return `<div class="card stat"><span>RECRUITS</span><b>${rs.length}</b></div><div class="card stat"><span>STREIFENFREIGABE</span><b>${ready}</b></div><div class="card stat"><span>OFFENE ZIELE</span><b>${open}</b></div><div class="card stat"><span>ZUGEWIESENE TESTS</span><b>${tests}</b></div>`})()}</div><div class="card"><div class="eyebrow">FORTSCHRITT DER RECRUITS</div><div class="fto-recruit-list">${db.users.filter(x=>x.role==="recruit").map(r=>`<div class="fto-recruit"><div><b>${esc(r.name)}</b><small>${esc(r.fto||"—")} · ${stage(r)}</small></div><div class="mini-progress"><i style="width:${progress(r)}%"></i></div><strong>${progress(r)}%</strong></div>`).join("")||"<p class='muted'>Noch keine Recruits.</p>"}</div></div>`:`<div class="dashboard-two"><div class="card"><div class="eyebrow">🎯 OFFENE AUSBILDUNGSZIELE</div><h2>Meine nächsten Ziele</h2>${(u.goals||[]).filter(g=>!g.done).length?(u.goals||[]).filter(g=>!g.done).map(g=>`<div class="goal-mini"><span>📌</span><b>${esc(g.text)}</b></div>`).join(""):"<p class='muted'>Aktuell keine offenen Ausbildungsziele.</p>"}</div><div class="card"><div class="eyebrow">🏅 QUALIFIKATIONEN</div><h2>Freigaben</h2>${qualificationHtml(u)}</div></div>`}
+ ${isTrainer(u)?`<div class="v630-command-grid">
+  <div class="card v630-action-card"><div class="section-head compact"><div><div class="eyebrow">⚠️ HANDLUNGSBEDARF</div><h2>Heute im Blick</h2></div><span class="v630-count">${v630IssueRows().length}</span></div>
+   <div class="v630-action-list">${v630IssueRows().slice(0,8).map(x=>`<button class="v630-action-row sev-${x.sev}" data-v630-recruit="${x.r.id}"><span>${x.icon}</span><div><b>${esc(x.r.name)}</b><small>${esc(x.text)}</small></div><strong>Öffnen →</strong></button>`).join("")||`<div class="v630-empty">✓ Aktuell kein dringender Handlungsbedarf.</div>`}</div>
+  </div>
+  <div class="card v630-feed-card"><div class="eyebrow">📡 ACADEMY LIVE</div><h2>Letzte Aktivitäten</h2>
+   <div class="v630-feed">${v630AcademyFeed(8).map(x=>`<button class="v630-feed-row" data-v630-recruit="${x.r.id}"><span>${x.icon}</span><div><b>${esc(x.r.name)}</b><small>${esc(x.text)}</small><em>${new Date(x.when).toLocaleString("de-DE")}</em></div></button>`).join("")||`<p class="muted">Noch keine Academy-Aktivitäten.</p>`}</div>
+  </div>
+ </div>`:""}
  <div class="card activity-card"><div class="eyebrow">AKTIVITÄTSVERLAUF</div><h2>Letzte Ausbildungsaktivitäten</h2>${timelineHtml(u,6)}</div>
  <div class="section-head"><div><div class="eyebrow">REKRUTENAUSBILDUNG</div><h2>Ausbildungskapitel</h2></div><span class="muted">Stand Handbuch 03.10.2026</span></div>
  <div class="grid chapter-grid">${titles.map(x=>`<div class="card chapter-card chapter-card-image phase-${x.n<=5?1:x.n<=10?2:x.n<=15?3:4} ${u.completed.includes(x.n)?"done":""}" data-open="${x.n}" style="--chapter-bg:url('${chapterCardImages[x.n]||`image${x.n}.png`}')"><div class="chapter-card-shade"></div><div class="chapter-card-content"><div class="chapter-num"><span class="chapter-card-icon">${chapterIcons[x.n]||"📘"}</span> KAPITEL ${String(x.n).padStart(2,"0")}</div><h3>${esc(x.title)}</h3><span class="chapter-card-state">${u.completed.includes(x.n)?"✓ Abgeschlossen":"Nicht begonnen"}</span></div></div>`).join("")}</div>`;
  document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>showChapter(+x.dataset.open));
+ document.querySelectorAll("[data-v630-recruit]").forEach(x=>x.onclick=()=>v630OpenRecruit(x.dataset.v630Recruit,"overview"));
 }
 
 async function restoreChapterNotes(n){
@@ -524,6 +566,15 @@ function admin(){
  if(idErr){alert("FTO-Zuordnung konnte nicht gespeichert werden: "+idErr.message);return}
  await refreshData();admin();
 });
+ $("#v630FtoHandover")?.addEventListener("click",async()=>{
+ const recipients=v62AssignedFtos(sel).filter(x=>x.id!==current.id);
+ if(!recipients.length){alert("Für diesen Recruit ist kein anderer gültiger FTO-Account zugeordnet.");return}
+ const body=v630HandoverSummary(sel);
+ try{
+  for(const u of recipients)await v62SendMessage({recipientId:u.id,subject:`FTO-Übergabe · ${sel.name}`,body,recruitId:sel.id,kind:"record_alert",sourceType:"handover"});
+  await refreshData();alert("FTO-Übergabe wurde an "+recipients.map(x=>x.name).join(", ")+" gesendet.");
+ }catch(err){alert("FTO-Übergabe konnte nicht gesendet werden: "+err.message)}
+});
  $("#copyAccess")?.addEventListener("click",async()=>{const msg=`🎉 Willkommen beim ALTA PD, ${sel.rank||"Recruit"} ${sel.name}! 🎉\n\n📋 Deine Zugangsdaten:\n🆔 Benutzername: ${sel.username}\n🔑 Passwort: 123456\n🔗 Login: https://ybiene.github.io/alta-pd-recruit-portal/\n\n🎖️ Deine Dienstdaten:\n🪪 Dienstnummer: ${sel.serviceNo||"—"}\n👮 Rang: ${sel.rank||"Recruit"}\n\n⚠️ WICHTIG: Ändere dein Passwort nach dem ersten Login und gib deine Zugangsdaten nicht weiter.\n\nViel Erfolg im Dienst! 👮🚔\nALTA Police Department`;await navigator.clipboard.writeText(msg);alert("Zugangsnachricht kopiert.")});
  $("#addFieldReport")?.addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(e.target);const payload={recruit_id:sel.id,author_id:current.id,author_name:current.name,author_rank:current.rank||roleLabel(current),report_date:f.get("date"),duration_minutes:+f.get("duration")||0,topics:f.get("topics"),positive_points:f.get("positive"),improvement_points:f.get("improve"),next_steps:f.get("next")};const {data,error}=await sb.from("field_reports").insert(payload).select("id").single();if(error){alert(error.message);return}try{await v62NotifyFtos(sel,`Neue Praxisbewertung · ${sel.name}`,`${current.rank||""} ${current.name} hat eine neue Praxis-/Ausbildungsfahrt dokumentiert. Themen: ${f.get("topics")}`, "practice",data?.id)}catch(err){console.error(err);alert("Eintrag gespeichert, aber FTO-Nachricht fehlgeschlagen: "+err.message)}await refreshData();admin()});
  $("#addTrainingGoal")?.addEventListener("submit",async e=>{e.preventDefault();const text=$("#trainingGoalText").value.trim();if(!text)return;const {data,error}=await sb.from("training_goals").insert({recruit_id:sel.id,goal_text:text,author_id:current.id,author_name:current.name,author_rank:current.rank||roleLabel(current)}).select("id").single();if(error){alert("Ziel konnte nicht gespeichert werden: "+error.message);return}try{await v62NotifyFtos(sel,`Neues Ausbildungsziel · ${sel.name}`,`${current.rank||""} ${current.name} hat ein Ausbildungsziel festgelegt: ${text}`,"goal",data?.id)}catch(err){console.error(err);alert("Eintrag gespeichert, aber FTO-Nachricht fehlgeschlagen: "+err.message)}await refreshData();admin()});
@@ -559,7 +610,7 @@ function admin(){
 });
 }
 function v625FtoOptions(selectedId="",selectedName="",allowEmpty=false){
- const norm=v=>String(v||"").trim().toLowerCase(),staff=db.users.filter(u=>["admin","trainer"].includes(u.role)).slice().sort((a,b)=>v62RankLevel(b)-v62RankLevel(a)||String(a.name||"").localeCompare(String(b.name||""),"de"));
+ const norm=v=>String(v||"").trim().toLowerCase(),uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,staff=db.users.filter(u=>uuid.test(String(u.id||""))&&["admin","trainer"].includes(u.role)).slice().sort((a,b)=>v62RankLevel(b)-v62RankLevel(a)||String(a.name||"").localeCompare(String(b.name||""),"de"));
  let out=allowEmpty?`<option value="">— Kein weiterer FTO —</option>`:"";
  out+=staff.map(u=>{const label=`${u.rank||roleLabel(u)} · ${u.name}${u.serviceNo?` · #${u.serviceNo}`:""}`;const sel=(selectedId&&u.id===selectedId)||(!selectedId&&[u.name,u.username,`${u.rank||""} ${u.name}`].map(norm).includes(norm(selectedName)));return `<option value="${u.id}" ${sel?"selected":""}>${esc(label)}</option>`}).join("");return out;
 }
@@ -576,7 +627,7 @@ function adminRecruit(r){
    <label>Status<select id="editStatus"><option ${r.status==="In Ausbildung"?"selected":""}>In Ausbildung</option><option ${r.status==="Pausiert"?"selected":""}>Pausiert</option><option ${r.status==="Streifenfreigabe"?"selected":""}>Streifenfreigabe</option><option ${r.status==="Ausbildung abgeschlossen"?"selected":""}>Ausbildung abgeschlossen</option><option ${r.status==="Archiviert"?"selected":""}>Archiviert</option></select></label><label>Weiterer FTO<select id="editSecondaryFto">${v625FtoOptions(r.secondaryFtoId,r.secondaryFto||"",true)}</select></label>
    <label>Rang<input id="editRank" value="${esc(r.rank)}"></label>
   </div>
-  <button class="primary" id="saveRecruit">Stammdaten speichern</button> <button class="secondary" id="copyAccess">📋 Zugangsdaten kopieren</button>
+  <button class="primary" id="saveRecruit">Stammdaten speichern</button> <button class="secondary" id="copyAccess">📋 Zugangsdaten kopieren</button> <button class="secondary" id="v630FtoHandover">🔄 FTO-Übergabe senden</button>
   <div class="record-tabs"><button class="active" data-record-jump="overview">Übersicht</button><button data-record-jump="chapters">Ausbildung</button><button data-record-jump="practice">Praxis</button><button data-record-jump="tests">Tests</button><button data-record-jump="goals">Ziele</button><button data-record-jump="history">Dienstbuch</button><button data-record-jump="notes">Notizen</button></div><section class="record-tab-panel" data-record-panel="overview"><div class="record-overview-grid"><div class="record-kpi"><small>Fortschritt</small><b>${p}%</b></div><div class="record-kpi"><small>Kapitel</small><b>${r.completed.length}/22</b></div><div class="record-kpi"><small>Ausbildungszeit</small><b>${fmtDuration(totalTrainingMinutes(r))}</b></div><div class="record-kpi"><small>Offene Ziele</small><b>${(r.goals||[]).filter(g=>!g.done).length}</b></div></div><div class="record-summary"><div><small>Leiter FTO</small><b>${esc(r.fto||"—")}</b></div><div><small>Weiterer FTO</small><b>${esc(r.secondaryFto||"—")}</b></div><div><small>Phase</small><b>${stage(r)}</b></div><div><small>Status</small><b>${esc(r.status||"—")}</b></div></div>${graduationChecklist(r)}</section><section class="record-tab-panel" data-record-panel="chapters"><div id="record-chapters"></div>
   <div class="card inner-card phase-release-card"><div class="eyebrow">🔓 AUSBILDUNGSPHASEN</div><h3>Nächste Phase freischalten</h3><p class="muted">Der Recruit kann automatisch durch Abschluss + Prüfung weiterkommen oder hier vom FTO manuell bis zu einer Phase freigeschaltet werden.</p><div class="phase-release-grid">${ACADEMY_PHASES.map(p=>`<button type="button" data-phase-release="${p.n}" class="${(+r.unlockedPhase||1)>=p.n?'released':''}"><b>Phase ${p.n}</b><small>${esc(p.name)}</small><span>${(+r.unlockedPhase||1)>=p.n?'✓ Freigegeben':'Freischalten'}</span></button>`).join("")}</div></div>
   <h3>Kapitel-Freigaben</h3>
@@ -671,7 +722,7 @@ $("#loginForm").onsubmit=async e=>{
  try{await refreshData()}catch(err){await sb.auth.signOut();$("#loginError").textContent="Portal-Profil konnte nicht geladen werden.";return}
  $("#loginView").classList.add("hidden");$("#app").classList.remove("hidden");
  $("#topName").textContent=current.name;$("#topRole").textContent=roleLabel(current);
- nav();setupSearch();setupMobileMenu();setupTopAccountLink();current.mustChangePassword?account():dashboard();
+ nav();setupSearch();setupMobileMenu();setupTopAccountLink();current.mustChangePassword?account():(sessionStorage.setItem("alta_pd_last_page_v613","#dashboard"),dashboard());
  if(!current.mustChangePassword&&!sessionStorage.getItem("apd_seen_splash")){$("#splash").classList.remove("hidden")}
 };
 $("#enterPortal").onclick=()=>{$("#splash").classList.add("hidden");sessionStorage.setItem("apd_seen_splash","1")};
@@ -989,11 +1040,12 @@ function v62RankLevel(u=current){let i=V62_RANKS.indexOf(u?.rank||"");return i<0
 function v62IsSergeantPlus(u=current){return v62RankLevel(u)>=3}
 function v62UserLabel(id){let u=db.users.find(x=>x.id===id);return u?`${u.rank||""} ${u.name}`.trim():"Unbekannt"}
 function v62AssignedFtos(r){
- const byId=id=>id?db.users.find(u=>u.id===id&&["trainer","admin"].includes(u.role))||null:null;
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+ const byId=id=>id&&uuid.test(String(id))?db.users.find(u=>u.id===id&&["trainer","admin"].includes(u.role))||null:null;
  let leader=byId(r?.leaderFtoId),secondary=byId(r?.secondaryFtoId);
  const norm=v=>String(v||"").trim().toLowerCase(),match=(u,v)=>!!norm(v)&&[u.name,u.username,`${u.rank||""} ${u.name}`].filter(Boolean).some(x=>norm(x)===norm(v));
- if(!leader)leader=db.users.find(u=>["trainer","admin"].includes(u.role)&&match(u,r?.fto))||null;
- if(!secondary)secondary=db.users.find(u=>["trainer","admin"].includes(u.role)&&match(u,r?.secondaryFto))||null;
+ if(!leader)leader=db.users.find(u=>uuid.test(String(u.id||""))&&["trainer","admin"].includes(u.role)&&match(u,r?.fto))||null;
+ if(!secondary)secondary=db.users.find(u=>uuid.test(String(u.id||""))&&["trainer","admin"].includes(u.role)&&match(u,r?.secondaryFto))||null;
  return [leader,secondary].filter((u,i,a)=>u&&a.findIndex(x=>x.id===u.id)===i);
 }
 function v623RecordRecipients(r){
@@ -1004,7 +1056,12 @@ function v623RecordRecipients(r){
 }
 
 async function v62SendMessage({recipientId,subject,body,recruitId=null,kind="mail",threadId=null,parentId=null,sourceType=null,sourceId=null}){
- const row={sender_id:current.id,recipient_id:recipientId,subject:subject||"(ohne Betreff)",body,kind,recruit_id:recruitId||null,thread_id:threadId||crypto.randomUUID(),parent_id:parentId||null,source_type:sourceType||null,source_id:sourceId||null};
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+ const {data:{user}}=await sb.auth.getUser();
+ const senderId=user?.id||current?.id;
+ if(!uuid.test(String(senderId||"")))throw new Error("Absender-Account hat keine gültige Benutzer-ID.");
+ if(!uuid.test(String(recipientId||"")))throw new Error("Der zugeordnete FTO hat keine gültige Benutzer-ID. Bitte FTO in den Stammdaten neu auswählen und speichern.");
+ const row={sender_id:senderId,recipient_id:recipientId,subject:subject||"(ohne Betreff)",body,kind,recruit_id:uuid.test(String(recruitId||""))?recruitId:null,thread_id:threadId&&uuid.test(String(threadId))?threadId:crypto.randomUUID(),parent_id:parentId&&uuid.test(String(parentId))?parentId:null,source_type:sourceType||null,source_id:sourceId&&uuid.test(String(sourceId))?sourceId:null};
  const {error}=await sb.from("academy_messages").insert(row);if(error)throw error;
 }
 async function v62NotifyFtos(r,subject,body,sourceType,sourceId=null){
@@ -1067,7 +1124,10 @@ function messagesView(){
    r.innerHTML=`<div class="mail-reader-head"><div><div class="mail-reader-avatar">${esc(other.split(/\s+/).slice(-2).map(a=>a[0]).join("").toUpperCase())}</div><div><small>${activeFolder==="in"?"VON":"AN"}</small><b>${esc(other)}</b><span>${new Date(x.created_at).toLocaleString("de-DE")}</span></div></div><div class="mail-reader-actions">${activeFolder==="in"&&!x.read_at?`<button data-read="${x.id}">✓ Gelesen</button>`:""}<button data-reply="${x.id}">↩ Antworten</button></div></div><div class="mail-reader-subject"><small>${x.kind==="record_alert"?"📋 AKTENBENACHRICHTIGUNG":"INTERNE NACHRICHT"}</small><h1>${esc(x.subject)}</h1></div><div class="mail-reader-body">${esc(x.body).replace(/\n/g,"<br>")}</div>${x.recruit_id?`<div class="mail-reader-record"><span>📂 Diese Nachricht gehört zu einer Ausbildungsakte.</span><button data-open-mail-recruit="${x.recruit_id}">Recruit-Akte öffnen →</button></div>`:""}`;
    r.querySelector("[data-read]")?.addEventListener("click",async e=>{await sb.from("academy_messages").update({read_at:new Date().toISOString()}).eq("id",e.currentTarget.dataset.read).eq("recipient_id",current.id);await refreshData();messagesView()});
    r.querySelector("[data-reply]")?.addEventListener("click",e=>v62Reply(e.currentTarget.dataset.reply));
-   r.querySelector("[data-open-mail-recruit]")?.addEventListener("click",e=>{selectedRecruit=e.currentTarget.dataset.openMailRecruit;recruitRecordClosed=false;recruitRecordsOnly=true;admin()});
+   r.querySelector("[data-open-mail-recruit]")?.addEventListener("click",e=>{
+    const tab=x.source_type==="field_report"?"practice":(x.source_type==="goal"||x.source_type==="note")?"overview":"overview";
+    v630OpenRecruit(e.currentTarget.dataset.openMailRecruit,tab);
+   });
  };
  document.querySelectorAll("[data-folder]").forEach(b=>b.onclick=()=>{activeFolder=b.dataset.folder;activeId=folder()[0]?.id||null;document.querySelectorAll("[data-folder]").forEach(x=>x.classList.toggle("active",x===b));renderList()});
  $('#v621MailSearch').oninput=e=>renderList(e.target.value);
