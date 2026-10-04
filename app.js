@@ -457,8 +457,20 @@ function admin(){
  document.querySelectorAll("[data-close-record]").forEach(b=>b.onclick=()=>{if(selectedRecruit!==b.dataset.closeRecord)return;recruitRecordClosed=true;selectedRecruit=null;admin()});
  $("#closeRecruitRecord")?.addEventListener("click",()=>{recruitRecordClosed=true;selectedRecruit=null;admin()});
  $("#printRecruitRecord")?.addEventListener("click",()=>printRecruitRecord(sel));
- document.querySelectorAll("[data-record-jump]").forEach(b=>b.onclick=()=>activateRecordTab(b.dataset.recordJump)); activateRecordTab(recordActiveTab,false);
- document.querySelectorAll("[data-check]").forEach(b=>b.onchange=async()=>{const y=window.scrollY,tab=recordActiveTab;await toggleChapter(sel.id,+b.dataset.check);await refreshData();admin();requestAnimationFrame(()=>{activateRecordTab(tab,false);window.scrollTo({top:y,left:0,behavior:"instant"})})});
+ document.querySelectorAll("[data-record-jump]").forEach(b=>b.onclick=()=>activateRecordTab(b.dataset.recordJump));
+ const _savedRecordTab=sessionStorage.getItem("alta_record_active_tab")||recordActiveTab||"overview";
+ recordActiveTab=_savedRecordTab;
+ activateRecordTab(_savedRecordTab,false);
+ document.querySelectorAll("[data-check]").forEach(b=>b.onchange=async()=>{
+  const tab="chapters",chapter=b.dataset.check,top=b.getBoundingClientRect().top;
+  recordActiveTab=tab;try{sessionStorage.setItem("alta_record_active_tab",tab)}catch(_){}
+  await toggleChapter(sel.id,+chapter);await refreshData();admin();
+  requestAnimationFrame(()=>{
+    activateRecordTab("chapters",false);
+    const row=document.querySelector(`[data-check="${chapter}"]`);
+    if(row){window.scrollBy({top:row.getBoundingClientRect().top-top,left:0,behavior:"instant"})}
+  })
+ });
 
  document.querySelectorAll("[data-phase-release]").forEach(b=>b.onclick=async()=>{
   const phase=+b.dataset.phaseRelease;
@@ -946,9 +958,10 @@ setTimeout(installCommandPalette,500);
 
 
 /* ===== V5.0 Role Cockpits + echte Ausbildungsakte-Tabs ===== */
-let recordActiveTab="overview";
+let recordActiveTab=sessionStorage.getItem("alta_record_active_tab")||"overview";
 function activateRecordTab(name,scroll=true){
  recordActiveTab=name||"overview";
+ try{sessionStorage.setItem("alta_record_active_tab",recordActiveTab)}catch(_){}
  document.querySelectorAll('[data-record-panel]').forEach(p=>p.classList.toggle('active',p.dataset.recordPanel===recordActiveTab));
  document.querySelectorAll('[data-record-jump]').forEach(b=>b.classList.toggle('active',b.dataset.recordJump===recordActiveTab));
  const box=document.querySelector('.record-workspace'); if(scroll&&box) box.scrollIntoView({behavior:'smooth',block:'start'});
