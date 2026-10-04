@@ -1147,3 +1147,11 @@ input,select,textarea{background:#08131e!important;border-color:rgba(130,165,192
 .v61-inbox-btn{position:relative}.v61-inbox-btn i{position:absolute;right:-4px;top:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;display:grid;place-items:center;background:#d86666;color:white;font-size:10px;font-style:normal}.v61-inbox-modal{position:fixed;inset:0;z-index:100001;background:rgba(1,6,12,.74);backdrop-filter:blur(7px);display:flex;justify-content:center;align-items:flex-start;padding:10vh 16px}.v61-inbox-box{width:min(720px,100%);max-height:76vh;overflow:auto;background:#0b1624;border:1px solid rgba(77,163,230,.25);border-radius:16px;padding:18px}.v61-inbox-row{width:100%;display:grid;grid-template-columns:32px 1fr auto;align-items:center;gap:10px;text-align:left;background:transparent;border:0;border-top:1px solid rgba(255,255,255,.06);padding:12px 4px;color:inherit}.v61-inbox-row small{display:block;color:var(--muted,#91a0b2);margin-top:2px}
 .v61-record-toolbar{display:flex;gap:7px;flex-wrap:wrap;padding:10px;margin:10px 0 16px;background:rgba(77,163,230,.045);border:1px solid rgba(77,163,230,.13);border-radius:12px}.v61-record-toolbar button{padding:8px 10px}.v61-record-alerts{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}.v61-record-alerts span{padding:7px 9px;border-radius:8px;font-size:12px}.v61-record-alerts .red{background:rgba(216,102,102,.10);color:#f09b9b}.v61-record-alerts .orange{background:rgba(227,154,72,.10);color:#efb06b}.v61-record-alerts .blue{background:rgba(77,163,230,.10);color:#91c9ef}.v61-record-alerts .green{background:rgba(84,189,131,.10);color:#86d5a8}.v61-empty{padding:18px;text-align:center;color:var(--muted,#91a0b2)}
 @media(max-width:800px){.v61-continue{grid-template-columns:44px 1fr}.v61-continue>button{grid-column:1/-1}.v61-fto-today>button{grid-template-columns:1fr}.v61-fto-today>button strong{display:none}}
+
+/* ===== V6.1.2 – ORIGINAL DASHBOARD BANNER FIX ===== */
+.hero{
+ background:
+   linear-gradient(90deg,rgba(5,17,29,.95) 0%,rgba(5,18,31,.82) 44%,rgba(5,18,31,.30) 72%,rgba(5,18,31,.12) 100%),
+   url('image26.png?v=6.1.2') center 42%/cover no-repeat!important;
+ border-color:rgba(77,163,230,.28)!important;
+}

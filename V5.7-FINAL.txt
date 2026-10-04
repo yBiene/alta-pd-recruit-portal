@@ -1,0 +1,11 @@
+ALTA PD Academy Portal – V5.7 FINAL
+- Finaler UI/UX-Feinschliff
+- Versions-/Systemstatusleiste
+- Schutz vor versehentlichen Doppelaktionen bei kritischen Buttons
+- verständlichere globale Fehlerhinweise
+- robustere Darstellung langer Namen/Titel
+- zusätzliche responsive Absicherung für kleinere Displays
+- einheitliche leere Zustände für wirklich leere Karten
+- bestehendes neues APD-Logo und Banner ohne Logo bleiben erhalten
+
+Hinweis: Keine neue Datenbankmigration erforderlich. Bestehende Supabase-Struktur bleibt unverändert.

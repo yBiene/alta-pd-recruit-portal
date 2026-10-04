@@ -1831,9 +1831,7 @@ function v61Inbox(){
 function v61OpenInbox(){
  document.querySelector('.v61-inbox-modal')?.remove();let notes=v61Inbox(),m=document.createElement('div');m.className='v61-inbox-modal';m.innerHTML=`<div class="v61-inbox-box"><div class="section-head"><div><div class="eyebrow">AUFGABEN-INBOX</div><h2>${isTrainer(current)?'Academy-Handlungsbedarf':'Meine Aufgaben'}</h2></div><button class="secondary" data-close>✕</button></div>${notes.length?notes.map(x=>`<button class="v61-inbox-row" ${x.id?`data-id="${x.id}"`:''}><span>${x.i}</span><div><b>${esc(x.t)}</b><small>${esc(x.sub)}</small></div><strong>→</strong></button>`).join(''):'<div class="v61-empty">✓ Keine offenen Aufgaben.</div>'}</div>`;document.body.appendChild(m);m.onclick=e=>{if(e.target===m)m.remove()};m.querySelector('[data-close]').onclick=()=>m.remove();m.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{m.remove();selectedRecruit=b.dataset.id;recruitRecordClosed=false;admin()});
 }
-function v61InstallInboxButton(){
- const host=document.querySelector('.top-actions');if(!host||host.querySelector('.v61-inbox-btn'))return;let n=v61Inbox().length,b=document.createElement('button');b.className='v61-inbox-btn';b.innerHTML=`📥${n?`<i>${n}</i>`:''}`;b.title='Aufgaben-Inbox';b.onclick=v61OpenInbox;host.insertBefore(b,host.firstChild);
-}
+function v61InstallInboxButton(){ return; }
 function v61RecordToolbar(){
  if(!isTrainer(current)||!selectedRecruit)return;let head=document.querySelector('.record-head');if(!head||document.querySelector('.v61-record-toolbar'))return;let r=db.users.find(x=>x.id===selectedRecruit);if(!r)return;
  head.insertAdjacentHTML('afterend',`<div class="v61-record-toolbar"><button data-j="goals">🎯 + Ziel</button><button data-j="notes">📝 + Notiz</button><button data-j="practice">🚓 Praxis</button><button data-j="tests">📝 Test zuweisen</button><button data-j="chapters">✓ Freigaben</button><button data-j="history">📘 Dienstbuch</button></div>`);

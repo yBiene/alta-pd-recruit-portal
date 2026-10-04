@@ -1,0 +1,1 @@
+V5.9 Daily Hub: Dashboard-Hinweise, Schnellzugriff, persönliche Kennzahlen, globale Suche (Strg+K), Systemstatus. Keine SQL-Migration. Baut auf V5.8.6 auf.
