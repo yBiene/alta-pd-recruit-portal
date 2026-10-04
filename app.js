@@ -2137,104 +2137,64 @@ account=function(){_accountV61();v61InstallInboxButton()};
 })();
 
 
-/* ===== V6.3.2 – AUTHORITATIVE ROUTER: LOGIN / RELOAD / BACK-FORWARD ===== */
+/* V6.4.1: previous router disabled. */;
+
+
+/* ===== V6.4.1 – BROWSER HISTORY ROUTER ===== */
 (function(){
- const KEY="alta_pd_route_v632";
- const valid=new Set(["dashboard","command","command-live","accounts","admin","tests","account","news","documents","calendar","scenario","radio","mapquiz","plan","rides","dienstbuch","messages","achievements","leaderboard"]);
- let applying=false, freshLogin=false;
- const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
- function state(route="dashboard",extra={}){
-  return {apdPortal:true,v632:true,route,chapter:extra.chapter||null,recruitId:extra.recruitId||null,recordClosed:extra.recordClosed??null};
- }
- function hash(s){
-  if(s.route==="chapter"&&s.chapter)return "#chapter-"+s.chapter;
-  if(s.route==="admin"&&s.recruitId&&!s.recordClosed)return "#admin-recruit-"+encodeURIComponent(s.recruitId);
-  return "#"+(s.route||"dashboard");
- }
+ const ROUTES=new Set(["dashboard","command","command-live","accounts","admin","tests","account","news","documents","calendar","scenario","radio","mapquiz","plan","rides","dienstbuch","messages","achievements","leaderboard"]);
+ let replay=false;
+ const mk=(route,extra={})=>({apdHistory641:true,route,chapter:extra.chapter||null,recruitId:extra.recruitId||null,recordTab:extra.recordTab||null});
+ const hash=s=>s.route==="chapter"?`#chapter-${s.chapter}`:s.route==="admin"&&s.recruitId?`#admin-recruit-${s.recruitId}${s.recordTab?`~${s.recordTab}`:""}`:`#${s.route||"dashboard"}`;
  function parse(){
-  const raw=(location.hash||"").replace(/^#/,"");
-  let m=raw.match(/^chapter-(\d+)$/);if(m)return state("chapter",{chapter:+m[1]});
-  m=raw.match(/^admin-recruit-(.+)$/);if(m)return state("admin",{recruitId:decodeURIComponent(m[1]),recordClosed:false});
-  return valid.has(raw)?state(raw):null;
+  const h=(location.hash||"").slice(1);let m=h.match(/^chapter-(\d+)$/);if(m)return mk("chapter",{chapter:+m[1]});
+  m=h.match(/^admin-recruit-([0-9a-f-]{36})(?:~([a-z]+))?$/i);if(m)return mk("admin",{recruitId:m[1],recordTab:m[2]||"overview"});
+  return ROUTES.has(h)?mk(h):null;
  }
- function allowed(s){
-  if(!current)return false;
-  if(current.mustChangePassword)return s.route==="account";
-  if(["command","command-live","accounts","admin","calendar"].includes(s.route)&&!isTrainer(current))return false;
-  return s.route==="chapter"||valid.has(s.route);
- }
- function save(s){try{sessionStorage.setItem(KEY,JSON.stringify(s))}catch{}}
- function load(){try{return JSON.parse(sessionStorage.getItem(KEY)||"null")}catch{return null}}
- function draw(s){
-  if(!current)return;
-  if(!allowed(s))s=state(current.mustChangePassword?"account":"dashboard");
-  applying=true;
+ function render(s){
+  if(!current||!s)return;
+  replay=true;
   try{
-   if(s.route==="chapter"&&s.chapter)showChapter(+s.chapter);
-   else if(s.route==="admin"){
-    selectedRecruit=s.recruitId||null;
-    recruitRecordClosed=s.recordClosed??!s.recruitId;
-    showView("admin");
-   }else showView(s.route);
-   save(s);
-  }finally{applying=false}
+   if(current.mustChangePassword){baseShowView641("account");return}
+   if(s.route==="chapter")baseShowChapter641(+s.chapter);
+   else if(s.route==="admin"&&s.recruitId){
+    selectedRecruit=s.recruitId;recruitRecordClosed=false;recruitRecordsOnly=true;recordActiveTab=s.recordTab||"overview";
+    try{sessionStorage.setItem("alta_record_active_tab",recordActiveTab)}catch(_){}
+    baseShowView641("admin");
+    requestAnimationFrame(()=>requestAnimationFrame(()=>activateRecordTab(recordActiveTab,false)));
+   }else baseShowView641(s.route);
+  }finally{replay=false}
  }
- function commit(s,mode="pushState"){
-  if(applying||!current)return;
-  if(!allowed(s))s=state(current.mustChangePassword?"account":"dashboard");
-  try{history[mode](s,"",hash(s))}catch{}
-  save(s);
+ function push(s){
+  if(replay||!current)return;
+  if(history.state?.apdHistory641&&hash(history.state)===hash(s))return;
+  history.pushState(s,"",hash(s));
  }
- // Wrap final navigation functions so every real page creates browser history.
- const oldShowView=showView,oldShowChapter=showChapter;
+ const baseShowView641=showView,baseShowChapter641=showChapter;
  showView=function(v){
-  const result=oldShowView(v);
-  if(!applying)commit(state(v,{recruitId:v==="admin"?selectedRecruit:null,recordClosed:v==="admin"?recruitRecordClosed:null}));
-  return result;
+  const out=baseShowView641(v);
+  if(!replay)push(mk(v,{recruitId:v==="admin"&&!recruitRecordClosed?selectedRecruit:null,recordTab:recordActiveTab||null}));
+  return out;
  };
- showChapter=function(n){
-  const result=oldShowChapter(n);
-  if(!applying)commit(state("chapter",{chapter:+n}));
-  return result;
- };
+ showChapter=function(n){const out=baseShowChapter641(n);if(!replay)push(mk("chapter",{chapter:+n}));return out};
 
- // Browser arrows: render existing state without creating another history entry.
- window.addEventListener("popstate",e=>{
-  if(!current)return;
-  const s=e.state?.v632?e.state:parse();
-  if(s)draw(s);
- });
+ // This is the ONLY active browser Back/Forward handler.
+ window.addEventListener("popstate",e=>{const s=e.state?.apdHistory641?e.state:parse();if(s)render(s)});
 
- // Once authenticated:
- // - fresh login -> Dashboard
- // - refresh/session restore -> exact URL/page
- let lastUser=null;
- const boot=setInterval(()=>{
-  if(!current)return;
-  if(lastUser===current.id)return;
-  lastUser=current.id;
-  clearInterval(boot);
-  setTimeout(()=>{
-   if(current.mustChangePassword){
-    const s=state("account");history.replaceState(s,"",hash(s));draw(s);return;
-   }
-   // If the page has a meaningful route in the URL, this is a reload/deep link: preserve it.
-   const urlState=parse();
-   if(urlState && location.hash && location.hash!=="#account"){
-    history.replaceState(urlState,"",hash(urlState));draw(urlState);return;
-   }
-   // Normal login or stale account route: always Dashboard as the first page.
-   const s=state("dashboard");
-   history.replaceState(s,"",hash(s));save(s);draw(s);
-  },80);
- },50);
-
- // Recruit record open/close also gets a distinct history step.
+ // Recruit tab changes also become navigable history steps.
  document.addEventListener("click",e=>{
-  const open=e.target.closest("[data-edit],[data-command-open],[data-v5-open],[data-v51-open],[data-v630-recruit],[data-open-mail-recruit]");
-  const close=e.target.closest("[data-close-record]");
-  if(open)setTimeout(()=>{if(current&&selectedRecruit&&!recruitRecordClosed&&!applying)commit(state("admin",{recruitId:selectedRecruit,recordClosed:false}))},40);
-  if(close)setTimeout(()=>{if(current&&!applying)commit(state("admin",{recordClosed:true}))},40);
+  const t=e.target.closest("[data-record-jump]");
+  if(t&&selectedRecruit&&!recruitRecordClosed&&!replay)setTimeout(()=>push(mk("admin",{recruitId:selectedRecruit,recordTab:t.dataset.recordJump||"overview"})),0);
  },true);
+
+ // Initialize current entry after login/session restore without adding a duplicate history entry.
+ const timer=setInterval(()=>{
+  if(!current)return;clearInterval(timer);
+  setTimeout(()=>{
+   if(current.mustChangePassword){const s=mk("account");history.replaceState(s,"",hash(s));render(s);return}
+   const s=parse();
+   if(s&&location.hash&&location.hash!=="#account"){history.replaceState(s,"",hash(s));render(s)}
+   else{const d=mk("dashboard");history.replaceState(d,"",hash(d));render(d)}
+  },150);
+ },50);
 })();
