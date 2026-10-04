@@ -1844,3 +1844,35 @@ const _adminV61=admin;
 admin=function(){_adminV61();v61InstallInboxButton();v61RecordToolbar()};
 const _accountV61=account;
 account=function(){_accountV61();v61InstallInboxButton()};
+
+/* ===== V6.1.3 – RELOAD STAYS ON CURRENT PAGE ===== */
+(function(){
+ const KEY='alta_pd_last_page_v613';
+ function capture(){
+   if(!current)return;
+   let h=location.hash||'';
+   if(!h || h==='#dashboard'){
+     try{
+       const s=history.state;
+       if(s?.apdPortal){
+         if(s.route==='chapter'&&s.chapter)h='#chapter-'+s.chapter;
+         else if(s.route==='admin'&&s.recruitId&&!s.recordClosed)h='#admin-recruit-'+encodeURIComponent(s.recruitId);
+         else h='#'+(s.route||'dashboard');
+       }
+     }catch(_){}
+   }
+   try{sessionStorage.setItem(KEY,h||'#dashboard')}catch(_){}
+ }
+ window.addEventListener('beforeunload',capture);
+ document.addEventListener('click',()=>setTimeout(capture,0),true);
+ window.addEventListener('hashchange',capture);
+
+ // If a refresh/browser restart in the same tab occurs without a usable hash,
+ // restore the exact last portal route before the existing V5.6 router boots.
+ try{
+   const saved=sessionStorage.getItem(KEY);
+   if((!location.hash || location.hash==='#dashboard') && saved && saved!=='#dashboard'){
+     history.replaceState(history.state,'',location.pathname+location.search+saved);
+   }
+ }catch(_){}
+})();
