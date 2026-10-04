@@ -1625,3 +1625,47 @@ function v58RenderLiveUsers(){
   const v58PresenceRetry=setInterval(()=>{if(v58PresenceMe()){v58StartPresence();if(v58PresenceChannel)clearInterval(v58PresenceRetry)}},1500);
   setTimeout(()=>clearInterval(v58PresenceRetry),30000);
 })();
+
+/* ===== V5.9 – DAILY HUB / FINAL COMPLETION ===== */
+function v590SafeDate(v){try{const d=new Date(v);return isNaN(d)?null:d}catch(_){return null}}
+function v590Notifications(u=current){
+ const out=[];
+ const goals=(u.goals||[]).filter(x=>!x.done);
+ if(goals.length)out.push({i:'🎯',t:`${goals.length} offene${goals.length===1?'s':''} Ausbildungsziel${goals.length===1?'':'e'}`,v:'plan'});
+ const assigned=(u.assignedTests||[]);if(assigned.length)out.push({i:'📝',t:`${assigned.length} zugewiesene Prüfung${assigned.length===1?'':'en'}`,v:'tests'});
+ const fav=(u.favorites||u.favouriteChapters||[]);if(fav.length)out.push({i:'⭐',t:`${fav.length} Kapitel als Favorit gespeichert`,v:'documents'});
+ const p=typeof progress==='function'?progress(u):0;
+ if(u.role==='recruit'&&p<100)out.push({i:'📘',t:`Ausbildungsfortschritt ${p}% · ${22-(u.completed||[]).length} Kapitel offen`,v:'dashboard'});
+ if(typeof trainingEvents!=='undefined'&&trainingEvents.length)out.push({i:'📅',t:`${trainingEvents.length} Termin${trainingEvents.length===1?'':'e'} im Ausbildungskalender`,v:'calendar'});
+ return out.slice(0,6);
+}
+function v590Hub(){
+ const host=document.getElementById('v590DailyHub');if(!host||!current)return;
+ const u=current, notes=v590Notifications(u), rides=academyGet('rides',[]), mins=rides.reduce((a,x)=>a+(+x.minutes||0),0);
+ const passed=(u.testResults||[]).filter(x=>x.passed).length, fav=(u.favorites||u.favouriteChapters||[]);
+ host.innerHTML=`<div class="v590-hub-head"><div><div class="eyebrow">MEIN PORTAL HEUTE</div><h2>Auf einen Blick</h2></div><button class="secondary v590-search-open">⌘ Suche</button></div>
+ <div class="v590-kpis"><button data-v590-view="tests"><small>BESTANDENE TESTS</small><b>${passed}</b></button><button data-v590-view="rides"><small>PRAXISZEIT</small><b>${fmtDuration(mins)}</b></button><button data-v590-view="documents"><small>FAVORITEN</small><b>${fav.length}</b></button><button data-v590-view="account"><small>PORTALSTATUS</small><b class="ok-text">Bereit</b></button></div>
+ <div class="v590-hub-grid"><div class="v590-notify"><h3>🔔 Hinweise</h3>${notes.length?notes.map(n=>`<button data-v590-view="${n.v}"><span>${n.i}</span><b>${esc(n.t)}</b><small>Öffnen →</small></button>`).join(''):'<div class="v590-empty">✓ Keine offenen Hinweise.</div>'}</div>
+ <div class="v590-quick"><h3>⚡ Schnellzugriff</h3><div><button data-v590-view="mapquiz">🗺️ Kartenprüfung</button><button data-v590-view="radio">📻 Funk-Trainer</button><button data-v590-view="rides">🚓 Ausbildungsfahrt</button><button data-v590-view="documents">📂 Dokumente</button></div><p><b>System:</b> Online · <b>Version:</b> 5.9</p></div></div>`;
+ host.querySelectorAll('[data-v590-view]').forEach(b=>b.onclick=()=>showView(b.dataset.v590View));
+ host.querySelector('.v590-search-open')?.addEventListener('click',v590OpenSearch);
+}
+function v590OpenSearch(){
+ let old=document.getElementById('v590Search');if(old)old.remove();
+ const box=document.createElement('div');box.id='v590Search';box.className='v590-search';
+ box.innerHTML=`<div class="v590-search-box"><div class="v590-search-top"><b>🔎 Portal durchsuchen</b><button id="v590SearchClose">✕</button></div><input id="v590SearchInput" autocomplete="off" placeholder="Kapitel, Kartenprüfung, Funk, Dokumente …"><div id="v590SearchResults"></div><small>ESC zum Schließen · Enter zum Öffnen</small></div>`;
+ document.body.appendChild(box);const inp=box.querySelector('#v590SearchInput'),res=box.querySelector('#v590SearchResults');
+ const items=[...titles.map(x=>({label:`Kapitel ${x.n} · ${x.title}`,chapter:x.n})),{label:'Kartenprüfung',view:'mapquiz'},{label:'Funk-Trainer',view:'radio'},{label:'Ausbildungsfahrten',view:'rides'},{label:'Dienstbuch',view:'dienstbuch'},{label:'Tests',view:'tests'},{label:'Dokumente',view:'documents'},{label:'Mitteilungen',view:'news'},{label:'Mein Konto',view:'account'}];
+ let shown=[];
+ function draw(){const q=inp.value.trim().toLowerCase();shown=items.filter(x=>!q||x.label.toLowerCase().includes(q)).slice(0,10);res.innerHTML=shown.map((x,i)=>`<button data-i="${i}">${esc(x.label)}<span>→</span></button>`).join('')||'<div class="v590-empty">Keine Treffer.</div>';res.querySelectorAll('button').forEach(b=>b.onclick=()=>open(shown[+b.dataset.i]))}
+ function open(x){if(!x)return;box.remove();x.chapter?showChapter(x.chapter):showView(x.view)}
+ box.querySelector('#v590SearchClose').onclick=()=>box.remove();box.onclick=e=>{if(e.target===box)box.remove()};
+ inp.oninput=draw;inp.onkeydown=e=>{if(e.key==='Enter')open(shown[0]);if(e.key==='Escape')box.remove()};draw();setTimeout(()=>inp.focus(),20);
+}
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();v590OpenSearch()}});
+const _dashboardV590=dashboard;
+dashboard=function(){
+ _dashboardV590();
+ const content=document.getElementById('content'),hero=content?.querySelector('.hero');
+ if(content&&hero&&!document.getElementById('v590DailyHub')){const h=document.createElement('section');h.id='v590DailyHub';h.className='card v590-hub';hero.insertAdjacentElement('afterend',h);v590Hub()}
+};
