@@ -657,7 +657,7 @@ function adminRecruit(r){
    <div class="v640-overview-columns"><div class="card inner-card v640-next"><div class="eyebrow">➡️ NÄCHSTER SCHRITT</div><h3>${p===100?"Abschluss prüfen":(r.goals||[]).some(g=>!g.done)?"Offene Ausbildungsziele bearbeiten":"Ausbildung fortsetzen"}</h3><p class="muted">${p===100?"Alle Kapitel sind abgeschlossen. Prüfe Tests, Freigaben und Abschlussvoraussetzungen.":(r.goals||[]).some(g=>!g.done)?`${(r.goals||[]).filter(g=>!g.done).length} offene Ziele sind aktuell hinterlegt.`:`Weiter mit den noch offenen Kapiteln und der aktuellen Ausbildungsphase.`}</p><button class="secondary" type="button" data-record-jump="${p===100?"tests":(r.goals||[]).some(g=>!g.done)?"goals":"chapters"}">Bereich öffnen →</button></div><div class="card inner-card"><div class="eyebrow">👮 ZUSTÄNDIGKEIT</div><h3>FTO-Team</h3><div class="v640-fto-lines"><p><span>Leiter FTO</span><b>${esc(r.fto||"—")}</b></p><p><span>Weiterer FTO</span><b>${esc(r.secondaryFto||"—")}</b></p><p><span>Status</span><b>${esc(r.status||"—")}</b></p></div></div></div>
    <details class="v640-graduation"><summary>🎓 Abschlussbereitschaft & Voraussetzungen anzeigen</summary><div>${graduationChecklist(r)}</div></details>
   </section><section class="record-tab-panel" data-record-panel="chapters"><div id="record-chapters"></div>
-  <div class="card inner-card phase-release-card"><div class="eyebrow">🔓 AUSBILDUNGSPHASEN</div><h3>Nächste Phase freischalten</h3><p class="muted">Der Recruit kann automatisch durch Abschluss + Prüfung weiterkommen oder hier vom FTO manuell bis zu einer Phase freigeschaltet werden.</p><div class="phase-release-grid">${ACADEMY_PHASES.map(p=>`<button type="button" data-phase-release="${p.n}" class="${(+r.unlockedPhase||1)>=p.n?'released':''}"><b>Phase ${p.n}</b><small>${esc(p.name)}</small><span>${(+r.unlockedPhase||1)>=p.n?'✓ Freigegeben':'Freischalten'}</span></button>`).join("")}</div></div>
+  
   <div class="v640-section-title"><div><div class="eyebrow">📚 AUSBILDUNG</div><h3>Kapitel nach Ausbildungsphasen</h3></div><span>${r.completed.length}/22 abgeschlossen</span></div>
   <div class="v640-phase-groups">${ACADEMY_PHASES.map(ph=>{const pts=titles.filter(x=>x.n>=ph.from&&x.n<=ph.to),done=pts.filter(x=>r.completed.includes(x.n)).length;return `<details class="v640-phase-group" ${(+r.unlockedPhase||1)===ph.n?"open":""}><summary><div><b>Phase ${ph.n} · ${esc(ph.name)}</b><small>Kapitel ${ph.from}–${ph.to}</small></div><span>${done}/${pts.length} ✓</span></summary><div class="chapter-checks chapter-category-grid">${pts.map(x=>`<label class="check chapter-category-card" style="--chapter-bg:url(\'${chapterCardImages[x.n]}\')"><input type="checkbox" data-check="${x.n}" ${r.completed.includes(x.n)?"checked":""}><span><b>${x.n}.</b> ${esc(x.title)}</span></label>`).join("")}</div></details>`}).join("")}</div>
   </section><section class="record-tab-panel" data-record-panel="tests"><div id="record-tests"></div><h3>Tests zuweisen</h3>
@@ -1942,14 +1942,20 @@ function aeGet(k,d){try{let v=localStorage.getItem(aeKey(k));return v==null?d:JS
 function aeSet(k,v){localStorage.setItem(aeKey(k),JSON.stringify(v))}
 function aePhaseForChapter(n){return ACADEMY_PHASES.find(p=>n>=p.range[0]&&n<=p.range[1])||ACADEMY_PHASES[0]}
 function aePassed(id,u=current){return (u?.testResults||[]).some(r=>r.testId===id&&r.passed)}
+function aeChapterUnlocked(n,u=current){
+ if(!u||u.role!=='recruit')return true;
+ n=+n||1;
+ if(n<=1)return true;
+ // Kapitel werden strikt nacheinander freigeschaltet:
+ // Wissenscheck des vorherigen Kapitels bestanden = nächstes Kapitel offen.
+ // Für Kapitel n müssen damit alle vorherigen Wissenschecks bestanden sein.
+ for(let i=1;i<n;i++)if(!aeKnowledgeOk(i))return false;
+ return true;
+}
 function aePhaseUnlocked(p,u=current){
  if(!u||u.role!=='recruit')return true;
- if(p.n===1)return true;
- if((+u.unlockedPhase||1)>=p.n)return true;
- const prev=ACADEMY_PHASES[p.n-2], completed=Array.from({length:prev.range[1]-prev.range[0]+1},(_,i)=>prev.range[0]+i).every(n=>(u.completed||[]).includes(n));
- return completed && aePassed(prev.test,u);
+ return aeChapterUnlocked(p.range[0],u);
 }
-function aeChapterUnlocked(n,u=current){return aePhaseUnlocked(aePhaseForChapter(n),u)}
 function aeReadData(){return aeGet('read',{})}
 function aeReadSeconds(n){return +(aeReadData()[n]||0)}
 function aeMarkReadSeconds(n,sec){let d=aeReadData();d[n]=Math.max(0,(+d[n]||0)+sec);aeSet('read',d)}
@@ -2020,7 +2026,7 @@ function aeKnowledgeCheck(n){
  modal.className='ae-modal';document.body.appendChild(modal);
  const render=()=>{const q=qs[step];modal.innerHTML=`<div class="ae-modal-box"><div class="eyebrow">WISSENSCHECK · KAPITEL ${n} · FRAGE ${step+1}/${qs.length}</div><div class="knowledge-progress"><i style="width:${((step)/qs.length)*100}%"></i></div><h2>${esc(q[0])}</h2><div class="ae-answers">${q[1].map((a,i)=>`<button data-a="${i}">${esc(a)}</button>`).join('')}</div><p class="muted">Mindestens 3 von 4 Fragen müssen richtig sein.</p><button class="secondary" data-close>Abbrechen</button></div>`;
   modal.querySelector('[data-close]').onclick=()=>modal.remove();
-  modal.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{if(+b.dataset.a===q[2])score++;step++;if(step<qs.length)return render();const ok=score>=3;if(ok)aeSetKnowledge(n,true);modal.innerHTML=`<div class="ae-modal-box knowledge-result"><div class="eyebrow">WISSENSCHECK · ERGEBNIS</div><h2>${ok?'✓ Bestanden':'✕ Noch nicht bestanden'}</h2><p><b>${score}/${qs.length}</b> Fragen richtig.</p><p class="muted">${ok?'Der Wissenscheck wurde gespeichert.':'Lies das Kapitel noch einmal aufmerksam und versuche es danach erneut.'}</p><button class="primary" data-done>${ok?'Weiter':'Zurück zum Kapitel'}</button></div>`;modal.querySelector('[data-done]').onclick=()=>{modal.remove();showChapter(n)}})
+  modal.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{if(+b.dataset.a===q[2])score++;step++;if(step<qs.length)return render();const ok=score>=3;if(ok)aeSetKnowledge(n,true);modal.innerHTML=`<div class="ae-modal-box knowledge-result"><div class="eyebrow">WISSENSCHECK · ERGEBNIS</div><h2>${ok?'✓ Bestanden':'✕ Noch nicht bestanden'}</h2><p><b>${score}/${qs.length}</b> Fragen richtig.</p><p class="muted">${ok?'Der Wissenscheck wurde gespeichert.':'Lies das Kapitel noch einmal aufmerksam und versuche es danach erneut.'}</p><button class="primary" data-done>${ok?(n<22?`Kapitel ${n+1} öffnen`:'Ausbildung ansehen'):'Zurück zum Kapitel'}</button></div>`;modal.querySelector('[data-done]').onclick=()=>{modal.remove();if(ok&&n<22){nav();showChapter(n+1)}else if(ok&&n===22){nav();dashboard()}else showChapter(n)}})
  };
  render();
 }
@@ -2032,11 +2038,11 @@ function aeExamQuestions(t){return aeShuffle(t.questions).map(q=>{let opts=q.a.m
 function aeExamLock(on){document.body.classList.toggle('ae-exam-mode',!!on);sessionStorage.setItem('alta_exam_mode',on?'1':'0')}
 
 const _navAE=nav;
-nav=function(){_navAE();if(current?.role==='recruit')document.querySelectorAll('[data-chapter]').forEach(b=>{let n=+b.dataset.chapter;if(!aeChapterUnlocked(n)){b.classList.add('ae-nav-locked');b.title='Noch nicht freigeschaltet';b.onclick=()=>{toast?.('🔒 Diese Ausbildungsphase ist noch gesperrt.')}}})};
+nav=function(){_navAE();if(current?.role==='recruit')document.querySelectorAll('[data-chapter]').forEach(b=>{let n=+b.dataset.chapter;if(!aeChapterUnlocked(n)){b.classList.add('ae-nav-locked');b.title='Noch nicht freigeschaltet';b.onclick=()=>{toast?.('🔒 Dieses Kapitel ist noch gesperrt. Bestehe zuerst den Wissenscheck des vorherigen Kapitels.')}}})};
 const _showChapterAE=showChapter;
 showChapter=function(n){
  aeStopChapterSession();
- if(current?.role==='recruit'&&!aeChapterUnlocked(n)){toast?.('🔒 Schließe zuerst die vorherige Ausbildungsphase und Prüfung ab.');return dashboard()}
+ if(current?.role==='recruit'&&!aeChapterUnlocked(n)){toast?.('🔒 Bestehe zuerst den Wissenscheck des vorherigen Kapitels.');return dashboard()}
  _showChapterAE(n);aeStartChapterSession(n);
  if(current?.role==='recruit'){
   const side=document.querySelector('.side-card');if(side){const sec=aeReadSeconds(n),ok=aeKnowledgeOk(n);side.insertAdjacentHTML('beforeend',`<div class="ae-learning"><div class="eyebrow">LERNSTATUS</div><div class="ae-learn-row"><span>Lernzeit</span><b>${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}</b></div><div class="ae-learn-row"><span>Wissenscheck</span><b>${ok?'✓ Bestanden':'Offen'}</b></div><button class="${ok?'secondary':'primary'}" id="aeKnowledgeBtn">${ok?'✓ Wissenscheck wiederholen':'🧠 Wissenscheck starten'}</button><small>Empfehlung: Kapitel aufmerksam durcharbeiten, danach den Wissenscheck absolvieren.</small></div>`);document.getElementById('aeKnowledgeBtn').onclick=()=>{aeStopChapterSession();aeKnowledgeCheck(n)}}}
@@ -2213,3 +2219,5 @@ account=function(){_accountV61();v61InstallInboxButton()};
   },150);
  },50);
 })();
+
+/* V6.4.4 – Kapitel-Freischaltung: Wissenscheck Kapitel N schaltet Kapitel N+1 frei. */
