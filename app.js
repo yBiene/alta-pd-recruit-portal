@@ -1625,3 +1625,19 @@ function v58RenderLiveUsers(){
   const v58PresenceRetry=setInterval(()=>{if(v58PresenceMe()){v58StartPresence();if(v58PresenceChannel)clearInterval(v58PresenceRetry)}},1500);
   setTimeout(()=>clearInterval(v58PresenceRetry),30000);
 })();
+
+/* ===== V5.9 – 3D DEPTH & MOTION ===== */
+(function(){
+ const fine=()=>matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&innerWidth>760;
+ let raf=0;
+ function cards(){
+  document.querySelectorAll('#content .card,#content .hero,#content .chapter-card,#content .digital-id,#content .record-card,#content .admin-card,#content .panel').forEach(el=>{
+   if(el.dataset.v59Depth)return;el.dataset.v59Depth='1';el.classList.add('v59-depth-card');
+   el.addEventListener('pointermove',e=>{if(!fine())return;const r=el.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height,rx=(.5-y)*3.2,ry=(x-.5)*4.2;el.style.setProperty('--v59-x',(x*100).toFixed(1)+'%');el.style.setProperty('--v59-y',(y*100).toFixed(1)+'%');if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{el.style.transform=`rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translate3d(0,-2px,8px)`;el.classList.add('v59-active')})});
+   el.addEventListener('pointerleave',()=>{el.style.transform='';el.classList.remove('v59-active')});
+  });
+ }
+ const obs=new MutationObserver(cards);
+ function init(){cards();const c=document.getElementById('content');if(c)obs.observe(c,{childList:true,subtree:true})}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
