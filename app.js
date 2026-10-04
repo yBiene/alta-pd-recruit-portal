@@ -363,14 +363,14 @@ function accountManagement(){
  const trainerCreate=isOwner()?`<section class="card account-create-panel"><div class="eyebrow">AUSBILDER</div><h2>Ausbilder-Account erstellen</h2><p class="muted">Account und Berechtigungsstufe für einen neuen Ausbilder anlegen.</p><form id="createTrainerAccounts" class="form-grid account-form-spacious">
   <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
   <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
-  <label>Rang<select name="rank" required><option>Chief of Police</option><option>Assistant Chief</option><option>Deputy Chief</option><option>Commander</option><option>Captain II</option><option selected>Sergeant I</option><option>Detective I</option><option>Police Officer II</option><option>Recruit I</option></select></label>
+  <label>Rang<select name="rank" required><option>Chief of Police</option><option>Assistant Chief</option><option>Deputy Chief</option><option>Commander</option><option>Captain</option><option selected>Sergeant</option><option>Detective</option><option>Police Officer</option><option>Recruit</option></select></label>
   <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
   <label>Standardpasswort<input value="123456" disabled></label>
   <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
   <button class="primary" type="submit">Ausbilder-Account erstellen</button>
  </form></section>`:"";
  const recruits=db.users.filter(x=>x.role==="recruit");
- const rankOptions=["Chief of Police","Assistant Chief","Deputy Chief","Commander","Captain II","Sergeant I","Detective I","Police Officer II","Recruit I"];
+ const rankOptions=["Chief of Police","Assistant Chief","Deputy Chief","Commander","Captain","Sergeant","Detective","Police Officer","Recruit"];
  const accountEditor=isOwner()?`<section class="card account-editor-v562">
   <div class="section-head"><div><div class="eyebrow">HAUPTADMIN</div><h2>Andere Accounts bearbeiten</h2><p class="muted">Ausbilder- und Recruit-Accounts verwalten, Passwörter zurücksetzen oder Accounts entfernen.</p></div><span class="access-badge owner">Nur Hauptadmin</span></div>
   <div class="account-editor-tabs-v562"><button class="primary active" type="button" data-account-tab="trainers">Ausbilder (${trainers.length})</button><button class="secondary" type="button" data-account-tab="recruits">Rekruten (${recruits.length})</button></div>
@@ -413,7 +413,7 @@ function admin(){
     <label>Dienstnummer<input name="serviceNo" required placeholder="R-103"></label>
     <label>Benutzername<input name="username" required placeholder="vorname.nachname"></label>
     <label>Standardpasswort<input value="123456" disabled></label>
-    <label>FTO<input name="fto" value="${esc(current.name)}" required></label>
+    <label>Leiter FTO<select name="fto" required>${v625FtoOptions(current.name,false)}</select></label>
     <label>Ausbildungsbeginn<input name="start" value="${new Date().toLocaleDateString("de-DE")}"></label>
     <button class="primary" type="submit">Recruit-Account erstellen</button>
    </form></div>`:`<div class="card"><h3>Recruit-Accounts</h3><p class="muted">Mit deinem aktuellen Zugriff kannst du Ausbildungsstände bearbeiten. Neue Accounts können nur mit Extra-Zugriff angelegt werden.</p></div>`;
@@ -421,13 +421,13 @@ function admin(){
    <form id="createTrainer" class="form-grid">
     <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
     <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
-    <label>Rang<select name="rank" required><option>Chief of Police</option><option>Assistant Chief</option><option>Deputy Chief</option><option>Commander</option><option>Captain II</option><option selected>Sergeant I</option><option>Detective I</option><option>Police Officer II</option><option>Recruit I</option></select></label>
+    <label>Rang<select name="rank" required><option>Chief of Police</option><option>Assistant Chief</option><option>Deputy Chief</option><option>Commander</option><option>Captain</option><option selected>Sergeant</option><option>Detective</option><option>Police Officer</option><option>Recruit</option></select></label>
     <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
     <label>Standardpasswort<input value="123456" disabled></label>
     <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
     <button class="primary" type="submit">Ausbilder-Account erstellen</button>
    </form>
-   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Chief of Police"?"selected":""}>Chief of Police</option><option ${t.rank==="Assistant Chief"?"selected":""}>Assistant Chief</option><option ${t.rank==="Deputy Chief"?"selected":""}>Deputy Chief</option><option ${t.rank==="Commander"?"selected":""}>Commander</option><option ${t.rank==="Captain II"?"selected":""}>Captain II</option><option ${t.rank==="Sergeant I"?"selected":""}>Sergeant I</option><option ${t.rank==="Detective I"?"selected":""}>Detective I</option><option ${t.rank==="Police Officer II"?"selected":""}>Police Officer II</option><option ${t.rank==="Recruit I"?"selected":""}>Recruit I</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="secondary" data-reset-password="${t.id}" data-reset-name="${esc(t.name)}">🔑 Passwort zurücksetzen</button><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
+   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Chief of Police"?"selected":""}>Chief of Police</option><option ${t.rank==="Assistant Chief"?"selected":""}>Assistant Chief</option><option ${t.rank==="Deputy Chief"?"selected":""}>Deputy Chief</option><option ${t.rank==="Commander"?"selected":""}>Commander</option><option ${t.rank==="Captain"?"selected":""}>Captain</option><option ${t.rank==="Sergeant"?"selected":""}>Sergeant</option><option ${t.rank==="Detective"?"selected":""}>Detective</option><option ${t.rank==="Police Officer"?"selected":""}>Police Officer</option><option ${t.rank==="Recruit"?"selected":""}>Recruit</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="secondary" data-reset-password="${t.id}" data-reset-name="${esc(t.name)}">🔑 Passwort zurücksetzen</button><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
   </div>`:"";
  $("#content").innerHTML=`
  <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>${recruitRecordsOnly?"Rekruten Ausbildungsakten":"Recruit-Verwaltung"}</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
@@ -552,6 +552,23 @@ function admin(){
  if(confirm("Recruit-Account wirklich löschen?"))try{await invokeAccountAction({action:"delete",userId:sel.id});selectedRecruit=null;await refreshData();admin()}catch(err){alert(err.message)}
 });
 }
+function v625FtoOptions(selected="",allowEmpty=false){
+ const norm=v=>String(v||"").trim().toLowerCase(), chosen=norm(selected);
+ const staff=db.users.filter(u=>["admin","trainer"].includes(u.role)).slice().sort((a,b)=>{
+   const ar=v62RankLevel(b)-v62RankLevel(a);return ar||String(a.name||"").localeCompare(String(b.name||""),"de");
+ });
+ let out=allowEmpty?`<option value="">— Kein weiterer FTO —</option>`:"";
+ out+=staff.map(u=>{
+   const label=`${u.rank||roleLabel(u)} · ${u.name}${u.serviceNo?` · #${u.serviceNo}`:""}`;
+   const candidates=[u.name,u.username,`${u.rank||""} ${u.name}`].map(norm);
+   return `<option value="${esc(u.name)}" ${candidates.includes(chosen)?"selected":""}>${esc(label)}</option>`;
+ }).join("");
+ // Preserve an old/manual value until the user deliberately changes it.
+ if(selected && !staff.some(u=>[u.name,u.username,`${u.rank||""} ${u.name}`].map(norm).includes(chosen))){
+   out=`<option value="${esc(selected)}" selected>${esc(selected)} · Altbestand</option>`+out;
+ }
+ return out;
+}
 function adminRecruit(r){
  let p=progress(r);
  return `<div class="card">
@@ -559,8 +576,8 @@ function adminRecruit(r){
   <p class="muted">${esc(r.serviceNo)} · ${esc(r.username)} · Ausbildungszeit <b>${fmtDuration(totalTrainingMinutes(r))}</b></p><div class="record-actions"><button class="secondary" id="printRecruitRecord" type="button">🖨️ Akte drucken</button><span class="readiness-pill ${readiness(r)[1]}">${readiness(r)[0]}</span></div>
   <div class="progress"><i style="width:${p}%"></i></div><p><b>${p}%</b> · ${r.completed.length}/22 Kapitel · ${stage(r)}</p>
   <div class="grid account-grid">
-   <label>Leiter FTO<input id="editFto" value="${esc(r.fto)}"></label>
-   <label>Status<select id="editStatus"><option ${r.status==="In Ausbildung"?"selected":""}>In Ausbildung</option><option ${r.status==="Pausiert"?"selected":""}>Pausiert</option><option ${r.status==="Streifenfreigabe"?"selected":""}>Streifenfreigabe</option><option ${r.status==="Ausbildung abgeschlossen"?"selected":""}>Ausbildung abgeschlossen</option><option ${r.status==="Archiviert"?"selected":""}>Archiviert</option></select></label><label>Weiterer FTO<input id="editSecondaryFto" value="${esc(r.secondaryFto||"")}" placeholder="Optional"></label>
+   <label>Leiter FTO<select id="editFto">${v625FtoOptions(r.fto,false)}</select></label>
+   <label>Status<select id="editStatus"><option ${r.status==="In Ausbildung"?"selected":""}>In Ausbildung</option><option ${r.status==="Pausiert"?"selected":""}>Pausiert</option><option ${r.status==="Streifenfreigabe"?"selected":""}>Streifenfreigabe</option><option ${r.status==="Ausbildung abgeschlossen"?"selected":""}>Ausbildung abgeschlossen</option><option ${r.status==="Archiviert"?"selected":""}>Archiviert</option></select></label><label>Weiterer FTO<select id="editSecondaryFto">${v625FtoOptions(r.secondaryFto||"",true)}</select></label>
    <label>Rang<input id="editRank" value="${esc(r.rank)}"></label>
   </div>
   <button class="primary" id="saveRecruit">Stammdaten speichern</button> <button class="secondary" id="copyAccess">📋 Zugangsdaten kopieren</button>
@@ -971,7 +988,7 @@ function planView(){setActive('[data-view="plan"]');$('#pageTitle').textContent=
 function ridesView(){setActive('[data-view="rides"]');$('#pageTitle').textContent='Ausbildungsfahrten';let rides=academyGet('rides',[]),start=academyGet('rideStart',null);$('#content').innerHTML=moduleHead('🚓 PRAXIS','Ausbildungsfahrten','Zeit erfassen und Ausbildungsfahrten dokumentieren.')+`<div class="grid dashboard-two"><div class="card ride-live"><div class="eyebrow">AKTUELLE FAHRT</div><h2>${start?'Ausbildungsfahrt läuft':'Keine Fahrt aktiv'}</h2><div class="ride-clock" id="rideClock">${start?'00:00:00':'—'}</div>${start?'<button class="danger" id="stopRide">■ Fahrt beenden</button>':'<button class="primary" id="startRide">▶ Fahrt starten</button>'}</div><div class="card"><h2>Meine Praxiszeit</h2><div class="big-number">${fmtDuration(rides.reduce((a,x)=>a+x.minutes,0))}</div><p class="muted">Persönlich erfasste Ausbildungsfahrten auf diesem Gerät.</p></div></div><div class="card"><h2>Fahrtenverlauf</h2>${rides.slice().reverse().map(x=>`<div class="timeline-row"><span class="timeline-icon">🚓</span><div><b>${esc(x.title||'Ausbildungsfahrt')}</b><small>${esc(x.date)} · ${fmtDuration(x.minutes)}</small></div></div>`).join('')||'<p class="muted">Noch keine Fahrt erfasst.</p>'}</div>`;if(start){const tick=()=>{let d=Math.floor((Date.now()-start)/1000),h=String(Math.floor(d/3600)).padStart(2,'0'),m=String(Math.floor(d%3600/60)).padStart(2,'0'),s=String(d%60).padStart(2,'0');if($('#rideClock'))$('#rideClock').textContent=`${h}:${m}:${s}`};tick();window._rideTimer&&clearInterval(window._rideTimer);window._rideTimer=setInterval(tick,1000);$('#stopRide').onclick=()=>{window._rideTimer&&clearInterval(window._rideTimer);window._rideTimer=null;let mins=Math.max(1,Math.round((Date.now()-start)/60000)),title=prompt('Kurzer Schwerpunkt der Fahrt:','Streifendienst')||'Ausbildungsfahrt';academySet('rideStart',null);rides.push({date:new Date().toLocaleString('de-DE'),minutes:mins,title});academySet('rides',rides);keepScrollV52(ridesView)}}else{window._rideTimer&&clearInterval(window._rideTimer);window._rideTimer=null;$('#startRide').onclick=()=>{academySet('rideStart',Date.now());keepScrollV52(ridesView)}}}
 function dienstbuchView(){setActive('[data-view="dienstbuch"]');$('#pageTitle').textContent='Dienstbuch';let rides=academyGet('rides',[]),extra=rides.map(x=>({when:new Date().toISOString(),icon:'🚓',text:`${x.title} · ${fmtDuration(x.minutes)}`}));let acts=[...(current.activity||[]),...extra];$('#content').innerHTML=moduleHead('📔 CHRONIK','Mein Dienstbuch','Automatische Übersicht über Ausbildung, Tests, Ziele und Praxis.')+`<div class="card"><div class="timeline-v49">${acts.length?acts.slice(0,30).map(x=>`<div class="timeline-row"><span class="timeline-icon">${x.icon}</span><div><b>${esc(x.text)}</b><small>${x.when?new Date(x.when).toLocaleString('de-DE'):'Persönlicher Eintrag'}</small></div></div>`).join(''):'<p class="muted">Noch keine Einträge.</p>'}</div></div>`}
 
-const V62_RANKS=["Recruit I","Police Officer II","Detective I","Sergeant I","Captain II","Commander","Deputy Chief","Assistant Chief","Chief of Police"];
+const V62_RANKS=["Recruit","Police Officer","Detective","Sergeant","Captain","Commander","Deputy Chief","Assistant Chief","Chief of Police"];
 function v62RankLevel(u=current){let i=V62_RANKS.indexOf(u?.rank||"");return i<0?(u?.role==="admin"?8:u?.role==="trainer"?3:0):i}
 function v62IsSergeantPlus(u=current){return v62RankLevel(u)>=3}
 function v62UserLabel(id){let u=db.users.find(x=>x.id===id);return u?`${u.rank||""} ${u.name}`.trim():"Unbekannt"}
@@ -1532,7 +1549,7 @@ setTimeout(sidebarTooltipsV544,0);
 
 /* ===== V5.6.1 – Ausbilder-Ränge ===== */
 (function(){
- const officialTrainerRanksV561=["Chief of Police","Assistant Chief","Deputy Chief","Commander","Captain II","Sergeant I","Detective I","Police Officer II","Recruit I"];
+ const officialTrainerRanksV561=["Chief of Police","Assistant Chief","Deputy Chief","Commander","Captain","Sergeant","Detective","Police Officer","Recruit"];
  const oldAdminV561=admin;
  admin=function(){
   oldAdminV561();
@@ -1596,8 +1613,8 @@ function leaderboardViewV565(){
  const weekLabel=`${b.start.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} – ${end.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}`;
  const podium=[top[1],top[0],top[2]], places=[2,1,3], medals=['🥈','🥇','🥉'];
  const bestProgress=[...all].sort((a,b)=>b.pct-a.pct)[0], bestTests=[...all].sort((a,b)=>b.tests-a.tests)[0], bestPractice=[...all].sort((a,b)=>b.avg-a.avg)[0], mostActive=[...all].sort((a,b)=>b.activity-a.activity)[0];
- const pod=podium.map((x,i)=>x?`<div class="lb-podium lb-place-${places[i]}"><div class="lb-medal">${medals[i]}</div><img src="${esc(x.r.avatarUrl||'apd-logo-v2.png')}" onerror="this.src='apd-logo-v2.png'"><small>PLATZ ${places[i]}</small><h3>${esc(x.r.name)}</h3><span>${esc(x.r.serviceNo||'—')} · ${esc(x.r.rank||'Recruit I')}</span><strong>${x.points} P</strong><div class="lb-mini-progress"><i style="width:${x.pct}%"></i></div><em>${x.pct}% Ausbildung</em></div>`:'<div class="lb-podium lb-empty">—</div>').join('');
- const rows=top.map((x,i)=>`<div class="lb-row ${i<3?'top':''}"><div class="lb-rank">${i+1}</div><div class="lb-person"><img src="${esc(x.r.avatarUrl||'apd-logo-v2.png')}" onerror="this.src='apd-logo-v2.png'"><div><b>${esc(x.r.name)}</b><small>${esc(x.r.serviceNo||'—')} · ${esc(x.r.rank||'Recruit I')} · FTO: ${esc(x.r.fto||'—')}</small></div></div><div><small>Phase</small><b>${esc(stage(x.r))}</b></div><div><small>Fortschritt</small><b>${x.pct}%</b></div><div><small>Tests</small><b>${x.tests}/5</b></div><div><small>Praxis</small><b>${x.practice}</b></div><div class="lb-points"><small>Woche</small><b>${x.points} P</b></div><div class="lb-trend ${x.trend[2]}">${x.trend[0]} ${x.trend[1]}</div></div>`).join('');
+ const pod=podium.map((x,i)=>x?`<div class="lb-podium lb-place-${places[i]}"><div class="lb-medal">${medals[i]}</div><img src="${esc(x.r.avatarUrl||'apd-logo-v2.png')}" onerror="this.src='apd-logo-v2.png'"><small>PLATZ ${places[i]}</small><h3>${esc(x.r.name)}</h3><span>${esc(x.r.serviceNo||'—')} · ${esc(x.r.rank||'Recruit')}</span><strong>${x.points} P</strong><div class="lb-mini-progress"><i style="width:${x.pct}%"></i></div><em>${x.pct}% Ausbildung</em></div>`:'<div class="lb-podium lb-empty">—</div>').join('');
+ const rows=top.map((x,i)=>`<div class="lb-row ${i<3?'top':''}"><div class="lb-rank">${i+1}</div><div class="lb-person"><img src="${esc(x.r.avatarUrl||'apd-logo-v2.png')}" onerror="this.src='apd-logo-v2.png'"><div><b>${esc(x.r.name)}</b><small>${esc(x.r.serviceNo||'—')} · ${esc(x.r.rank||'Recruit')} · FTO: ${esc(x.r.fto||'—')}</small></div></div><div><small>Phase</small><b>${esc(stage(x.r))}</b></div><div><small>Fortschritt</small><b>${x.pct}%</b></div><div><small>Tests</small><b>${x.tests}/5</b></div><div><small>Praxis</small><b>${x.practice}</b></div><div class="lb-points"><small>Woche</small><b>${x.points} P</b></div><div class="lb-trend ${x.trend[2]}">${x.trend[0]} ${x.trend[1]}</div></div>`).join('');
  $('#content').innerHTML=moduleHead('🥇 ACADEMY TOOLS','Academy Leaderboard','Top 10 der aktiven Rekruten – Wochenleistung und aktueller Ausbildungsstand.')+
  `<section class="card lb-hero"><div><div class="eyebrow">AKTUELLE WOCHE</div><h2>${weekLabel}</h2><p class="muted">Wochenpunkte entstehen aus dokumentierten Academy-Aktivitäten, Tests, Praxis und abgeschlossenen Ausbildungszielen. Der Gesamtfortschritt dient bei Gleichstand als nächstes Kriterium.</p></div><div class="lb-week-badge"><span>🏆</span><b>${all.length}</b><small>aktive Recruits</small></div></section>
  ${top.length?`<section class="lb-podium-wrap">${pod}</section>`:`<div class="card empty-state-v551"><b>Noch keine Recruits</b>Das Leaderboard füllt sich automatisch, sobald Recruit-Accounts vorhanden sind.</div>`}
