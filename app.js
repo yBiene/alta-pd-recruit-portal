@@ -56,8 +56,11 @@ async function refreshData(){
 
  const ids=db.users.map(x=>x.id);
  if(ids.length){
+  const progressRequest=(current.role==="admin" || (current.role==="trainer"&&current.access==="extra"))
+   ? sb.rpc("portal_visible_training_progress")
+   : sb.from("training_progress").select("*").eq("recruit_id",current.id);
   const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re},{data:notes,error:ne},{data:goals,error:ge},{data:reports,error:rpe},{data:favs,error:fe}]=await Promise.all([
-   sb.from("training_progress").select("*").in("recruit_id",ids),
+   progressRequest,
    sb.from("test_assignments").select("*").eq("active",true).in("recruit_id",ids),
    sb.from("test_results").select("*").in("recruit_id",ids).order("completed_at",{ascending:true}),
    sb.from("recruit_notes").select("*").in("recruit_id",ids).order("created_at",{ascending:true}),
