@@ -27,21 +27,22 @@ async function refreshData(){
  if(meErr||!me) throw meErr||new Error("Kein Portal-Profil gefunden.");
  current=mapProfile(me);
 
- // V6.4.9: Bereits lokal bestandene Wissenschecks einmalig direkt nach training_progress übernehmen.
+ // V6.4.6: Alte, bereits lokal bestandene Wissenschecks einmalig nach Supabase übernehmen.
+ // Dadurch werden bestehende Recruits (z. B. bereits bei Kapitel 7) in der Ausbildungsakte korrekt angezeigt.
  if(current.role==="recruit"){
-  try{
-   const localKnowledge=aeKnowledge();
-   for(let chapter=1;chapter<=22;chapter++){
-    if(localKnowledge?.[chapter]===true){
-     const {error}=await sb.from("training_progress").upsert({
-      recruit_id:current.id,chapter,completed:true,completed_by:current.id,
-      completed_at:new Date().toISOString()
-     },{onConflict:"recruit_id,chapter"});
-     if(error)throw error;
+  const syncKey=`alta_v646_progress_sync_${current.id}`;
+  if(sessionStorage.getItem(syncKey)!=="1"){
+   try{
+    const localKnowledge=aeKnowledge();
+    for(let chapter=1;chapter<=22;chapter++){
+     if(!localKnowledge?.[chapter]) break;
+     const {error}=await sb.rpc("complete_own_training_chapter",{chapter_no:chapter});
+     if(error) throw error;
     }
+    sessionStorage.setItem(syncKey,"1");
+   }catch(syncErr){
+    console.warn("Wissenscheck-Fortschritt konnte nicht synchronisiert werden:",syncErr?.message||syncErr);
    }
-  }catch(syncErr){
-   console.warn("Alter Wissenscheck-Fortschritt konnte nicht synchronisiert werden:",syncErr?.message||syncErr);
   }
  }
 
@@ -485,8 +486,27 @@ function admin(){
  const trainers=db.users.filter(x=>x.role==="trainer");
  /* V5.3.3: Akte öffnet sich ausschließlich über „Öffnen“. */
  let sel=db.users.find(x=>x.id===selectedRecruit && x.role==="recruit");
- const createRecruitCard="";
- const trainerAdmin="";
+ const createRecruitCard=recruitRecordsOnly?"":canCreateRecruit()?`<div class="card account-create-card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
+    <label>Name<input name="name" required placeholder="Recruit Name"></label>
+    <label>Dienstnummer<input name="serviceNo" required placeholder="R-103"></label>
+    <label>Benutzername<input name="username" required placeholder="vorname.nachname"></label>
+    <label>Standardpasswort<input value="123456" disabled></label>
+    <label>Leiter FTO<select name="fto" required>${v625FtoOptions(current.id,current.name,false)}</select></label>
+    <label>Ausbildungsbeginn<input name="start" value="${new Date().toLocaleDateString("de-DE")}"></label>
+    <button class="primary" type="submit">Recruit-Account erstellen</button>
+   </form></div>`:`<div class="card"><h3>Recruit-Accounts</h3><p class="muted">Mit deinem aktuellen Zugriff kannst du Ausbildungsstände bearbeiten. Neue Accounts können nur mit Extra-Zugriff angelegt werden.</p></div>`;
+ const trainerAdmin=(!recruitRecordsOnly&&isOwner())?`<div class="card trainer-admin"><div class="section-head compact"><div><div class="eyebrow">AUSBILDER</div><h3>Ausbilder-Accounts</h3></div><span class="access-badge owner">Nur Hauptadmin</span></div>
+   <form id="createTrainer" class="form-grid">
+    <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
+    <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
+    <label>Rang<select name="rank" required><option>Chief of Police</option><option>Assistant Chief</option><option>Deputy Chief</option><option>Commander</option><option>Captain</option><option selected>Sergeant</option><option>Detective</option><option>Police Officer</option><option>Recruit</option></select></label>
+    <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
+    <label>Standardpasswort<input value="123456" disabled></label>
+    <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
+    <button class="primary" type="submit">Ausbilder-Account erstellen</button>
+   </form>
+   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Chief of Police"?"selected":""}>Chief of Police</option><option ${t.rank==="Assistant Chief"?"selected":""}>Assistant Chief</option><option ${t.rank==="Deputy Chief"?"selected":""}>Deputy Chief</option><option ${t.rank==="Commander"?"selected":""}>Commander</option><option ${t.rank==="Captain"?"selected":""}>Captain</option><option ${t.rank==="Sergeant"?"selected":""}>Sergeant</option><option ${t.rank==="Detective"?"selected":""}>Detective</option><option ${t.rank==="Police Officer"?"selected":""}>Police Officer</option><option ${t.rank==="Recruit"?"selected":""}>Recruit</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="secondary" data-reset-password="${t.id}" data-reset-name="${esc(t.name)}">🔑 Passwort zurücksetzen</button><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
+  </div>`:"";
  $("#content").innerHTML=`
  <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>${recruitRecordsOnly?"Rekruten Ausbildungsakten":"Recruit-Verwaltung"}</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
  <div class="admin-grid ${sel?"":"record-is-closed"}">
@@ -1959,23 +1979,19 @@ function aeReadData(){return aeGet('read',{})}
 function aeReadSeconds(n){return +(aeReadData()[n]||0)}
 function aeMarkReadSeconds(n,sec){let d=aeReadData();d[n]=Math.max(0,(+d[n]||0)+sec);aeSet('read',d)}
 function aeKnowledge(){return aeGet('knowledge',{})}
-function aeKnowledgeOk(n,u=current){return !!aeKnowledge()[n] || !!(u?.completed||[]).includes(+n)}
+function aeKnowledgeOk(n,u=current){
+ if(u?.role==="recruit") return !!(u?.completed||[]).includes(+n);
+ return !!(u?.completed||[]).includes(+n) || !!aeKnowledge()[n];
+}
 async function aeSetKnowledge(n,v){
- let d=aeKnowledge();d[n]=!!v;aeSet('knowledge',d);
- if(v===true && current?.role==="recruit"){
-  const {error}=await sb.from("training_progress").upsert({
-   recruit_id:current.id,
-   chapter:+n,
-   completed:true,
-   completed_by:current.id,
-   completed_at:new Date().toISOString()
-  },{onConflict:"recruit_id,chapter"});
-  if(error)throw error;
-  if(!current.completed.includes(+n))current.completed.push(+n);
-  current.completed.sort((a,b)=>a-b);
-  const me=db.users.find(x=>x.id===current.id);
-  if(me&&!me.completed.includes(+n)){me.completed.push(+n);me.completed.sort((a,b)=>a-b)}
- }
+ const chapter=Number(n);
+ if(v!==true){let d=aeKnowledge();d[chapter]=false;aeSet('knowledge',d);return}
+ if(!current?.id||current?.role!=="recruit") throw new Error("Kein Recruit-Account angemeldet");
+ const {data:{user},error:authError}=await sb.auth.getUser();
+ if(authError||!user||user.id!==current.id) throw new Error("Recruit-Sitzung ist nicht gültig");
+ const {error}=await sb.rpc("complete_own_training_chapter",{chapter_no:chapter});
+ if(error) throw error;
+ let d=aeKnowledge();d[chapter]=true;aeSet('knowledge',d);
 }
 function aeReady(n){return aeReadSeconds(n)>=45 && aeKnowledgeOk(n)}
 function aeReadiness(u=current){
@@ -2041,7 +2057,18 @@ function aeKnowledgeCheck(n){
  modal.className='ae-modal';document.body.appendChild(modal);
  const render=()=>{const q=qs[step];modal.innerHTML=`<div class="ae-modal-box"><div class="eyebrow">WISSENSCHECK · KAPITEL ${n} · FRAGE ${step+1}/${qs.length}</div><div class="knowledge-progress"><i style="width:${((step)/qs.length)*100}%"></i></div><h2>${esc(q[0])}</h2><div class="ae-answers">${q[1].map((a,i)=>`<button data-a="${i}">${esc(a)}</button>`).join('')}</div><p class="muted">Mindestens 3 von 4 Fragen müssen richtig sein.</p><button class="secondary" data-close>Abbrechen</button></div>`;
   modal.querySelector('[data-close]').onclick=()=>modal.remove();
-  modal.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{if(+b.dataset.a===q[2])score++;step++;if(step<qs.length)return render();const ok=score>=3;if(ok){try{await aeSetKnowledge(n,true);await refreshData()}catch(e){console.error("Kapitel-Fortschritt:",e);toast?.("⚠️ Wissenscheck bestanden, aber Fortschritt konnte nicht gespeichert werden.");return}}modal.innerHTML=`<div class="ae-modal-box knowledge-result"><div class="eyebrow">WISSENSCHECK · ERGEBNIS</div><h2>${ok?'✓ Bestanden':'✕ Noch nicht bestanden'}</h2><p><b>${score}/${qs.length}</b> Fragen richtig.</p><p class="muted">${ok?'Der Wissenscheck wurde gespeichert.':'Lies das Kapitel noch einmal aufmerksam und versuche es danach erneut.'}</p><button class="primary" data-done>${ok?(n<22?`Kapitel ${n+1} öffnen`:'Ausbildung ansehen'):'Zurück zum Kapitel'}</button></div>`;modal.querySelector('[data-done]').onclick=()=>{modal.remove();if(ok&&n<22){nav();showChapter(n+1)}else if(ok&&n===22){nav();dashboard()}else showChapter(n)}})
+  modal.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{if(+b.dataset.a===q[2])score++;step++;if(step<qs.length)return render();const ok=score>=3;
+ if(ok){
+  try{
+   await aeSetKnowledge(n,true);
+   await refreshData();
+  }catch(e){
+   console.error("Wissenscheck konnte nicht gespeichert werden:",e);
+   toast?.("❌ Bestanden, aber Supabase-Speicherung fehlgeschlagen: "+(e?.message||e));
+   return;
+  }
+ }
+ modal.innerHTML=`<div class="ae-modal-box knowledge-result"><div class="eyebrow">WISSENSCHECK · ERGEBNIS</div><h2>${ok?'✓ Bestanden':'✕ Noch nicht bestanden'}</h2><p><b>${score}/${qs.length}</b> Fragen richtig.</p><p class="muted">${ok?'Der Wissenscheck wurde gespeichert.':'Lies das Kapitel noch einmal aufmerksam und versuche es danach erneut.'}</p><button class="primary" data-done>${ok?(n<22?`Kapitel ${n+1} öffnen`:'Ausbildung ansehen'):'Zurück zum Kapitel'}</button></div>`;modal.querySelector('[data-done]').onclick=()=>{modal.remove();if(ok&&n<22){nav();showChapter(n+1)}else if(ok&&n===22){nav();dashboard()}else showChapter(n)}})
  };
  render();
 }
