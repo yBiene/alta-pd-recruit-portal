@@ -27,22 +27,19 @@ async function refreshData(){
  if(meErr||!me) throw meErr||new Error("Kein Portal-Profil gefunden.");
  current=mapProfile(me);
 
- // V6.4.6: Alte, bereits lokal bestandene Wissenschecks einmalig nach Supabase übernehmen.
- // Dadurch werden bestehende Recruits (z. B. bereits bei Kapitel 7) in der Ausbildungsakte korrekt angezeigt.
+ // V6.4.8: Bestandene Wissenschecks zuverlässig mit Supabase synchronisieren.
+ // Läuft beim Recruit vor dem Laden von training_progress, damit die Ausbildungsakte sofort stimmt.
  if(current.role==="recruit"){
-  const syncKey=`alta_v646_progress_sync_${current.id}`;
-  if(sessionStorage.getItem(syncKey)!=="1"){
-   try{
-    const localKnowledge=aeKnowledge();
-    for(let chapter=1;chapter<=22;chapter++){
-     if(!localKnowledge?.[chapter]) break;
+  try{
+   const localKnowledge=aeKnowledge();
+   for(let chapter=1;chapter<=22;chapter++){
+    if(localKnowledge?.[chapter]===true){
      const {error}=await sb.rpc("complete_own_training_chapter",{chapter_no:chapter});
      if(error) throw error;
     }
-    sessionStorage.setItem(syncKey,"1");
-   }catch(syncErr){
-    console.warn("Wissenscheck-Fortschritt konnte nicht synchronisiert werden:",syncErr?.message||syncErr);
    }
+  }catch(syncErr){
+   console.warn("Wissenscheck-Fortschritt konnte nicht synchronisiert werden:",syncErr?.message||syncErr);
   }
  }
 
@@ -486,27 +483,8 @@ function admin(){
  const trainers=db.users.filter(x=>x.role==="trainer");
  /* V5.3.3: Akte öffnet sich ausschließlich über „Öffnen“. */
  let sel=db.users.find(x=>x.id===selectedRecruit && x.role==="recruit");
- const createRecruitCard=recruitRecordsOnly?"":canCreateRecruit()?`<div class="card account-create-card"><h3>Neuen Recruit anlegen</h3><form id="createRecruit" class="form-grid">
-    <label>Name<input name="name" required placeholder="Recruit Name"></label>
-    <label>Dienstnummer<input name="serviceNo" required placeholder="R-103"></label>
-    <label>Benutzername<input name="username" required placeholder="vorname.nachname"></label>
-    <label>Standardpasswort<input value="123456" disabled></label>
-    <label>Leiter FTO<select name="fto" required>${v625FtoOptions(current.id,current.name,false)}</select></label>
-    <label>Ausbildungsbeginn<input name="start" value="${new Date().toLocaleDateString("de-DE")}"></label>
-    <button class="primary" type="submit">Recruit-Account erstellen</button>
-   </form></div>`:`<div class="card"><h3>Recruit-Accounts</h3><p class="muted">Mit deinem aktuellen Zugriff kannst du Ausbildungsstände bearbeiten. Neue Accounts können nur mit Extra-Zugriff angelegt werden.</p></div>`;
- const trainerAdmin=(!recruitRecordsOnly&&isOwner())?`<div class="card trainer-admin"><div class="section-head compact"><div><div class="eyebrow">AUSBILDER</div><h3>Ausbilder-Accounts</h3></div><span class="access-badge owner">Nur Hauptadmin</span></div>
-   <form id="createTrainer" class="form-grid">
-    <label>Name<input name="name" required placeholder="Sgt Mustermann"></label>
-    <label>Dienstnummer<input name="serviceNo" required placeholder="S-02"></label>
-    <label>Rang<select name="rank" required><option>Chief of Police</option><option>Assistant Chief</option><option>Deputy Chief</option><option>Commander</option><option>Captain</option><option selected>Sergeant</option><option>Detective</option><option>Police Officer</option><option>Recruit</option></select></label>
-    <label>Benutzername<input name="username" required placeholder="sgt.mustermann"></label>
-    <label>Standardpasswort<input value="123456" disabled></label>
-    <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
-    <button class="primary" type="submit">Ausbilder-Account erstellen</button>
-   </form>
-   <div class="trainer-list">${trainers.map(t=>`<div class="trainer-row"><div><b>🎖️ ${esc(t.name)}</b><small>${esc(t.serviceNo)} · ${esc(t.username)}</small></div><select data-rank="${t.id}" aria-label="Rang"><option ${t.rank==="Chief of Police"?"selected":""}>Chief of Police</option><option ${t.rank==="Assistant Chief"?"selected":""}>Assistant Chief</option><option ${t.rank==="Deputy Chief"?"selected":""}>Deputy Chief</option><option ${t.rank==="Commander"?"selected":""}>Commander</option><option ${t.rank==="Captain"?"selected":""}>Captain</option><option ${t.rank==="Sergeant"?"selected":""}>Sergeant</option><option ${t.rank==="Detective"?"selected":""}>Detective</option><option ${t.rank==="Police Officer"?"selected":""}>Police Officer</option><option ${t.rank==="Recruit"?"selected":""}>Recruit</option></select><select data-access="${t.id}" aria-label="Zugriff"><option value="standard" ${t.access!=="extra"?"selected":""}>Ausbilder</option><option value="extra" ${t.access==="extra"?"selected":""}>Ausbilder + Extra-Zugriff</option></select><button class="secondary" data-reset-password="${t.id}" data-reset-name="${esc(t.name)}">🔑 Passwort zurücksetzen</button><button class="danger-btn" data-delete-trainer="${t.id}">Löschen</button></div>`).join("")||"<p class='muted'>Noch keine zusätzlichen Ausbilder-Accounts.</p>"}</div>
-  </div>`:"";
+ const createRecruitCard="";
+ const trainerAdmin="";
  $("#content").innerHTML=`
  <div class="section-head"><div><div class="eyebrow">FTO / ADMINISTRATION</div><h1>${recruitRecordsOnly?"Rekruten Ausbildungsakten":"Recruit-Verwaltung"}</h1></div><span class="status">${esc(current.name)} · ${roleLabel(current)}</span></div>
  <div class="admin-grid ${sel?"":"record-is-closed"}">
@@ -1980,7 +1958,18 @@ function aeReadSeconds(n){return +(aeReadData()[n]||0)}
 function aeMarkReadSeconds(n,sec){let d=aeReadData();d[n]=Math.max(0,(+d[n]||0)+sec);aeSet('read',d)}
 function aeKnowledge(){return aeGet('knowledge',{})}
 function aeKnowledgeOk(n,u=current){return !!aeKnowledge()[n] || !!(u?.completed||[]).includes(+n)}
-function aeSetKnowledge(n,v){let d=aeKnowledge();d[n]=!!v;aeSet('knowledge',d)}
+function aeSetKnowledge(n,v){
+ let d=aeKnowledge();d[n]=!!v;aeSet('knowledge',d);
+ if(v===true && current?.role==="recruit"){
+  sb.rpc("complete_own_training_chapter",{chapter_no:+n}).then(({error})=>{
+   if(error){console.error("Kapitel-Fortschritt:",error);toast?.("⚠️ Fortschritt konnte nicht gespeichert werden.");return}
+   if(!current.completed.includes(+n)) current.completed.push(+n);
+   current.completed.sort((a,b)=>a-b);
+   const me=db.users.find(x=>x.id===current.id);
+   if(me && !me.completed.includes(+n)){me.completed.push(+n);me.completed.sort((a,b)=>a-b)}
+  });
+ }
+}
 function aeReady(n){return aeReadSeconds(n)>=45 && aeKnowledgeOk(n)}
 function aeReadiness(u=current){
  if(!u)return 0;
