@@ -27,6 +27,25 @@ async function refreshData(){
  if(meErr||!me) throw meErr||new Error("Kein Portal-Profil gefunden.");
  current=mapProfile(me);
 
+ // V6.4.6: Alte, bereits lokal bestandene Wissenschecks einmalig nach Supabase übernehmen.
+ // Dadurch werden bestehende Recruits (z. B. bereits bei Kapitel 7) in der Ausbildungsakte korrekt angezeigt.
+ if(current.role==="recruit"){
+  const syncKey=`alta_v646_progress_sync_${current.id}`;
+  if(sessionStorage.getItem(syncKey)!=="1"){
+   try{
+    const localKnowledge=aeKnowledge();
+    for(let chapter=1;chapter<=22;chapter++){
+     if(!localKnowledge?.[chapter]) break;
+     const {error}=await sb.rpc("complete_own_training_chapter",{chapter_no:chapter});
+     if(error) throw error;
+    }
+    sessionStorage.setItem(syncKey,"1");
+   }catch(syncErr){
+    console.warn("Wissenscheck-Fortschritt konnte nicht synchronisiert werden:",syncErr?.message||syncErr);
+   }
+  }
+ }
+
  let profiles=[me];
  if(["admin","trainer"].includes(me.role)){
   const {data,error}=await sb.from("profiles").select("*").order("name");
