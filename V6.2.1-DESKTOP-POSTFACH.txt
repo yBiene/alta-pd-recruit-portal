@@ -1,0 +1,8 @@
+V6.2.1 Desktop-Postfach
+- Postfach aus der linken Academy-Navigation entfernt.
+- Postfach in die Benachrichtigungsglocke oben rechts integriert.
+- Glocken-Zähler berücksichtigt Workflow-Hinweise + ungelesene Nachrichten.
+- Benachrichtigungsfenster zeigt ungelesene Mails und Button 'Postfach öffnen'.
+- Postfach komplett als Desktop-Mailclient gestaltet: linke Ordnerleiste, Nachrichtenliste, Lesebereich, Suche, Aktualisieren, Compose-Fenster.
+- Bestehende V6.2 Supabase-Nachrichten, gelesen/ungelesen, Antworten und Aktenlinks bleiben erhalten.
+- Keine zusätzliche SQL gegenüber V6.2 erforderlich.

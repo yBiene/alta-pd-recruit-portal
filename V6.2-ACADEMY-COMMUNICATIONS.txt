@@ -1,0 +1,10 @@
+V6.2 Academy Communications
+- Echtes internes Supabase-Postfach: Posteingang/Gesendet, ungelesen/gelesen, Antworten.
+- Direkte Nachrichten zwischen Staff-Accounts.
+- Aktenkommunikation als eigener Tab in der Recruit-Akte.
+- Aktennachrichten sind mit Recruit verknüpft; direkter Akten-Link im Postfach.
+- Bei neuen Zielen, Vermerken und Praxisberichten durch Sergeant oder höher werden Haupt-/Zweit-FTO automatisch benachrichtigt (Sender ausgenommen).
+- Ziele, Notizen und Praxis zeigen den Verfasser; Ziele/Praxis speichern zusätzlich den Rang.
+- Recruit sieht die interne FTO-Aktenkommunikation nicht.
+- Dies ist internes Portal-Mail, kein Versand an externe E-Mail-Adressen.
+- SUPABASE-V6.2-ACADEMY-COMMUNICATIONS.sql einmal ausführen.

@@ -1,0 +1,1 @@
+FTOs werden jetzt über echte Account-UUIDs zugeordnet. SQL einmal ausführen; danach Leiter FTO und Weiterer FTO beim Recruit einmal auswählen und Stammdaten speichern. Versandfehler werden sichtbar angezeigt.

@@ -1,0 +1,1 @@
+Beim Aktualisieren bleibt der Benutzer auf der aktuell geöffneten Portal-Seite. Unterstützt normale Ansichten, Kapitel und geöffnete Recruit-Akten über die bestehende Hash-/History-Navigation. V6.1.2 Banner-Fix und alle bisherigen Funktionen bleiben erhalten.

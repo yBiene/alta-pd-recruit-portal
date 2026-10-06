@@ -1960,7 +1960,7 @@ function aeReadData(){return aeGet('read',{})}
 function aeReadSeconds(n){return +(aeReadData()[n]||0)}
 function aeMarkReadSeconds(n,sec){let d=aeReadData();d[n]=Math.max(0,(+d[n]||0)+sec);aeSet('read',d)}
 function aeKnowledge(){return aeGet('knowledge',{})}
-function aeKnowledgeOk(n){return !!aeKnowledge()[n]}
+function aeKnowledgeOk(n,u=current){return !!aeKnowledge()[n] || !!(u?.completed||[]).includes(+n)}
 function aeSetKnowledge(n,v){let d=aeKnowledge();d[n]=!!v;aeSet('knowledge',d)}
 function aeReady(n){return aeReadSeconds(n)>=45 && aeKnowledgeOk(n)}
 function aeReadiness(u=current){
@@ -2026,7 +2026,7 @@ function aeKnowledgeCheck(n){
  modal.className='ae-modal';document.body.appendChild(modal);
  const render=()=>{const q=qs[step];modal.innerHTML=`<div class="ae-modal-box"><div class="eyebrow">WISSENSCHECK · KAPITEL ${n} · FRAGE ${step+1}/${qs.length}</div><div class="knowledge-progress"><i style="width:${((step)/qs.length)*100}%"></i></div><h2>${esc(q[0])}</h2><div class="ae-answers">${q[1].map((a,i)=>`<button data-a="${i}">${esc(a)}</button>`).join('')}</div><p class="muted">Mindestens 3 von 4 Fragen müssen richtig sein.</p><button class="secondary" data-close>Abbrechen</button></div>`;
   modal.querySelector('[data-close]').onclick=()=>modal.remove();
-  modal.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{if(+b.dataset.a===q[2])score++;step++;if(step<qs.length)return render();const ok=score>=3;if(ok)aeSetKnowledge(n,true);modal.innerHTML=`<div class="ae-modal-box knowledge-result"><div class="eyebrow">WISSENSCHECK · ERGEBNIS</div><h2>${ok?'✓ Bestanden':'✕ Noch nicht bestanden'}</h2><p><b>${score}/${qs.length}</b> Fragen richtig.</p><p class="muted">${ok?'Der Wissenscheck wurde gespeichert.':'Lies das Kapitel noch einmal aufmerksam und versuche es danach erneut.'}</p><button class="primary" data-done>${ok?(n<22?`Kapitel ${n+1} öffnen`:'Ausbildung ansehen'):'Zurück zum Kapitel'}</button></div>`;modal.querySelector('[data-done]').onclick=()=>{modal.remove();if(ok&&n<22){nav();showChapter(n+1)}else if(ok&&n===22){nav();dashboard()}else showChapter(n)}})
+  modal.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{if(+b.dataset.a===q[2])score++;step++;if(step<qs.length)return render();const ok=score>=3;if(ok)aeSetKnowledge(n,true);modal.innerHTML=`<div class="ae-modal-box knowledge-result"><div class="eyebrow">WISSENSCHECK · ERGEBNIS</div><h2>${ok?'✓ Bestanden':'✕ Noch nicht bestanden'}</h2><p><b>${score}/${qs.length}</b> Fragen richtig.</p><p class="muted">${ok?'Der Wissenscheck wurde gespeichert.':'Lies das Kapitel noch einmal aufmerksam und versuche es danach erneut.'}</p><button class="primary" data-done>${ok?(n<22?`Kapitel ${n+1} öffnen`:'Ausbildung ansehen'):'Zurück zum Kapitel'}</button></div>`;modal.querySelector('[data-done]').onclick=async()=>{if(ok){try{const {error}=await sb.rpc('complete_own_training_chapter',{chapter_no:n});if(error)throw error;await refreshData()}catch(e){console.error('Kapitel-Fortschritt:',e);toast?.('⚠️ Kapitel konnte nicht in der Ausbildungsakte gespeichert werden.');return}}modal.remove();if(ok&&n<22){nav();showChapter(n+1)}else if(ok&&n===22){nav();dashboard()}else showChapter(n)}})
  };
  render();
 }
@@ -2220,4 +2220,4 @@ account=function(){_accountV61();v61InstallInboxButton()};
  },50);
 })();
 
-/* V6.4.4 – Kapitel-Freischaltung: Wissenscheck Kapitel N schaltet Kapitel N+1 frei. */
+/* V6.4.5 – Wissenscheck synchronisiert Ausbildungsakte: Wissenscheck Kapitel N schaltet Kapitel N+1 frei. */

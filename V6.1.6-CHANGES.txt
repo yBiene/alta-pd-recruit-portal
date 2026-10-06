@@ -1,0 +1,7 @@
+V6.1.6:
+- Ausbildungsakte: aktive Registerkarte + Scrollposition bleiben nach Abhaken erhalten.
+- Mein Account: Ausbildungsverlauf zeigt 3 Einträge, Rest aufklappbar.
+- Wissenscheck: 4 Fragen pro Durchlauf, mindestens 3/4 richtig.
+- Passwortkarte: Button sauber unter den beiden Passwortfeldern.
+- Ausbildungsakte > Ausbildung: FTO kann Phase 1–4 manuell freischalten.
+- Für Phasenfreigabe SUPABASE-V6.1.6-PHASEN-FREIGABE.sql einmal ausführen.
