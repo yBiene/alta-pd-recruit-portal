@@ -27,22 +27,20 @@ async function refreshData(){
  if(meErr||!me) throw meErr||new Error("Kein Portal-Profil gefunden.");
  current=mapProfile(me);
 
- // V6.4.6: Alte, bereits lokal bestandene Wissenschecks einmalig nach Supabase übernehmen.
- // Dadurch werden bestehende Recruits (z. B. bereits bei Kapitel 7) in der Ausbildungsakte korrekt angezeigt.
+ // V6.4.14: Lokale Alt-Fortschritte des eingeloggten Recruits zentral übernehmen.
  if(current.role==="recruit"){
-  const syncKey=`alta_v646_progress_sync_${current.id}`;
-  if(sessionStorage.getItem(syncKey)!=="1"){
-   try{
-    const localKnowledge=aeKnowledge();
-    for(let chapter=1;chapter<=22;chapter++){
-     if(!localKnowledge?.[chapter]) break;
-     const {error}=await sb.rpc("complete_own_training_chapter",{chapter_no:chapter});
-     if(error) throw error;
-    }
-    sessionStorage.setItem(syncKey,"1");
-   }catch(syncErr){
-    console.warn("Wissenscheck-Fortschritt konnte nicht synchronisiert werden:",syncErr?.message||syncErr);
+  try{
+   const localKnowledge=aeKnowledge();
+   const chapters=[];
+   for(let chapter=1;chapter<=22;chapter++){
+    if(localKnowledge?.[chapter]===true) chapters.push(chapter);
    }
+   if(chapters.length){
+    const {error}=await sb.rpc("sync_own_training_progress",{chapter_numbers:chapters});
+    if(error) throw error;
+   }
+  }catch(syncErr){
+   console.error("Alt-Fortschritt synchronisieren:",syncErr);
   }
  }
 
@@ -56,11 +54,10 @@ async function refreshData(){
 
  const ids=db.users.map(x=>x.id);
  if(ids.length){
-  const progressRequest=(current.role==="admin" || (current.role==="trainer"&&current.access==="extra"))
-   ? sb.rpc("portal_visible_training_progress")
-   : sb.from("training_progress").select("*").eq("recruit_id",current.id);
   const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re},{data:notes,error:ne},{data:goals,error:ge},{data:reports,error:rpe},{data:favs,error:fe}]=await Promise.all([
-   progressRequest,
+   ((current.role==="admin" || (current.role==="trainer"&&current.access==="extra"))
+    ? sb.rpc("portal_visible_training_progress")
+    : sb.from("training_progress").select("*").eq("recruit_id",current.id)),
    sb.from("test_assignments").select("*").eq("active",true).in("recruit_id",ids),
    sb.from("test_results").select("*").in("recruit_id",ids).order("completed_at",{ascending:true}),
    sb.from("recruit_notes").select("*").in("recruit_id",ids).order("created_at",{ascending:true}),
@@ -1983,18 +1980,18 @@ function aeReadSeconds(n){return +(aeReadData()[n]||0)}
 function aeMarkReadSeconds(n,sec){let d=aeReadData();d[n]=Math.max(0,(+d[n]||0)+sec);aeSet('read',d)}
 function aeKnowledge(){return aeGet('knowledge',{})}
 function aeKnowledgeOk(n,u=current){
- if(u?.role==="recruit") return !!(u?.completed||[]).includes(+n);
- return !!(u?.completed||[]).includes(+n) || !!aeKnowledge()[n];
+ if(u?.role==="recruit") return !!(u?.completed||[]).includes(+n) || !!aeKnowledge()[n];
+ return !!(u?.completed||[]).includes(+n);
 }
 async function aeSetKnowledge(n,v){
  const chapter=Number(n);
- if(v!==true){let d=aeKnowledge();d[chapter]=false;aeSet('knowledge',d);return}
- if(!current?.id||current?.role!=="recruit") throw new Error("Kein Recruit-Account angemeldet");
- const {data:{user},error:authError}=await sb.auth.getUser();
- if(authError||!user||user.id!==current.id) throw new Error("Recruit-Sitzung ist nicht gültig");
- const {error}=await sb.rpc("complete_own_training_chapter",{chapter_no:chapter});
- if(error) throw error;
- let d=aeKnowledge();d[chapter]=true;aeSet('knowledge',d);
+ let d=aeKnowledge();
+ d[chapter]=!!v;
+ aeSet('knowledge',d);
+ if(v===true && current?.role==="recruit"){
+  const {error}=await sb.rpc("complete_own_training_chapter",{chapter_no:chapter});
+  if(error) throw error;
+ }
 }
 function aeReady(n){return aeReadSeconds(n)>=45 && aeKnowledgeOk(n)}
 function aeReadiness(u=current){
@@ -2066,8 +2063,8 @@ function aeKnowledgeCheck(n){
    await aeSetKnowledge(n,true);
    await refreshData();
   }catch(e){
-   console.error("Wissenscheck konnte nicht gespeichert werden:",e);
-   toast?.("❌ Bestanden, aber Supabase-Speicherung fehlgeschlagen: "+(e?.message||e));
+   console.error("Fortschritt speichern:",e);
+   toast?.("❌ Fortschritt konnte nicht zentral gespeichert werden: "+(e?.message||e));
    return;
   }
  }
