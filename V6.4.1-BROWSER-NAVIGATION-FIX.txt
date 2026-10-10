@@ -1,8 +1,0 @@
-V6.4.1
-Browser-Navigation neu aufgebaut:
-Dashboard -> Mein Account -> Zurück = Dashboard -> Vorwärts = Mein Account.
-Alle alten popstate-Listener sind deaktiviert; nur der neue Router verarbeitet Browser Zurück/Vorwärts.
-Recruit-Akten und deren Reiter werden ebenfalls als History-Schritte gespeichert.
-Reload behält die aktuelle Route; normaler Login startet auf Dashboard.
-V6.4 Ausbildungsakte und alle bisherigen Funktionen bleiben erhalten.
-Keine neue SQL.

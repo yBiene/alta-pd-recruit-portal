@@ -1,7 +1,0 @@
-V6.4.2
-- Nur Accounts mit Ausbilder + Zugriff (hasExtraTrainerAccess) können die komplette Sidebar-Kategorie AUSBILDUNG ein-/ausklappen.
-- Klick auf AUSBILDUNG bzw. Pfeil ▾/▸ blendet alle 22 Kapitel ein oder aus.
-- Zustand wird lokal gespeichert und bleibt nach Reload/Login auf diesem Browser erhalten.
-- Recruit-Accounts sehen die Navigation wie bisher und können sie nicht einklappen.
-- V6.4.1 Browsernavigation und V6.4 Ausbildungsakte bleiben erhalten.
-Keine SQL.

@@ -1,5 +1,0 @@
-V6.2.4
-- Sichtbare Beschriftung in der Rekruten-Ausbildungsakte von „FTO“ auf „Leiter FTO“ geändert.
-- „Weiterer FTO“ bleibt unverändert.
-- Die automatische Empfängerlogik aus V6.2.3 bleibt erhalten.
-- Keine neue SQL erforderlich.

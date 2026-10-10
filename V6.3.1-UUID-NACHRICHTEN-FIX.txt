@@ -1,6 +1,0 @@
-V6.3.1
-Behebt den Fehler invalid input syntax for type uuid: '5'/'6'.
-Nachrichten verwenden jetzt die echte Supabase-Auth-UUID als Absender.
-FTO-Empfänger und Dropdowns akzeptieren nur echte UUID-Profile.
-Alle V6.3 Funktionen bleiben erhalten.
-Keine neue Pflicht-SQL.

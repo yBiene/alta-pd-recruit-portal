@@ -1,6 +1,0 @@
-V6.2.8 – Login Dashboard
-- Nach erfolgreichem normalen Login landet der Benutzer immer auf dem Dashboard.
-- Ein alter gespeicherter „Mein Account“-Stand überschreibt den Login nicht mehr.
-- Ausnahme bleibt die Erstanmeldung mit Pflicht-Passwortwechsel: dort öffnet sich weiterhin Mein Account/Sicherheit, damit das Standardpasswort geändert werden kann.
-- Alle Funktionen aus V6.2.7 inklusive UUID-FTO-Zuordnung bleiben erhalten.
-- Keine zusätzliche SQL gegenüber V6.2.7.

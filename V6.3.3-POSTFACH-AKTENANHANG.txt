@@ -1,1 +1,0 @@
-Vollständige Details in FTO-Nachrichten; Aktenanhang zeigt Recruit und Zielbereich; Klick öffnet Praxis/Ziele/Notizen/Tests/Ausbildung exakt. V6.3.2 Navigation bleibt erhalten. Keine neue SQL.

@@ -1,8 +1,0 @@
-ALTA PD Portal V5.1 – Academy Workflow
-- Academy Board im Command Center
-- Academy-Pass für Recruits und in der Ausbildungsakte
-- Aktive Ausbildungssession mit Timer
-- Session-Ende speichert automatisch einen FTO-Bericht/Ausbildungszeit in Supabase
-- FTO-Übergabe wird als Ausbildungs-Vermerk in Supabase gespeichert
-- Abschlussworkflow: Voraussetzungen -> FTO-Empfehlung -> Command-Streifenfreigabe
-- Rollen-Dashboards, Tabs, GTA-Kapitelbilder und bisherige Funktionen bleiben erhalten

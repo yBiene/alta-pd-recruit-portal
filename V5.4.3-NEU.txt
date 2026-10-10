@@ -1,9 +1,0 @@
-ALTA PD Portal V5.4.3 – Komfort & Übersicht
-
-- Einklappbare Desktop-Seitenleiste; Zustand wird lokal gespeichert.
-- Globale Suche erweitert: Kapitel, Portalbereiche und (für FTO/Admin) Recruits/Ausbildungsakten.
-- Benachrichtigungen sind jetzt verständlicher und direkt anklickbar.
-- Klick auf einen Hinweis führt zum passenden Bereich.
-- Ausbildungskalender zeigt bei Terminen zusätzlich einen relativen Countdown.
-- Bestehender Klick auf Name/Rang oben rechts öffnet weiterhin direkt „Mein Account“.
-- Keine neue SQL-Migration erforderlich.

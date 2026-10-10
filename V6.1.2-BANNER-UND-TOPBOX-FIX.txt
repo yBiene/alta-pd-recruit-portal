@@ -1,1 +1,0 @@
-Originaler Dashboard-Banner image26.png wieder sichtbar. Ursache war ein !important-Background aus V6.0.2 Color Polish. Die zusätzliche Inbox-Box oben neben der Suche wurde entfernt. V6.1 Workflow/FTO Assist bleibt ansonsten erhalten.

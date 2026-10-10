@@ -1,9 +1,0 @@
-V6.2.5 – FTO-Auswahl
-- Leiter FTO ist jetzt ein Dropdown statt freier Texteingabe.
-- Weiterer FTO ist jetzt ein Dropdown statt freier Texteingabe.
-- Angezeigt werden Rang + Name + Dienstnummer aller vorhandenen Admin-/Ausbilder-Accounts.
-- Weiterer FTO kann optional auf „Kein weiterer FTO“ gesetzt werden.
-- Bestehende alte manuelle Werte werden als „Altbestand“ erhalten, bis sie geändert werden.
-- Beim Erstellen eines Recruit-Accounts wird Leiter FTO ebenfalls per Dropdown gewählt.
-- Die automatische Nachrichten-Zuordnung aus V6.2.3/6.2.4 bleibt erhalten.
-- Keine neue SQL erforderlich.

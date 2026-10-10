@@ -1,1 +1,0 @@
-Fix: In Rekruten Ausbildungsakte > Ausbildung bleibt nach Kapitel-Freigaben der Tab Ausbildung aktiv. Zusätzlich wird die Position des gerade abgehakten Kapitels wiederhergestellt. Tab-Zustand wird in sessionStorage gesichert.

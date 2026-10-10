@@ -1,9 +1,0 @@
-V6.3.2 – Navigation FIX
-- Normaler Login startet immer auf Dashboard.
-- Pflicht-Passwortwechsel bleibt die einzige Ausnahme.
-- F5/Strg+R behält die aktuell geöffnete Seite über die URL (#dashboard, #account, #chapter-X, #admin-recruit-ID usw.).
-- Browser Zurück/Vorwärts rendert die vorherige/nächste Portal-Seite.
-- Navigation erzeugt echte History-Einträge.
-- Recruit-Akte öffnen/schließen wird ebenfalls in der Browser-History berücksichtigt.
-- Alle V6.3.1 Nachrichten-/UUID-Fixes und V6.3 Academy-Funktionen bleiben erhalten.
-Keine neue SQL.

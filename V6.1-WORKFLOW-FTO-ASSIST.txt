@@ -1,4 +1,0 @@
-V6.1 basiert ausdrücklich auf V6.0.2 Color Polish.
-Banner/CSS der V6.0.2 wurde nicht durch den späteren V6.0.3 Banner-Restore überschrieben.
-Neu: Recruit Weiterlernen, Aufgaben-Inbox, automatische Handlungsbedarfe, FTO-Tagesliste, Akten-Schnellaktionen.
-Keine SQL-Migration erforderlich; verwendet vorhandene Portal-/Supabase-Daten.

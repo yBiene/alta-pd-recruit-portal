@@ -1,7 +1,0 @@
-V6.2.2
-- Separater Postfach-Button ✉️ oben rechts direkt neben der Glocke.
-- Postfach-Button zeigt ungelesene Nachrichten.
-- Glocke zeigt nur noch echte ungelesene Portal-/Postfachnachrichten und keine automatisch abgeleiteten Handlungsbedarf-Zähler.
-- Wenn keine ungelesene Nachricht vorhanden ist, erscheint keine rote 1.
-- Desktop-Postfach aus V6.2.1 bleibt unverändert erhalten.
-- Keine neue SQL erforderlich.

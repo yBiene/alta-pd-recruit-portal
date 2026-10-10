@@ -1,1 +1,0 @@
-Rekrutenauswahl bei geöffneter Ausbildungsakte verbreitert und neu angeordnet. Name/Dienstinfos stehen oben, Aktionsbuttons darunter in zwei gleich breiten Spalten. Dadurch keine gequetschten Namen/Statusanzeigen mehr. Mobile bleibt einspaltig.
