@@ -17,7 +17,7 @@ function mapProfile(p){
   role:p.role, access:p.access_level||"standard", rank:p.rank||"",
   fto:p.fto||"", start:p.training_start||"", status:p.status||"In Ausbildung",
   mustChangePassword:!!p.must_change_password, secondaryFto:p.secondary_fto||"", leaderFtoId:p.leader_fto_id||null, secondaryFtoId:p.secondary_fto_id||null, lastLogin:p.last_login||null, unlockedPhase:+p.unlocked_phase||1,
-  completed:[], assignedTests:[], testResults:[], notes:[], goals:[], activity:[], reports:[], favorites:[]
+  completed:[], unlockedChapters:[], ratings:[], assignedTests:[], testResults:[], notes:[], goals:[], activity:[], reports:[], favorites:[]
  };
 }
 async function refreshData(){
@@ -27,23 +27,6 @@ async function refreshData(){
  if(meErr||!me) throw meErr||new Error("Kein Portal-Profil gefunden.");
  current=mapProfile(me);
 
- // V6.4.14: Lokale Alt-Fortschritte des eingeloggten Recruits zentral übernehmen.
- if(current.role==="recruit"){
-  try{
-   const localKnowledge=aeKnowledge();
-   const chapters=[];
-   for(let chapter=1;chapter<=22;chapter++){
-    if(localKnowledge?.[chapter]===true) chapters.push(chapter);
-   }
-   if(chapters.length){
-    const {error}=await sb.rpc("sync_own_training_progress",{chapter_numbers:chapters});
-    if(error) throw error;
-   }
-  }catch(syncErr){
-   console.error("Alt-Fortschritt synchronisieren:",syncErr);
-  }
- }
-
  let profiles=[me];
  if(["admin","trainer"].includes(me.role)){
   const {data,error}=await sb.from("profiles").select("*").order("name");
@@ -52,6 +35,17 @@ async function refreshData(){
  }
  db.users=profiles.map(mapProfile);
 
+ // Freigaben und Bewertungen werden aus Supabase geladen; bei Fehler bleiben Kapitel für Rekruten gesperrt.
+ try {
+  const {data:unlocks,error:unlockError}=await sb.from("chapter_unlocks").select("recruit_id,chapter,unlocked_at,unlocked_by");
+  if(unlockError) throw unlockError;
+  for(const u of db.users)u.unlockedChapters=(unlocks||[]).filter(x=>x.recruit_id===u.id).map(x=>x.chapter);
+ } catch(e){console.warn("Kapitel-Freigaben nicht verfügbar:",e.message);for(const u of db.users)u.unlockedChapters=[];}
+ try {
+  const {data:ratings,error:ratingError}=await sb.from("fto_ratings").select("*").order("created_at",{ascending:false});
+  if(ratingError)throw ratingError;
+  for(const u of db.users)u.ratings=(ratings||[]).filter(x=>x.recruit_id===u.id);
+ }catch(e){console.warn("FTO-Bewertungen:",e.message);}
  const ids=db.users.map(x=>x.id);
  if(ids.length){
   const [{data:prog,error:pe},{data:assign,error:ae},{data:results,error:re},{data:notes,error:ne},{data:goals,error:ge},{data:reports,error:rpe},{data:favs,error:fe}]=await Promise.all([
@@ -173,7 +167,7 @@ const TESTS=[
 
 const chapterIcons={1:"📋",2:"🏛️",3:"👔",4:"📱",5:"📢",6:"🗺️",7:"💻",8:"🚙",9:"🚓",10:"🤝",11:"⚖️",12:"📁",13:"🔫",14:"🎯",15:"🎓",16:"📑",17:"🎧",18:"🔋",19:"🧪",20:"📖",21:"📍",22:"⚠️"};
 const chapterCardImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-art-${String(i+1).padStart(2,"0")}.webp?v=hd60`]));
-const chapterBannerImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,"kapitel-banner-polizei.webp?v=uniform20261010"]));
+const chapterBannerImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,"kapitel-banner-original.png?v=20261010fix2"]));
 function nav(){
  const canCollapseTraining=hasExtraTrainerAccess(current);
  let collapsed=false;
@@ -184,7 +178,7 @@ function nav(){
  }else{
   html+=`<div class="nav-label">AUSBILDUNG</div>`;
  }
- for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon chapter-nav-emoji" aria-hidden="true">${chapterIcons[x.n]||"📘"}</span>${esc(x.title)}</button>`;
+ for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon chapter-nav-emoji" aria-hidden="true">${!isTrainer(current)&&!(current.unlockedChapters||[]).includes(x.n)?"🔒":chapterIcons[x.n]||"📘"}</span>${esc(x.title)}</button>`;
  if(canCollapseTraining)html+=`</div>`;
  html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button><div class="nav-label">PORTAL</div><button class="nav-btn" data-view="news">📢 Mitteilungen</button><button class="nav-btn" data-view="documents">📂 Dokumente</button>`;
  if(hasExtraTrainerAccess(current)) html+=`<div class="nav-label">FTO / ADMIN</div>${isOwner(current)?`<button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn v58-command-live-nav" data-view="command-live">🟢 Live-Benutzer</button>`:""}<button class="nav-btn" data-view="accounts">👤 Account-Verwaltung</button><button class="nav-btn" data-view="admin">📂 Rekruten Ausbildungsakten</button>`;
@@ -358,7 +352,13 @@ function editableChapterHtml(n,html){
 }
 
 function showChapter(n){
- const c=CHAPTERS[n]; if(!c)return; localStorage.setItem("alta_last_chapter",String(n));
+ const c=CHAPTERS[n]; if(!c)return;
+ if(!isTrainer(current)&&!(current.unlockedChapters||[]).includes(n)){
+  setActive(`[data-chapter="${n}"]`);$("#pageTitle").textContent=`Kapitel ${n} · Gesperrt`;
+  $("#content").innerHTML=`<div class="card apd-locked"><h1>🔒 Kapitel ${n} ist gesperrt</h1><p>${esc(c.title)}</p><p>Dieses Kapitel muss von einem Ausbilder oder einer höheren Dienststellung für dich freigegeben werden.</p><button class="secondary" id="lockedBack">Zum Dashboard</button></div>`;
+  $("#lockedBack").onclick=()=>showView("dashboard");return;
+ }
+ localStorage.setItem("alta_last_chapter",String(n));
  setActive(`[data-chapter="${n}"]`); $("#pageTitle").textContent=`Kapitel ${n}`;
  const done=current.completed.includes(n);
  const chapterImages=(n===6||n===21)?["gebietskarte.png"]:(c.images||[]); const imgs=chapterImages.map(i=>`<img src="${i}" alt="Handbuch-Abbildung ${i}" onclick="window.open(this.src,'_blank')">`).join("");
@@ -680,6 +680,8 @@ function adminRecruit(r){
    <details class="v640-graduation"><summary>🎓 Abschlussbereitschaft & Voraussetzungen anzeigen</summary><div>${graduationChecklist(r)}</div></details>
   </section><section class="record-tab-panel" data-record-panel="chapters"><div id="record-chapters"></div>
   
+  <div class="card inner-card apd-fto-permissions"><div class="eyebrow">🔐 KAPITELFREIGABEN</div><h3>Kapitel für diesen Rekruten freischalten</h3><p class="muted">Nur Ausbilder und höher. Jede Freigabe wird zentral gespeichert und protokolliert.</p><div class="apd-unlock-grid">${titles.map(x=>`<button type="button" class="apd-unlock ${r.unlockedChapters.includes(x.n)?"is-open":""}" data-unlock="${x.n}">${r.unlockedChapters.includes(x.n)?"🔓":"🔒"} ${x.n}. ${esc(x.title)} <small>${r.unlockedChapters.includes(x.n)?"Freigegeben":"Gesperrt"}</small></button>`).join("")}</div></div>
+  <div class="card inner-card apd-fto-rating"><div class="eyebrow">⭐ AUSBILDUNGSBEWERTUNGEN</div><h3>FTO-Bewertung erfassen</h3><form id="apdRatingForm" class="apd-rating-form"><label>Funk<select name="funk">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===3?"selected":""}>${n} / 5</option>`).join("")}</select></label><label>Streifendienst<select name="streife">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===3?"selected":""}>${n} / 5</option>`).join("")}</select></label><label>Bürgerkontakt<select name="buerger">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===3?"selected":""}>${n} / 5</option>`).join("")}</select></label><label>Verhalten<select name="verhalten">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===3?"selected":""}>${n} / 5</option>`).join("")}</select></label><label class="apd-wide">Bemerkung<textarea name="note" maxlength="1000" placeholder="Beobachtungen und nächste Schritte"></textarea></label><button class="primary">Bewertung speichern</button></form><div class="apd-rating-list">${(r.ratings||[]).map(x=>`<p>⭐ ${esc(new Date(x.created_at).toLocaleDateString("de-DE"))} · Funk ${x.funk}/5 · Streife ${x.streife}/5 · Bürgerkontakt ${x.buerger}/5 · Verhalten ${x.verhalten}/5<br><small>${esc(x.note||"")}</small></p>`).join("")||"Noch keine Bewertungen."}</div></div>
   <div class="v640-section-title"><div><div class="eyebrow">📚 AUSBILDUNG</div><h3>Kapitel nach Ausbildungsphasen</h3></div><span>${r.completed.length}/22 abgeschlossen</span></div>
   <div class="v640-phase-groups">${ACADEMY_PHASES.map(ph=>{const pts=titles.filter(x=>x.n>=ph.from&&x.n<=ph.to),done=pts.filter(x=>r.completed.includes(x.n)).length;return `<details class="v640-phase-group" ${(+r.unlockedPhase||1)===ph.n?"open":""}><summary><div><b>Phase ${ph.n} · ${esc(ph.name)}</b><small>Kapitel ${ph.from}–${ph.to}</small></div><span>${done}/${pts.length} ✓</span></summary><div class="chapter-checks chapter-category-grid">${pts.map(x=>`<label class="check chapter-category-card" style="--chapter-bg:url(\'${chapterCardImages[x.n]}\')"><input type="checkbox" data-check="${x.n}" ${r.completed.includes(x.n)?"checked":""}><span><b>${x.n}.</b> ${esc(x.title)}</span></label>`).join("")}</div></details>`}).join("")}</div>
   </section><section class="record-tab-panel" data-record-panel="tests"><div id="record-tests"></div><h3>Tests zuweisen</h3>
@@ -2195,3 +2197,27 @@ account=function(){_accountV61();v61InstallInboxButton()};
 })();
 
 /* V6.4.5 – Wissenscheck synchronisiert Ausbildungsakte: Wissenscheck Kapitel N schaltet Kapitel N+1 frei. */
+
+// FTO-Module: Ereignisdelegation funktioniert auch nach dem Neuzeichnen der Rekrutenakte.
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("[data-unlock]");if(!b||!isTrainer(current))return;
+ const chapter=Number(b.dataset.unlock),recruitId=selectedRecruit;
+ const recruit=db.users.find(u=>u.id===recruitId);if(!recruit||recruit.role!=="recruit")return;
+ const unlocked=(recruit.unlockedChapters||[]).includes(chapter);
+ if(!confirm(`Kapitel ${chapter} für ${recruit.name} ${unlocked?"sperren":"freigeben"}?`))return;
+ b.disabled=true;
+ try{
+  const {error}=await sb.rpc("fto_set_chapter_unlock",{p_recruit_id:recruitId,p_chapter:chapter,p_unlock:!unlocked});
+  if(error)throw error;
+  await refreshData();selectedRecruit=recruitId;admin();
+ }catch(err){alert("Freigabe fehlgeschlagen: "+err.message);b.disabled=false;}
+});
+document.addEventListener("submit",async e=>{
+ if(e.target.id!=="apdRatingForm")return;
+ e.preventDefault();if(!isTrainer(current))return;
+ const form=e.target,values=new FormData(form),recruitId=selectedRecruit;
+ const payload={recruit_id:recruitId,funk:+values.get("funk"),streife:+values.get("streife"),buerger:+values.get("buerger"),verhalten:+values.get("verhalten"),note:String(values.get("note")||"").trim(),trainer_id:current.id};
+ const btn=form.querySelector('button[type="submit"],button:not([type])');if(btn)btn.disabled=true;
+ try{const {error}=await sb.from("fto_ratings").insert(payload);if(error)throw error;await refreshData();selectedRecruit=recruitId;admin();}
+ catch(err){alert("Bewertung konnte nicht gespeichert werden: "+err.message);if(btn)btn.disabled=false;}
+});
