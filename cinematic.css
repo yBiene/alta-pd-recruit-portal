@@ -47,3 +47,17 @@ body:not(.cinematic-off) .content > .hero,body:not(.cinematic-off) .content > .c
 .chapter-header:has(.cinematic-academy):before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(3,13,25,.93),rgba(4,15,28,.53));pointer-events:none}
 .cinematic-off .chapter-header{background:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.55)),url('image1.png') center/cover!important}
 @media(prefers-reduced-motion:reduce){.chapter-header{background:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.55)),url('image1.png') center/cover!important}}
+
+/* V1.1 Sichtbarkeits-FIX: Videos vor der Deckfläche, unter den Inhalten */
+.login-shell{isolation:isolate}
+.login-shell > .cinematic-login{z-index:0!important;opacity:.9!important;pointer-events:none}
+.login-shell > .cinematic-login-shade{z-index:1!important;pointer-events:none}
+.login-shell > :not(.cinematic-login):not(.cinematic-login-shade){position:relative;z-index:2}
+.cinematic-hero{isolation:isolate}
+.cinematic-hero > .cinematic-dashboard{z-index:0!important;opacity:1!important;pointer-events:none}
+.cinematic-hero > .cinematic-hero-shade{z-index:1!important;pointer-events:none}
+.cinematic-hero > .cinematic-hero-copy{z-index:2!important}
+.chapter-header{position:relative;isolation:isolate;overflow:hidden}
+.chapter-header > .cinematic-academy{z-index:0!important;opacity:.85!important;pointer-events:none}
+.chapter-header:has(> .cinematic-academy):before{z-index:1!important}
+.chapter-header:has(> .cinematic-academy) > :not(.cinematic-academy){position:relative;z-index:2}
