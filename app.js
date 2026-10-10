@@ -363,8 +363,10 @@ function showChapter(n){
  const done=current.completed.includes(n);
  const chapterImages=(n===6||n===21)?["gebietskarte.png"]:(c.images||[]); const imgs=chapterImages.map(i=>`<img src="${i}" alt="Handbuch-Abbildung ${i}" onclick="window.open(this.src,'_blank')">`).join("");
  $("#content").innerHTML=`
- <div class="chapter-header" style="background-image:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.58)),url('${chapterBannerImages[n]}')">
-  <div><div class="chapter-no">KAPITEL ${String(n).padStart(2,"0")}</div><h1>${esc(c.title)}</h1><span class="status">${done?"✓ Abgeschlossen":"● In Ausbildung"}</span></div>
+ <div class="chapter-header apd-photo-banner">
+  <img class="apd-banner-photo" src="kapitel-banner-original.png?v=20261010direct3" alt="Polizeibeamte am Streifenwagen in Los Santos" loading="eager" decoding="async" onerror="this.onerror=null;this.src='kapitel-banner-polizei.webp?v=20261010direct3'">
+  <div class="apd-banner-shade" aria-hidden="true"></div>
+  <div class="apd-banner-caption"><div class="chapter-no">KAPITEL ${String(n).padStart(2,"0")}</div><h1>${esc(c.title)}</h1><span class="status">${done?"✓ Abgeschlossen":"● In Ausbildung"}</span></div>
  </div>
  <div class="chapter-body">
   <article class="card article">${editableChapterHtml(n,c.html) || "<p>Für dieses Kapitel wurden keine zusätzlichen Textblöcke erkannt.</p>"}${imgs?`<h3>Bebilderte Anleitung</h3><div class="gallery">${imgs}</div>`:""}</article>
