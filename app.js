@@ -173,6 +173,7 @@ const TESTS=[
 
 const chapterIcons={1:"📋",2:"🏛️",3:"👔",4:"📱",5:"📢",6:"🗺️",7:"💻",8:"🚙",9:"🚓",10:"🤝",11:"⚖️",12:"📁",13:"🔫",14:"🎯",15:"🎓",16:"📑",17:"🎧",18:"🔋",19:"🧪",20:"📖",21:"📍",22:"⚠️"};
 const chapterCardImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-art-${String(i+1).padStart(2,"0")}.webp?v=hd60`]));
+const chapterBannerImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-banner-${String(i+1).padStart(2,"0")}.webp?v=sharp20261010`]));
 function nav(){
  const canCollapseTraining=hasExtraTrainerAccess(current);
  let collapsed=false;
@@ -362,7 +363,7 @@ function showChapter(n){
  const done=current.completed.includes(n);
  const chapterImages=(n===6||n===21)?["gebietskarte.png"]:(c.images||[]); const imgs=chapterImages.map(i=>`<img src="${i}" alt="Handbuch-Abbildung ${i}" onclick="window.open(this.src,'_blank')">`).join("");
  $("#content").innerHTML=`
- <div class="chapter-header" style="background-image:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.58)),url('${chapterCardImages[n]}')">
+ <div class="chapter-header" style="background-image:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.58)),url('${chapterBannerImages[n]}')">
   <div><div class="chapter-no">KAPITEL ${String(n).padStart(2,"0")}</div><h1>${esc(c.title)}</h1><span class="status">${done?"✓ Abgeschlossen":"● In Ausbildung"}</span></div>
  </div>
  <div class="chapter-body">
@@ -935,7 +936,7 @@ function addMotivationDashboard(){
 const _dashboardV46=dashboard;dashboard=function(){_dashboardV46();addMotivationDashboard()};
 function chapterIntro(n){
  if(current.role!=='recruit')return;const key=`alta_intro_${current.id}_${n}`;if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');
- const c=CHAPTERS[n];if(!c)return;const o=document.createElement('div');o.className='chapter-intro';o.innerHTML=`<div class="chapter-intro-bg" style="background-image:url('${chapterCardImages[n]}')"></div><div class="chapter-intro-shade"></div><div class="chapter-intro-content"><div class="eyebrow">ALTA POLICE DEPARTMENT · AUSBILDUNG</div><div class="intro-number">KAPITEL ${String(n).padStart(2,'0')}</div><h1>${esc(c.title)}</h1><p>${current.completed.includes(n)?'✓ Bereits abgeschlossen':'Bereit für den nächsten Ausbildungsschritt?'}</p><button class="primary">Kapitel starten →</button></div>`;document.body.appendChild(o);const close=()=>{o.classList.add('leaving');setTimeout(()=>o.remove(),220)};o.querySelector('button').onclick=close;o.onclick=e=>{if(e.target===o)close()};
+ const c=CHAPTERS[n];if(!c)return;const o=document.createElement('div');o.className='chapter-intro';o.innerHTML=`<div class="chapter-intro-bg" style="background-image:url('${chapterBannerImages[n]}')"></div><div class="chapter-intro-shade"></div><div class="chapter-intro-content"><div class="eyebrow">ALTA POLICE DEPARTMENT · AUSBILDUNG</div><div class="intro-number">KAPITEL ${String(n).padStart(2,'0')}</div><h1>${esc(c.title)}</h1><p>${current.completed.includes(n)?'✓ Bereits abgeschlossen':'Bereit für den nächsten Ausbildungsschritt?'}</p><button class="primary">Kapitel starten →</button></div>`;document.body.appendChild(o);const close=()=>{o.classList.add('leaving');setTimeout(()=>o.remove(),220)};o.querySelector('button').onclick=close;o.onclick=e=>{if(e.target===o)close()};
 }
 const _showChapterV46=showChapter;showChapter=async function(n){const r=await _showChapterV46(n);setTimeout(()=>chapterIntro(n),80);return r};
 
