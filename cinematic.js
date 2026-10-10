@@ -18,7 +18,7 @@
  if(root){const observer=new MutationObserver(()=>{
   const chapter=root.querySelector('.chapter-header');
   if(chapter&&!chapter.querySelector('.cinematic-academy')){
-   const vid=document.createElement('video');vid.className='cinematic-video cinematic-academy';vid.muted=true;vid.autoplay=true;vid.loop=true;vid.playsInline=true;vid.preload='metadata';vid.setAttribute('aria-hidden','true');vid.src='videos/academy.mp4';
+   const vid=document.createElement('video');vid.className='cinematic-video cinematic-academy';vid.muted=true;vid.autoplay=true;vid.loop=true;vid.playsInline=true;vid.preload='metadata';vid.setAttribute('aria-hidden','true');vid.src='academy.mp4';
    chapter.prepend(vid);
   }
   const v=root.querySelector('.cinematic-dashboard, .cinematic-academy');

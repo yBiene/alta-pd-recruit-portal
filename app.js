@@ -302,7 +302,7 @@ function dashboard(){
  let u=current, p=progress(u);
  $("#content").innerHTML=`
  <div class="hero cinematic-hero">
-  <video class="cinematic-video cinematic-dashboard" autoplay muted loop playsinline preload="metadata" poster="image26.png" aria-hidden="true"><source src="videos/dashboard.mp4" type="video/mp4"></video>
+  <video class="cinematic-video cinematic-dashboard" autoplay muted loop playsinline preload="metadata" poster="image26.png" aria-hidden="true"><source src="dashboard.mp4" type="video/mp4"></video>
   <div class="cinematic-hero-shade" aria-hidden="true"></div>
   <div class="cinematic-hero-copy"><div class="eyebrow">${greeting().toUpperCase()}</div><h1>${esc(u.rank?u.rank+" ":"")}${esc(u.name)}</h1>
    <span class="status">● ${esc(u.status)}</span>
