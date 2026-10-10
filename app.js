@@ -173,7 +173,7 @@ const TESTS=[
 
 const chapterIcons={1:"📋",2:"🏛️",3:"👔",4:"📱",5:"📢",6:"🗺️",7:"💻",8:"🚙",9:"🚓",10:"🤝",11:"⚖️",12:"📁",13:"🔫",14:"🎯",15:"🎓",16:"📑",17:"🎧",18:"🔋",19:"🧪",20:"📖",21:"📍",22:"⚠️"};
 const chapterCardImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-art-${String(i+1).padStart(2,"0")}.webp?v=hd60`]));
-const chapterBannerImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-banner-${String(i+1).padStart(2,"0")}.webp?v=sharp20261010`]));
+const chapterBannerImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,"kapitel-banner-polizei.webp?v=uniform20261010"]));
 function nav(){
  const canCollapseTraining=hasExtraTrainerAccess(current);
  let collapsed=false;
