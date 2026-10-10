@@ -1287,3 +1287,16 @@ input,select,textarea{background:#08131e!important;border-color:rgba(130,165,192
 .nav-btn[data-chapter] .chapter-nav-thumb{background-size:cover;background-position:center;border:1px solid rgba(96,187,247,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);filter:none}
 body.sidebar-collapsed .nav-btn[data-chapter] .chapter-nav-thumb{width:42px!important;height:36px!important;flex:0 0 42px!important;border-radius:7px}
 .chapter-card-image,.chapter-category-card{background-position:center;background-size:cover}
+
+/* 2026-10-10: compact academy tiles and chapter headers, static backgrounds */
+.chapter-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+.chapter-grid .chapter-card-image{aspect-ratio:3.35 / 1!important;min-height:90px!important;max-height:112px!important}
+.chapter-grid .chapter-card-content{padding:9px 12px!important;min-height:0!important}
+.chapter-grid .chapter-card-image h3{font-size:13px!important;line-height:1.15!important;margin:4px 0 6px!important}
+.chapter-grid .chapter-card-image .chapter-num{font-size:9px!important}
+.chapter-grid .chapter-card-state{font-size:9px!important;padding:2px 6px!important}
+.chapter-header{min-height:125px!important;padding:15px 20px!important;border-radius:13px!important}
+.chapter-header h1{font-size:clamp(22px,2.2vw,29px)!important;margin:3px 0!important}
+.chapter-header .chapter-no{font-size:11px!important}
+@media(max-width:1250px){.chapter-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:760px){.chapter-grid{grid-template-columns:1fr!important}.chapter-grid .chapter-card-image{aspect-ratio:3 / 1!important;min-height:100px!important;max-height:125px!important}.chapter-header{min-height:110px!important;padding:13px 15px!important}}
