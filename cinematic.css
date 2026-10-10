@@ -45,8 +45,8 @@ body:not(.cinematic-off) .content > .hero,body:not(.cinematic-off) .content > .c
 .chapter-header{isolation:isolate;background-color:#071727!important}
 .cinematic-academy{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:.58;pointer-events:none}
 .chapter-header:has(.cinematic-academy):before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(3,13,25,.93),rgba(4,15,28,.53));pointer-events:none}
-.cinematic-off .chapter-header{background:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.55)),url('image1.png') center/cover!important}
-@media(prefers-reduced-motion:reduce){.chapter-header{background:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.55)),url('image1.png') center/cover!important}}
+.cinematic-off .chapter-header{background-size:cover!important}
+@media(prefers-reduced-motion:reduce){.chapter-header{background-size:cover!important}}
 
 /* V1.1 Sichtbarkeits-FIX: Videos vor der Deckfläche, unter den Inhalten */
 .login-shell{isolation:isolate}

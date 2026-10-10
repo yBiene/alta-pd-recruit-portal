@@ -27,3 +27,43 @@ body:not(.cinematic-off) .premium-entrance{animation:premiumFadeUp .43s cubic-be
 @media(hover:none){body:not(.cinematic-off) .content .card:hover,body:not(.cinematic-off) .chapter-category-card:hover,body:not(.cinematic-off) .nav-btn:hover{transform:none}}
 @media(prefers-reduced-motion:reduce){body:not(.cinematic-off) .premium-entrance,body:not(.cinematic-off) .chapter-header,body:not(.cinematic-off) .chapter-intro-bg{animation:none!important}body:not(.cinematic-off) .content .card,body:not(.cinematic-off) .chapter-category-card,body:not(.cinematic-off) .nav-btn,body:not(.cinematic-off) .mini-progress i{transition:none!important}}
 @media print{.premium-entrance{animation:none!important}body .chapter-header{filter:none!important}}
+
+/* v3: klare 16:9 Kapitelkarten, Emoji-Navigation, große individuelle Full-HD-Banner. */
+.nav-btn[data-chapter] .chapter-nav-icon{
+  background:#0a2133!important;background-image:none!important;
+  display:grid!important;place-items:center!important;
+  width:27px!important;height:27px!important;flex:0 0 27px!important;
+  font-size:17px!important;line-height:1!important;filter:none!important;
+  border-radius:7px!important;
+}
+body.sidebar-collapsed .nav-btn[data-chapter] .chapter-nav-icon{
+  width:40px!important;height:40px!important;flex:0 0 40px!important;font-size:21px!important;
+}
+/* Karten zeigen deutlich mehr vom Bild statt schmaler Streifen. */
+.chapter-grid .chapter-card-image{
+  aspect-ratio:16 / 9!important;min-height:172px!important;max-height:none!important;
+  background-color:#091b2a!important;
+}
+.chapter-grid .chapter-card-image::before{
+  background-size:cover!important;background-position:center center!important;
+  image-rendering:auto!important;
+}
+.chapter-grid .chapter-card-content{padding:15px 17px!important}
+.chapter-grid .chapter-card-image h3{font-size:clamp(14px,1.2vw,18px)!important;line-height:1.25!important;max-width:95%!important}
+/* Das Kapitelbanner wird in größerer Höhe angezeigt; jedes Kapitel nutzt sein eigenes Bild aus app.js. */
+.chapter-header,.cinematic-off .chapter-header{
+  min-height:clamp(260px,30vw,390px)!important;
+  padding:clamp(22px,3vw,38px)!important;
+  background-size:cover!important;
+  background-position:center 45%!important;
+  background-repeat:no-repeat!important;
+  image-rendering:auto!important;
+}
+.chapter-header h1{font-size:clamp(26px,3vw,40px)!important;line-height:1.12!important;max-width:850px}
+@media(min-width:1500px){.chapter-grid .chapter-card-image{min-height:205px!important}}
+@media(max-width:1250px){.chapter-grid .chapter-card-image{min-height:180px!important}}
+@media(max-width:760px){
+ .chapter-grid .chapter-card-image{min-height:175px!important}
+ .chapter-header,.cinematic-off .chapter-header{min-height:255px!important;padding:20px!important}
+}
+@media(prefers-reduced-motion:reduce){.chapter-grid .chapter-card-image::before{transition:none!important}}

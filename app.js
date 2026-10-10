@@ -172,7 +172,7 @@ const TESTS=[
 
 
 const chapterIcons={1:"📋",2:"🛡️",3:"🦺",4:"📡",5:"📻",6:"🗺️",7:"💻",8:"🔎",9:"🚓",10:"🤝",11:"⚖️",12:"🗂️",13:"🛡️",14:"🎯",15:"🎓",16:"📋",17:"🎙️",18:"🔫",19:"🧪",20:"📝",21:"🗺️",22:"⚠️"};
-const chapterCardImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-art-${String(i+1).padStart(2,"0")}.webp?v=hd60`]));
+const chapterCardImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-art-${String(i+1).padStart(2,"0")}.webp?v=hd-premium-3`]));
 function nav(){
  const canCollapseTraining=hasExtraTrainerAccess(current);
  let collapsed=false;
@@ -183,7 +183,7 @@ function nav(){
  }else{
   html+=`<div class="nav-label">AUSBILDUNG</div>`;
  }
- for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon chapter-nav-thumb" aria-hidden="true" style="background-image:url('${chapterCardImages[x.n]}')"></span>${esc(x.title)}</button>`;
+ for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon" aria-hidden="true">${chapterIcons[x.n]||"📘"}</span>${esc(x.title)}</button>`;
  if(canCollapseTraining)html+=`</div>`;
  html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button><div class="nav-label">PORTAL</div><button class="nav-btn" data-view="news">📢 Mitteilungen</button><button class="nav-btn" data-view="documents">📂 Dokumente</button>`;
  if(hasExtraTrainerAccess(current)) html+=`<div class="nav-label">FTO / ADMIN</div>${isOwner(current)?`<button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn v58-command-live-nav" data-view="command-live">🟢 Live-Benutzer</button>`:""}<button class="nav-btn" data-view="accounts">👤 Account-Verwaltung</button><button class="nav-btn" data-view="admin">📂 Rekruten Ausbildungsakten</button>`;
