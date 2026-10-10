@@ -1339,3 +1339,32 @@ body.sidebar-collapsed .nav-btn[data-chapter] .chapter-nav-thumb{width:42px!impo
 .apd-fto-permissions button.apd-unlock:focus-visible{outline:3px solid #73cfff!important;outline-offset:2px!important;}
 @media(max-width:1050px){.apd-fto-permissions .apd-unlock-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}}
 @media(max-width:620px){.apd-fto-permissions .apd-unlock-grid{grid-template-columns:1fr!important;}.chapter-header.apd-photo-banner{height:220px!important;}.chapter-header.apd-photo-banner .apd-banner-caption h1{font-size:24px!important;}}
+
+/* Ausbildungsstatus, Postfachsuche und mobile Bedienung */
+.chapter-card-state[data-progress]{display:inline-block;border-radius:8px;padding:5px 9px;font-weight:700;background:#163149;color:#d4e6f4}
+.chapter-card-state[data-progress="waiting"]{background:#473518;color:#ffe0a0}
+.chapter-card-state[data-progress="working"]{background:#0c3c5c;color:#9cdbff}
+.chapter-card-state[data-progress="done"]{background:#113e34;color:#a4f2cf}
+.portal-chapter-state{display:grid;gap:12px;margin-top:20px;border-top:1px solid #244660;padding-top:18px}
+.portal-chapter-state small{color:#b2c9da;line-height:1.5}
+.portal-fto-queue{margin-top:18px}.portal-fto-queue h2{font-size:clamp(19px,2vw,25px)}
+.portal-queue-list>div{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid #244660}
+.portal-queue-list small{display:block;margin-top:5px}.portal-fto-queue details{margin-top:16px}.portal-fto-queue details button{margin:8px 8px 0 0}
+.portal-receipts{margin-top:16px;border-top:1px solid #244660;padding-top:12px}.portal-receipts>div{padding:7px 0}
+#portalRecipientSearch{width:100%;min-height:44px;margin:7px 0}.mail-compose-window label>small{display:block;color:#9eb9cf;margin:6px 0}
+.portal-answer-correct{border-color:#56d5a5!important;color:#b5f4d9!important;background:#133d32!important;opacity:1!important}
+#portalQuizFeedback p{line-height:1.6}.ae-modal{overflow:auto}.ae-modal-box{max-height:90dvh;overflow:auto}
+button:disabled{cursor:default;opacity:.6}
+@media(max-width:760px){
+ .portal-queue-list>div{flex-direction:column;align-items:stretch}.portal-queue-list button{text-align:left}
+ .portal-fto-queue{padding:18px}.portal-fto-queue details button{width:100%;margin-right:0}
+ .content{padding:14px!important;overflow-wrap:anywhere}.chapter-body{grid-template-columns:minmax(0,1fr)!important}
+ .side-card{position:static!important}.table-wrap{max-width:100%;overflow-x:auto}
+ .content button,.mail-compose-window button,.mail-compose-window select{min-height:44px}
+ .mail-compose-modal{padding:10px!important;align-items:center}.mail-compose-window{width:100%!important;max-height:94dvh;overflow:auto}
+ .mail-compose-window form{padding:15px!important}.mail-compose-window textarea{min-height:150px;max-height:30dvh}
+ .news-card p{white-space:pre-wrap;overflow-wrap:anywhere}.ae-modal-box{width:calc(100vw - 24px)!important;box-sizing:border-box;padding:20px!important}
+ .portal-chapter-state button{width:100%}.portal-fto-queue h2{line-height:1.4}
+}
+
+.portal-chapter-meta{display:block;color:#cfdfeb;font-size:11px;margin-top:8px;line-height:1.4}

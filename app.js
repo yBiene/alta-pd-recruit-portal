@@ -61,6 +61,7 @@ async function refreshData(){
   ]);
   if(pe) throw pe;if(ae) throw ae;if(re) throw re;if(ne) console.warn("Recruit-Vermerke:",ne.message);if(ge) console.warn("Ausbildungsziele:",ge.message);if(rpe) console.warn("FTO-Berichte:",rpe.message);if(fe) console.warn("Favoriten:",fe.message);
   for(const u of db.users){
+   u.chapterProgress=(prog||[]).filter(x=>x.recruit_id===u.id);
    u.completed=(prog||[]).filter(x=>x.recruit_id===u.id&&x.completed).map(x=>x.chapter).sort((a,b)=>a-b);
    u.assignedTests=(assign||[]).filter(x=>x.recruit_id===u.id&&x.active).map(x=>x.test_id);
    u.testResults=(results||[]).filter(x=>x.recruit_id===u.id).map(x=>({
@@ -740,8 +741,8 @@ async function newsView(){
  setActive('[data-view="news"]');$("#pageTitle").textContent="Mitteilungen";
  const {data:news,error}=await sb.from("announcements").select("*").order("pinned",{ascending:false}).order("created_at",{ascending:false});
  const {data:reads}=await sb.from("announcement_reads").select("announcement_id").eq("user_id",current.id); const read=new Set((reads||[]).map(x=>x.announcement_id));
- $("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">DEPARTMENT NEWS</div><h1>📢 Mitteilungen</h1></div>${isOwner()?'<button class="primary" id="newAnnouncement">+ Mitteilung</button>':''}</div><div id="newsList">${(news||[]).map(n=>`<article class="card news-card ${n.pinned?'pinned':''}"><div class="eyebrow">${n.pinned?'📌 ANGEHEFTET':'MITTEILUNG'} · ${new Date(n.created_at).toLocaleDateString('de-DE')}</div><h2>${esc(n.title)}</h2><p>${esc(n.body)}</p><small>${esc(n.author_name||'ALTA PD')}</small>${!read.has(n.id)?`<button class="secondary" data-read-news="${n.id}">✓ Als gelesen bestätigen</button>`:'<span class="read-badge">✓ Gelesen</span>'}</article>`).join('')||'<div class="card"><p class="muted">Keine Mitteilungen.</p></div>'}</div>`;
- document.querySelectorAll('[data-read-news]').forEach(b=>b.onclick=async()=>{await sb.from('announcement_reads').upsert({announcement_id:+b.dataset.readNews,user_id:current.id},{onConflict:'announcement_id,user_id'});newsView()});
+ $("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">DEPARTMENT NEWS</div><h1>📢 Mitteilungen</h1></div>${isOwner()?'<button class="primary" id="newAnnouncement">+ Mitteilung</button>':''}</div><div id="newsList">${(news||[]).map(n=>`<article data-announcement="${esc(n.id)}" class="card news-card ${n.pinned?'pinned':''}"><div class="eyebrow">${n.pinned?'📌 ANGEHEFTET':'MITTEILUNG'} · ${new Date(n.created_at).toLocaleDateString('de-DE')}</div><h2>${esc(n.title)}</h2><p>${esc(n.body)}</p><small>${esc(n.author_name||'ALTA PD')}</small>${!read.has(n.id)?`<button class="secondary" data-read-news="${n.id}">✓ Als gelesen bestätigen</button>`:'<span class="read-badge">✓ Gelesen</span>'}</article>`).join('')||'<div class="card"><p class="muted">Keine Mitteilungen.</p></div>'}</div>`;
+ document.querySelectorAll('[data-read-news]').forEach(b=>b.onclick=async()=>{const {error}=await sb.from('announcement_reads').upsert({announcement_id:b.dataset.readNews,user_id:current.id},{onConflict:'announcement_id,user_id'});if(error){toast("⚠ "+error.message);return}newsView()});
  $("#newAnnouncement")?.addEventListener('click',async()=>{const title=prompt('Titel der Mitteilung:');if(!title)return;const body=prompt('Text der Mitteilung:');if(!body)return;const pinned=confirm('Mitteilung oben anheften?');const {error}=await sb.from('announcements').insert({title,body,pinned,author_id:current.id,author_name:current.name});if(error)alert(error.message);else newsView()});
 }
 function documentsView(){setActive('[data-view="documents"]');$("#pageTitle").textContent="Dokumente";$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">INTERNER BEREICH</div><h1>📂 Dokumente & Schnellzugriff</h1></div></div><div class="grid chapter-grid"><div class="card"><h2>⭐ Favoriten</h2>${(current.favorites||[]).length?(current.favorites||[]).map(n=>`<button class="doc-link" data-doc-chapter="${n}">Kapitel ${n} · ${esc(CHAPTERS[n]?.title||'')}</button>`).join(''):'<p class="muted">Noch keine Favoriten. In einem Kapitel kannst du ☆ Als Favorit wählen.</p>'}</div><div class="card"><h2>🕘 Zuletzt angesehen</h2>${localStorage.getItem('alta_last_chapter')?`<button class="doc-link" data-doc-chapter="${localStorage.getItem('alta_last_chapter')}">Kapitel ${localStorage.getItem('alta_last_chapter')} · ${esc(CHAPTERS[localStorage.getItem('alta_last_chapter')]?.title||'')}</button>`:'<p class="muted">Noch kein Kapitel angesehen.</p>'}</div><div class="card"><h2>📚 Rekrutenhandbuch</h2><p>Alle 22 Kapitel sind über die Navigation erreichbar. Favorisiere häufig benötigte Inhalte für den Schnellzugriff.</p></div><div class="card"><h2>🖨️ Ausbildungsakte</h2><p>Unter „Mein Account“ kannst du deine aktuelle Ausbildungsübersicht drucken oder als PDF speichern.</p></div></div>`;document.querySelectorAll('[data-doc-chapter]').forEach(b=>b.onclick=()=>showChapter(+b.dataset.docChapter))}
@@ -1159,7 +1160,7 @@ async function v62SendMessage({recipientId,subject,body,recruitId=null,kind="mai
  const {data:{user}}=await sb.auth.getUser();
  const senderId=user?.id||current?.id;
  if(!uuid.test(String(senderId||"")))throw new Error("Absender-Account hat keine gültige Benutzer-ID.");
- if(!uuid.test(String(recipientId||"")))throw new Error("Der zugeordnete FTO hat keine gültige Benutzer-ID. Bitte FTO in den Stammdaten neu auswählen und speichern.");
+ if(!uuid.test(String(recipientId||"")))throw new Error("Der Empfänger hat keine gültige Benutzer-ID. Bitte eine Person aus der Empfängerliste auswählen.");
  const row={sender_id:senderId,recipient_id:recipientId,subject:subject||"(ohne Betreff)",body,kind,recruit_id:uuid.test(String(recruitId||""))?recruitId:null,thread_id:threadId&&uuid.test(String(threadId))?threadId:crypto.randomUUID(),parent_id:parentId&&uuid.test(String(parentId))?parentId:null,source_type:sourceType||null,source_id:sourceId&&uuid.test(String(sourceId))?sourceId:null};
  const {error}=await sb.from("academy_messages").insert(row);if(error)throw error;
 }
@@ -1184,7 +1185,7 @@ function v62Unread(){return (db.messages||[]).filter(x=>x.recipient_id===current
 function messagesView(){
  setActive('[data-view="messages"]');$('#pageTitle').textContent='Postfach';
  const mine=(db.messages||[]), incoming=mine.filter(x=>x.recipient_id===current.id), sent=mine.filter(x=>x.sender_id===current.id);
- const people=db.users.filter(x=>x.id!==current.id&&x.role!=="recruit");
+ const people=portalPeople();
  let activeFolder="in", activeId=(incoming[0]||sent[0]||{}).id||null;
  $('#content').innerHTML=`<div class="mail-desktop">
    <aside class="mail-sidebar">
@@ -1205,7 +1206,7 @@ function messagesView(){
     </div>
    </section>
   </div>
-  <div class="mail-compose-modal hidden" id="v621ComposeModal"><div class="mail-compose-window"><header><b>Neue Nachricht</b><button type="button" id="v621ComposeClose">×</button></header><form id="v62MailForm"><label>An<select name="recipient" required><option value="">Empfänger auswählen…</option>${people.map(u=>`<option value="${u.id}">${esc(u.rank||"")} ${esc(u.name)}</option>`).join("")}</select></label><label>Betreff<input name="subject" maxlength="140" required placeholder="Betreff"></label><textarea name="body" rows="10" maxlength="4000" required placeholder="Nachricht schreiben…"></textarea><footer><small>Interne ALTA-PD Nachricht</small><button class="primary">Senden ➤</button></footer></form></div></div>`;
+  <div class="mail-compose-modal hidden" id="v621ComposeModal"><div class="mail-compose-window"><header><b>Neue Nachricht</b><button type="button" id="v621ComposeClose">×</button></header><form id="v62MailForm"><label>An<select name="recipient" required><option value="">Empfänger auswählen…</option>${people.map(u=>`<option value="${u.id}">${esc(portalPersonLabel(u))}</option>`).join("")}</select></label><label>Betreff<input name="subject" maxlength="140" required placeholder="Betreff"></label><textarea name="body" rows="10" maxlength="4000" required placeholder="Nachricht schreiben…"></textarea><footer><small>Interne ALTA-PD Nachricht</small><button class="primary">Senden ➤</button></footer></form></div></div>`;
  const folder=()=>activeFolder==="in"?incoming:sent;
  const renderList=(query="")=>{
    let arr=folder().filter(x=>!query||`${x.subject||""} ${x.body||""} ${v62UserLabel(activeFolder==="in"?x.sender_id:x.recipient_id)}`.toLowerCase().includes(query.toLowerCase()));
@@ -1236,6 +1237,7 @@ function messagesView(){
  $('#v621ComposeModal').onclick=e=>{if(e.target.id==="v621ComposeModal")e.currentTarget.classList.add("hidden")};
  $('#v62MailForm').onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target);try{await v62SendMessage({recipientId:f.get("recipient"),subject:f.get("subject").trim(),body:f.get("body").trim()});await refreshData();toast("✓ Nachricht gesendet");messagesView()}catch(err){alert("Nachricht konnte nicht gesendet werden: "+err.message)}};
  renderList();
+ portalInstallRecipientSearch();
 }
 function achievementsView(){setActive('[data-view="achievements"]');$('#pageTitle').textContent='Abzeichen';let badges=personalBadges(current),all=[['📘','Erstes Kapitel',(current.completed||[]).length>=1],['🔥','Lernserie',learningStreak(current)>=3],['📻','Funk Ready',qualifications(current)[0][2]],['💻','EFA Ready',qualifications(current)[1][2]],['🚓','Streife',qualifications(current)[2][2]],['🎯','Schießtraining',qualifications(current)[3][2]],['🧪','Beweismittel',qualifications(current)[4][2]],['🏅','Theorie',qualifications(current)[5][2]],['⭐','Halbzeit',progress(current)>=50],['👑','100 Prozent',progress(current)===100]];$('#content').innerHTML=moduleHead('🏆 SAMMLUNG','Meine Abzeichen','Deine persönlichen Ausbildungs-Meilensteine.')+`<div class="achievement-grid">${all.map(x=>`<div class="card achievement ${x[2]?'earned':'locked'}"><span>${x[0]}</span><h3>${x[1]}</h3><small>${x[2]?'Freigeschaltet':'Noch gesperrt'}</small></div>`).join('')}</div>`}
 function addPersonalLearningTools(){if(current?.role!=='recruit')return;const c=$('#content');if(!c||c.querySelector('.v49-tools'))return;const head=[...c.querySelectorAll('.section-head')].find(x=>x.textContent.includes('Ausbildungskapitel'));if(!head)return;let notes=academyGet('learningNotes','');head.insertAdjacentHTML('beforebegin',`<div class="v49-tools grid dashboard-two"><div class="card"><div class="eyebrow">📝 MEIN LERNZETTEL</div><h2>Persönliche Notizen</h2><textarea id="learningNotes" rows="4" placeholder="Merksätze, Funkcodes, Fragen an den FTO...">${esc(notes)}</textarea><small id="noteSaved" class="muted">Automatisch lokal gespeichert</small></div><div class="card"><div class="eyebrow">⚡ SCHNELLSTART</div><h2>Training starten</h2><div class="quick-tool-buttons"><button class="secondary" data-quick-view="scenario">🎬 Szenario</button><button class="secondary" data-quick-view="radio">📻 Funk</button><button class="secondary" data-quick-view="mapquiz">🗺️ Ortskunde</button><button class="secondary" data-quick-view="rides">🚓 Fahrt</button></div></div></div>`);$('#learningNotes').oninput=e=>{academySet('learningNotes',e.target.value);$('#noteSaved').textContent='✓ Gespeichert'};document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>showView(b.dataset.quickView))}
@@ -2223,3 +2225,121 @@ document.addEventListener("submit",async e=>{
  try{const {error}=await sb.from("fto_ratings").insert(payload);if(error)throw error;await refreshData();selectedRecruit=recruitId;admin();}
  catch(err){alert("Bewertung konnte nicht gespeichert werden: "+err.message);if(btn)btn.disabled=false;}
 });
+
+/* ALTA PD: Ausbildungsworkflow und durchsuchbares Postfach. */
+let portalDirectory=[],portalReviews=[],portalWorkflowReady=false;
+const portalRefreshBase=refreshData;
+refreshData=async function(){
+ const ok=await portalRefreshBase();if(!ok){portalDirectory=[];portalReviews=[];portalWorkflowReady=false;return ok}
+ const ownerId=current.id;
+ const results=await Promise.allSettled([sb.rpc('portal_mail_directory'),sb.from('chapter_review_requests').select('*')]);
+ if(current?.id!==ownerId)return ok;
+ const directory=results[0].status==='fulfilled'?results[0].value:null;
+ const reviews=results[1].status==='fulfilled'?results[1].value:null;
+ portalDirectory=directory&&!directory.error?(directory.data||[]).map(x=>({...x,serviceNo:x.service_no})):db.users.filter(x=>x.accountEnabled!==false&&!x.archivedAt);
+ portalReviews=reviews&&!reviews.error?reviews.data||[]:[];
+ portalWorkflowReady=!!reviews&&!reviews.error;
+ return ok;
+};
+function portalPeople(){return [...new Map([...db.users.filter(x=>x.accountEnabled!==false&&!x.archivedAt),...portalDirectory].map(x=>[x.id,x])).values()].filter(x=>x.id!==current?.id).sort((a,b)=>a.name.localeCompare(b.name,'de'))}
+function portalPersonLabel(u){return `${u.rank||''} ${u.name||''} · ${u.role==='recruit'?'Rekrut':u.role==='admin'?'Leitung':'Ausbilder'}${u.serviceNo?' · '+u.serviceNo:''}`.trim()}
+const portalLabelBase=v62UserLabel;
+v62UserLabel=function(id){const u=portalDirectory.find(x=>x.id===id);return u?`${u.rank||''} ${u.name}`.trim():portalLabelBase(id)};
+function portalRecipientOptions(people){return people.map(u=>`<option value="${esc(u.id)}">${esc(portalPersonLabel(u))}</option>`).join('')}
+function portalInstallRecipientSearch(){
+ const select=document.querySelector('#v62MailForm select[name="recipient"]');if(!select)return;
+ const people=portalPeople(),label=select.closest('label');
+ label.insertAdjacentHTML('afterbegin','<span>Empfänger suchen</span><input id="portalRecipientSearch" type="search" autocomplete="off" placeholder="Name, Rang oder Dienstnummer…" aria-label="Empfänger suchen"><small id="portalRecipientCount" role="status"></small>');
+ const render=q=>{const selected=select.value,needle=q.trim().toLocaleLowerCase('de'),matches=people.filter(u=>portalPersonLabel(u).toLocaleLowerCase('de').includes(needle));
+ select.innerHTML='<option value="">Empfänger auswählen…</option>'+portalRecipientOptions(matches);
+ if(selected&&!matches.some(x=>x.id===selected)){const u=people.find(x=>x.id===selected);if(u)select.insertAdjacentHTML('beforeend',`<optgroup label="Bereits ausgewählt">${portalRecipientOptions([u])}</optgroup>`)}
+ select.value=selected;document.querySelector('#portalRecipientCount').textContent=`${matches.length} Personen gefunden${matches.length?'':' – Suchbegriff ändern'}`;
+ };render('');document.querySelector('#portalRecipientSearch').oninput=e=>render(e.target.value);
+ document.querySelector('#v621Compose').addEventListener('click',()=>document.querySelector('#portalRecipientSearch').focus());
+}
+function portalChapterStatus(u,n){
+ const request=portalReviews.find(r=>r.recruit_id===u.id&&+r.chapter===+n);
+ if(request&&!request.reviewed_at)return {label:'Warten auf FTO',kind:'waiting',detail:'Angefragt am '+new Date(request.requested_at).toLocaleDateString('de-DE')};
+ if((u.completed||[]).includes(+n)){const p=(u.chapterProgress||[]).find(x=>+x.chapter===+n);return {label:'Abgeschlossen',kind:'done',detail:p?.completed_at?new Date(p.completed_at).toLocaleDateString('de-DE')+' · '+(p.completed_by===u.id?'Wissenscheck':v62UserLabel(p.completed_by)):''}}
+ const st=u.id===current?.id?chapterStates.find(x=>+x.chapter===+n):null;
+ return st?.last_opened_at||st?.read_at?{label:'In Bearbeitung',kind:'working',detail:''}:{label:'Offen',kind:'open',detail:''};
+}
+function portalChapterBadges(){document.querySelectorAll('.chapter-card[data-open]').forEach(card=>{const s=portalChapterStatus(current,+card.dataset.open),el=card.querySelector('.chapter-card-state');if(el){el.textContent=s.label;el.dataset.progress=s.kind;el.title=s.detail;if(s.detail)el.insertAdjacentHTML('afterend',`<small class="portal-chapter-meta">${esc(s.detail)}</small>`)}})}
+function portalFtoQueue(){
+ if(!isTrainer(current))return;
+ const people=db.users.filter(x=>x.role==='recruit'&&x.accountEnabled!==false&&!x.archivedAt&&x.status!=='Archiviert');
+ const requests=portalReviews.filter(x=>!x.reviewed_at&&people.some(r=>r.id===x.recruit_id));
+ const stale=people.filter(r=>v61DaysSince(v61LastActivity(r)||r.start)>=7);
+ const card=document.createElement('section');card.className='card portal-fto-queue';
+ card.innerHTML=`<div class="eyebrow">FTO · RÜCKMELDUNGEN</div><h2>${requests.length} wartende Kapitel · ${stale.length} Rekruten ohne aktuelle Aktivität</h2>${!portalWorkflowReady?'<p class="notice">Die neue Datenbank-Erweiterung wurde noch nicht eingerichtet.</p>':''}<div class="portal-queue-list">${requests.map(x=>{const r=people.find(r=>r.id===x.recruit_id);return `<div><button class="secondary" data-portal-record="${esc(r.id)}"><b>${esc(r.name)}</b> · Kapitel ${x.chapter}<small>Seit ${new Date(x.requested_at).toLocaleDateString('de-DE')}</small></button><button class="primary" data-review-recruit="${esc(r.id)}" data-review-chapter="${x.chapter}">Rückmeldung bestätigen</button></div>`}).join('')||'<p class="muted">Keine Kapitel warten auf Rückmeldung.</p>'}</div>${stale.length?`<details><summary>Rekruten ohne Aktivität seit mindestens 7 Tagen</summary>${stale.map(r=>`<button class="secondary" data-portal-record="${esc(r.id)}">${esc(r.name)} · ${v61LastActivity(r)?v61DaysSince(v61LastActivity(r))+' Tage':'Noch keine Ausbildung dokumentiert'}</button>`).join('')}</details>`:''}`;
+ document.querySelector('.hero')?.insertAdjacentElement('afterend',card);
+ card.querySelectorAll('[data-portal-record]').forEach(b=>b.onclick=()=>v630OpenRecruit(b.dataset.portalRecord));
+ card.querySelectorAll('[data-review-recruit]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const {error}=await sb.rpc('portal_review_chapter',{p_recruit_id:b.dataset.reviewRecruit,p_chapter:+b.dataset.reviewChapter});if(error)throw error;await refreshData();dashboard();toast('✓ Rückmeldung bestätigt. Den Kapitelabschluss kannst du in der Akte bearbeiten.')}catch(e){toast('⚠ '+e.message);b.disabled=false}});
+}
+const portalDashboardBase=dashboard;
+dashboard=function(){const out=portalDashboardBase();portalChapterBadges();portalFtoQueue();if(current?.role==='recruit'){document.querySelector('.ae-today')?.remove();const n=v61NextRecruitStep();const subtitle=document.querySelector('.v61-continue p');if(n&&subtitle)subtitle.textContent=n.sub}return out};
+const portalNextBase=v61NextRecruitStep;
+v61NextRecruitStep=function(u=current){
+ const pending=portalReviews.find(x=>x.recruit_id===u?.id&&!x.reviewed_at);
+ if(pending)return {icon:'⏳',title:`FTO-Rückmeldung zu Kapitel ${pending.chapter}`,sub:'Deine Anfrage ist eingegangen. Du kannst deinen Ausbildungsstand im Konto ansehen.',go:()=>showView('account')};
+ const next=portalNextBase(u);if(next?.icon==='📖'&&u?.role==='recruit')next.sub='Kapitel lesen, Wissenscheck absolvieren und offene Fragen mit dem FTO klären.';return next;
+};
+const portalChapterBase=showChapter;
+showChapter=function(n){const out=portalChapterBase(n);const side=document.querySelector('.side-card');if(!side||!current)return out;
+ const state=portalChapterStatus(current,n),request=portalReviews.find(x=>x.recruit_id===current.id&&+x.chapter===+n);
+ side.insertAdjacentHTML('beforeend',`<div class="portal-chapter-state"><span class="chapter-card-state" data-progress="${state.kind}">${state.label}</span>${state.detail?`<small>${esc(state.detail)}</small>`:''}${request?.reviewed_by?`<small>Ausbilder: ${esc(v62UserLabel(request.reviewed_by))}</small>`:''}${current.role==='recruit'?`<button class="secondary" id="portalRequestReview" ${!portalWorkflowReady||state.kind==='waiting'?'disabled':''}>${state.kind==='waiting'?'⏳ Rückmeldung angefragt':'FTO-Rückmeldung anfordern'}</button><small>${portalWorkflowReady?'Für Fragen oder die praktische Abzeichnung. Wissenscheck und FTO-Rückmeldung bleiben getrennte Nachweise.':'Neue Datenbank-Erweiterung für FTO-Rückmeldungen erforderlich.'}</small>`:''}</div>`);
+ document.querySelector('#portalRequestReview')?.addEventListener('click',async e=>{e.currentTarget.disabled=true;try{const {error}=await sb.rpc('portal_request_chapter_review',{p_chapter:+n});if(error)throw error;await refreshData();showChapter(n);toast('✓ FTO-Rückmeldung angefragt')}catch(err){toast('⚠ '+err.message);e.target.disabled=false}});return out;
+};
+const portalTimelineBase=timelineHtml;
+timelineHtml=function(u,limit=8){const extra=portalReviews.filter(x=>x.recruit_id===u.id).flatMap(x=>[{when:x.requested_at,icon:'⏳',text:`Kapitel ${x.chapter}: FTO-Rückmeldung angefragt`},...(x.reviewed_at?[{when:x.reviewed_at,icon:'✓',text:`Kapitel ${x.chapter}: Rückmeldung von ${v62UserLabel(x.reviewed_by)}`}]:[])]);return portalTimelineBase({...u,activity:[...(u.activity||[]),...extra].sort((a,b)=>new Date(b.when)-new Date(a.when))},limit)};
+const portalNewsBase=newsView;
+newsView=async function(){await portalNewsBase();if(!isTrainer(current)||!document.querySelector('#newsList'))return;const list=document.querySelector('#newsList');const {data,error}=await sb.rpc('portal_announcement_receipts');if(!list.isConnected)return;if(error){list.insertAdjacentHTML('beforeend','<p class="notice">Lesebestätigungs-Übersicht benötigt die neue Datenbank-Erweiterung.</p>');return}
+ list.querySelectorAll('.news-card').forEach(card=>{const button=card.querySelector('[data-read-news]');const id=button?.dataset.readNews||card.dataset.announcement;const rows=(data||[]).filter(x=>String(x.announcement_id)===String(id));if(!rows.length)return;card.insertAdjacentHTML('beforeend',`<details class="portal-receipts"><summary>${rows.filter(x=>x.confirmed).length}/${rows.length} Lesebestätigungen</summary>${rows.map(x=>`<div>${x.confirmed?'✓':'○'} ${esc(x.name)} · ${x.confirmed?'Bestätigt':'Noch offen'}</div>`).join('')}</details>`)});
+};
+
+/* Drei Fragen, zufällige Antwortreihenfolge und eine Erklärung nach jeder Antwort. */
+const portalQuizScenarios={
+ 1:['Ein Bürger kritisiert deine Entscheidung. Wie reagierst du?','Ruhig bleiben und die Entscheidung nachvollziehbar erklären','Den Bürger sofort wegschicken','Kritik persönlich nehmen','Professionelles Verhalten zeigt sich durch Ruhe und nachvollziehbare Entscheidungen.'],
+ 2:['Du willst auf Streife gehen, dein Funkgerät ist ungeprüft. Was zuerst?','Funk und übrige Dienstausrüstung prüfen','Trotzdem losfahren','Nur den Laptop ausschalten','Dienstbereitschaft setzt geprüfte Geräte und vollständige Ausrüstung voraus.'],
+ 3:['Ein wichtiges Ausrüstungsteil fehlt. Was tust du?','Fehlende Ausrüstung vor dem Einsatz klären','Den Mangel verschweigen','Privates Material ohne Einweisung nutzen','Mängel müssen vor dem Einsatz geklärt werden.'],
+ 4:['Deine Meldung ist lang und unübersichtlich. Was hilft?','Vor dem Drücken die Kernaussage überlegen','Sofort sprechen und dabei nachdenken','Ohne Pause weitersprechen','Denken – Drücken – Sprechen hilft bei kurzen, verständlichen Meldungen.'],
+ 5:['Du verstehst einen Funkcode nicht sicher. Was tust du?','Die Bedeutung klären und verständlich nachfragen','Eine Bedeutung erfinden','Die Meldung ignorieren','Eine Rückfrage verhindert Missverständnisse.'],
+ 6:['Welche Standortmeldung hilft einer anderen Streife?','Straße, Postleitzahl und markanter Ort','Nur die Fahrzeugfarbe','Nur die Uhrzeit','SPM enthält Straße, Postleitzahl und markanten Ort.'],
+ 7:['Du möchtest einen neuen Report anlegen. Wo suchst du?','Im CAD unter Reports','In der Fahrzeugversicherung','Im privaten Postfach','Das CAD enthält den Arbeitsbereich für Reports.'],
+ 8:['Das Kennzeichen passt zum Treffer, das Fahrzeugmerkmal weicht ab. Was tun?','Fahrzeug und Abfragetreffer sorgfältig abgleichen','Den Treffer ungeprüft übernehmen','Die Abweichung verschweigen','Ein passendes Kennzeichen ersetzt den Abgleich des tatsächlichen Fahrzeugs nicht.'],
+ 9:['Du fährst und möchtest am Laptop arbeiten. Was tun?','Erst sicher anhalten','Während der Fahrt tippen','Nur bei hoher Geschwindigkeit tippen','Der Fahrer bedient den Laptop erst, wenn das Fahrzeug sicher steht.'],
+ 10:['Ein Bürger ist aufgebracht. Wie beginnst du das Gespräch?','Ruhig und klar sprechen','Zurückschreien','Ohne Erklärung weggehen','Ruhige, verständliche Kommunikation unterstützt professionellen Bürgerkontakt.'],
+ 11:['Du bist dir über die Grundlage einer Maßnahme unsicher. Was tun?','Grundlage prüfen und Unterstützung einbeziehen','Einfach handeln','Unsicherheit verbergen','Vor einer Maßnahme muss ihre Grundlage geklärt sein.'],
+ 12:['Du übergibst ein Beweismittel. Was gehört dazu?','Die Übergabe nachvollziehbar dokumentieren','Nur mündlich erwähnen','Das Beweismittel privat mitnehmen','Eine dokumentierte Übergabe macht die Bearbeitung nachvollziehbar.'],
+ 13:['Du kennst ein Einsatzmittel noch nicht sicher. Was tun?','Einweisung und sichere Anwendung klären','Sofort ausprobieren','Ohne Rückfrage benutzen','Fehlende Einweisung darf nicht durch Ausprobieren ersetzt werden.'],
+ 14:['Beim Training machst du einen Fehler. Was hilft?','Fehler besprechen und gezielt üben','Fehler verschweigen','Training dauerhaft vermeiden','Training dient dem Lernen und sicherem, nachvollziehbarem Handeln.'],
+ 15:['Ein Ausbildungsziel ist noch offen. Was tun?','Den nächsten Übungsschritt mit dem FTO vereinbaren','Das Ziel ungeprüft abhaken','Den Eintrag löschen','Ausbildungsziele werden durch Übung und nachvollziehbare Nachweise erreicht.'],
+ 16:['Eine Checkliste ist noch unvollständig. Was tun?','Fehlende Punkte und Einweisungen nachholen','Alle Kästchen auf einmal abhaken','Die Liste ignorieren','Checklisten helfen, fehlende Einweisungen sichtbar zu machen.'],
+ 17:['Mehrere Units werden am Einsatz benötigt. Wer koordiniert?','Die Leitstelle bzw. zuständige Einsatzleitung','Jede Unit ohne Absprache','Ein zufälliger Bürger','Koordination verbindet verfügbare Units mit den Einsatzaufträgen.'],
+ 18:['Du findest unbekannte Munition. Wie gehst du vor?','Nicht ausprobieren und fachkundige Unterstützung holen','Eine passende Waffe suchen und testen','Privat aufbewahren','Unbekannte Munition erfordert sichere Handhabung und Fachkenntnis.'],
+ 19:['Die Laborprüfung eines Beweismittels steht noch aus. Was beachten?','Übergabe dokumentieren und Ergebnis später zur Akte ergänzen','Ein Ergebnis erfinden','Die Akte ohne Hinweis als vollständig behandeln','Laborergebnisse werden nach ihrer Prüfung nachvollziehbar zur Akte ergänzt.'],
+ 20:['Ein Merkwort passt nicht eindeutig zur Lage. Was tun?','Den Ablauf prüfen und die Lage neu bewerten','Das Merkwort blind anwenden','Dokumentation weglassen','Merkwörter unterstützen das Erinnern, ersetzen aber keine Lagebewertung.'],
+ 21:['Dein Standort ist auf der Karte schwer zu erkennen. Was hilft?','Straße, PLZ und markanten Ort abgleichen','Eine beliebige PLZ nennen','Nur die Himmelsrichtung nennen','Mehrere passende Ortsangaben helfen bei einer zuverlässigen Standortmeldung.'],
+ 22:['Du entdeckst einen unbekannten Gefahrenbereich. Was tun?','Gefahr erkennen, melden, bewerten und passende Hilfe holen','Ohne Einweisung hineingehen','Die Gefahr selbst ausprobieren','Unbekannte Gefahren werden nicht durch Ausprobieren geprüft.']
+};
+aeKnowledgeQuestions=function(n){const base=aeQuestionForChapter(n),s=portalQuizScenarios[n];return [
+ {question:base[0],options:base[1],correct:base[2],explanation:'Richtig ist: '+base[1][base[2]]+'.'},
+ {question:s[0],options:s.slice(1,4),correct:0,explanation:s[4]},
+ {question:'Ein Ablauf aus diesem Kapitel ist noch unklar. Was ist sinnvoll?',options:['Den Abschnitt erneut prüfen und den FTO fragen','Den Punkt ungeprüft als erledigt markieren','Ohne Verständnis weitermachen'],correct:0,explanation:'Offene Fragen gehören in die Ausbildung. Lies den Abschnitt erneut und kläre die Anwendung mit deinem FTO.'}
+].map(q=>{const answer=q.options[q.correct],options=aeShuffle([...q.options]);return [q.question,options,options.indexOf(answer),q.explanation]})};
+aeSetKnowledge=async function(n,v){const chapter=Number(n);if(v===true&&current?.role==='recruit'){const {error}=await sb.rpc('complete_own_training_chapter',{chapter_no:chapter});if(error)throw error}const d=aeKnowledge();d[chapter]=!!v;aeSet('knowledge',d)};
+aeKnowledgeOk=function(n,u=current){return !!(u?.completed||[]).includes(+n)};
+aeKnowledgeCheck=function(n){
+ const qs=aeKnowledgeQuestions(n),modal=document.createElement('div'),previousFocus=document.activeElement;let step=0,score=0,answered=false;
+ modal.className='ae-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Wissenscheck');document.body.append(modal);
+ const userId=current?.id,close=()=>{modal.remove();document.removeEventListener('keydown',keyHandler);previousFocus?.focus()};
+ const keyHandler=e=>{if(e.key==='Escape')close();if(e.key==='Tab'){const controls=[...modal.querySelectorAll('button:not([disabled])')];if(!controls.length)return;const first=controls[0],last=controls[controls.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}};document.addEventListener('keydown',keyHandler);
+ const finish=async()=>{const ok=score>=2;modal.innerHTML=`<div class="ae-modal-box"><h2>${ok?'Wird gespeichert…':'Noch nicht bestanden'}</h2><p>${score}/3 richtig.</p></div>`;
+ if(ok){try{if(current?.id!==userId)throw new Error('Bitte erneut anmelden.');await aeSetKnowledge(n,true);await refreshData()}catch(e){modal.innerHTML=`<div class="ae-modal-box"><h2>Speichern fehlgeschlagen</h2><p>${esc(e.message)}</p><button class="primary" data-retry>Erneut speichern</button><button class="secondary" data-close>Schließen</button></div>`;modal.querySelector('[data-retry]').onclick=finish;modal.querySelector('[data-close]').onclick=close;return}}
+ modal.innerHTML=`<div class="ae-modal-box"><h2>${ok?'✓ Bestanden':'Noch nicht bestanden'}</h2><p>${score}/3 richtig. ${ok?'Dein Fortschritt wurde gespeichert.':'Lies das Kapitel erneut und wiederhole den Check.'}</p><button class="primary" data-done>Zurück zum Kapitel</button></div>`;modal.querySelector('[data-done]').onclick=()=>{close();nav();showChapter(n)};modal.querySelector('button').focus()};
+ const render=()=>{answered=false;const q=qs[step];modal.innerHTML=`<div class="ae-modal-box"><div class="eyebrow">KAPITEL ${n} · FRAGE ${step+1}/3</div><h2>${esc(q[0])}</h2><div class="ae-answers">${q[1].map((a,i)=>`<button data-answer="${i}">${esc(a)}</button>`).join('')}</div><div id="portalQuizFeedback" role="status"></div><p class="muted">Mindestens 2 von 3 Fragen richtig beantworten.</p><button class="secondary" data-close>Abbrechen</button></div>`;
+ modal.querySelector('[data-close]').onclick=close;
+ modal.querySelectorAll('[data-answer]').forEach(b=>b.onclick=()=>{if(answered)return;answered=true;const correct=+b.dataset.answer===q[2];if(correct)score++;modal.querySelectorAll('[data-answer]').forEach(x=>{x.disabled=true;if(+x.dataset.answer===q[2])x.classList.add('portal-answer-correct')});modal.querySelector('#portalQuizFeedback').innerHTML=`<p><b>${correct?'✓ Richtig':'Noch nicht richtig'}</b></p><p>${esc(q[3])}</p><button class="primary" data-next>${step===2?'Ergebnis ansehen':'Nächste Frage'}</button>`;const next=modal.querySelector('[data-next]');next.onclick=()=>{step++;step<qs.length?render():finish()};next.focus()});modal.querySelector('button').focus()};render();
+};
+
+aeChapterUnlocked=function(n,u=current){if(!u||u.role!=='recruit')return true;if(!(u.unlockedChapters||[]).includes(+n))return false;for(let i=1;i<+n;i++)if(!(u.completed||[]).includes(i))return false;return true};
