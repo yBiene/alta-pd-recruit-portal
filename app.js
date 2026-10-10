@@ -656,7 +656,7 @@ function adminRecruit(r){
  let p=progress(r);
  return `<div class="card">
   <div class="record-head"><div><div class="eyebrow">AUSBILDUNGSAKTE</div><h2>${esc(r.name)}</h2></div><button class="record-close-btn" id="closeRecruitRecord" type="button" title="Ausbildungsakte schließen">✕ Ausbildungsakte schließen</button></div>
-  <p class="muted">${esc(r.serviceNo)} · ${esc(r.username)} · Ausbildungszeit <b>${fmtDuration(totalTrainingMinutes(r))}</b></p><div class="record-actions"><button class="secondary" id="printRecruitRecord" type="button">🖨️ Akte drucken / PNG</button><span class="readiness-pill ${readiness(r)[1]}">${readiness(r)[0]}</span></div>
+  <p class="muted">${esc(r.serviceNo)} · ${esc(r.username)} · Ausbildungszeit <b>${fmtDuration(totalTrainingMinutes(r))}</b></p><div class="record-actions"><button class="secondary" id="printRecruitRecord" type="button">🖨️ Drucken</button><span class="readiness-pill ${readiness(r)[1]}">${readiness(r)[0]}</span></div>
   <div class="progress"><i style="width:${p}%"></i></div><p><b>${p}%</b> · ${r.completed.length}/22 Kapitel · ${stage(r)}</p>
   <div class="v640-record-meta">
    <div><small>Dienstnummer</small><b>${esc(r.serviceNo||"—")}</b></div><div><small>Rang</small><b>${esc(r.rank||"Recruit")}</b></div><div><small>Leiter FTO</small><b>${esc(r.fto||"—")}</b></div><div><small>Weiterer FTO</small><b>${esc(r.secondaryFto||"—")}</b></div><div><small>Status</small><b>${esc(r.status||"—")}</b></div>
@@ -1056,33 +1056,36 @@ function printRecruitRecord(r){
  </main>
  <footer class="footer"><span>ALTA Police Department · Recruit Training Division</span><span>Ausbildungsakte ${safe(r.serviceNo)} · ${safe(r.name)}</span></footer>
  </div>
- <div class="export-toolbar"><button id="saveFullPng" type="button">⬇ Gesamte Akte als PNG</button><button type="button" onclick="window.print()">🖨 PDF / Drucken</button><span id="exportStatus" role="status"></span></div>
+ <div class="export-toolbar"><button data-export-image="png" type="button">⬇ PNG speichern</button><button data-export-image="jpeg" type="button">⬇ JPEG speichern</button><button type="button" onclick="window.print()">🖨 PDF / Drucken</button><span id="exportStatus" role="status"></span></div>
  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
  <script>
  (function(){
-  const button=document.getElementById('saveFullPng');
+  const buttons=Array.from(document.querySelectorAll('[data-export-image]'));
   const status=document.getElementById('exportStatus');
-  button.addEventListener('click',async function(){
-   button.disabled=true;status.textContent='Gesamte Akte wird erstellt …';
+  async function saveImage(format){
+   buttons.forEach(button=>button.disabled=true);
+   status.textContent='Gesamte Akte wird erstellt …';
    try{
     if(typeof html2canvas!=='function')throw new Error('Bildbibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen.');
     await document.fonts.ready;
     await Promise.all(Array.from(document.querySelectorAll('.sheet img')).map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,3000)})));
     const sheet=document.querySelector('.sheet');
     const width=Math.ceil(sheet.scrollWidth),height=Math.ceil(sheet.scrollHeight);
-    // Browser begrenzen die maximale Canvas-Groesse. Skalierung fuer EIN PNG automatisch anpassen.
+    // Eine einzige lange Datei; Canvas-Grenzen des Browsers beachten.
     const scale=Math.min(2,30000/height,Math.sqrt(16000000/(width*height)));
     if(scale<0.35)throw new Error('Die Akte ist fuer ein einzelnes Browser-Bild zu lang. Bitte PDF / Drucken verwenden.');
     const canvas=await html2canvas(sheet,{backgroundColor:'#ffffff',scale:scale,useCORS:true,allowTaint:false,logging:false,scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,width),windowHeight:Math.max(document.documentElement.clientHeight,height)});
-    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
-    if(!blob)throw new Error('PNG konnte nicht erzeugt werden.');
+    const mime=format==='jpeg'?'image/jpeg':'image/png';
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,mime,format==='jpeg'?0.94:undefined));
+    if(!blob)throw new Error('Bild konnte nicht erzeugt werden.');
     const link=document.createElement('a'),url=URL.createObjectURL(blob);
-    link.href=url;link.download='Ausbildungsakte-'+document.title.replace(/^Ausbildungsakte - /,'').replace(/[^a-z0-9_-]+/gi,'-')+'-Gesamt.png';
+    link.href=url;link.download='Ausbildungsakte-'+document.title.replace(/^Ausbildungsakte - /,'').replace(/[^a-z0-9_-]+/gi,'-')+'-Gesamt.'+(format==='jpeg'?'jpg':'png');
     document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
-    status.textContent='PNG gespeichert – komplette Akte von oben bis unten.';
-   }catch(error){status.textContent=error.message||'Export fehlgeschlagen';console.error('Akte als PNG:',error)}
-   finally{button.disabled=false}
-  });
+    status.textContent=(format==='jpeg'?'JPEG':'PNG')+' gespeichert – komplette Akte von oben bis unten.';
+   }catch(error){status.textContent=error.message||'Export fehlgeschlagen';console.error('Akte als Bild:',error)}
+   finally{buttons.forEach(button=>button.disabled=false)}
+  }
+  buttons.forEach(button=>button.addEventListener('click',()=>saveImage(button.dataset.exportImage)));
  })();
  <\/script></body></html>`);
  w.document.close();

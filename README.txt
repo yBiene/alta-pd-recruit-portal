@@ -1,8 +1,9 @@
-ALTA PD – Gesamtakte als PNG
+ALTA PD – Druckansicht mit PNG und JPEG
 
-1. app.js, index.html und style.css im GitHub-Repository ersetzen.
-2. Vorhandene glassmorphism.css, Bilder, Manifest und Service Worker beibehalten.
-3. Ausbildungsakte oeffnen > Akte drucken / PNG > Gesamte Akte als PNG.
-4. Alternativ PDF / Drucken waehlen.
+1. app.js in GitHub ersetzen (die anderen beiden Dateien sind unverändert beigelegt).
+2. Seite mit Strg+F5 aktualisieren.
+3. Ausbildungsakte öffnen > Drucken.
+4. In der Vorschau PNG, JPEG oder PDF / Drucken wählen.
 
-PNG-Erstellung benoetigt Internet fuer html2canvas (jsDelivr). Bei extrem langen Akten kann ein einzelnes Bild an Browsergrenzen scheitern; dann PDF verwenden.
+Die Abschnitte Geplante Ausbildung und Änderungs- & Ausbildungsverlauf bleiben aus der Druckansicht entfernt.
+Die Bildspeicherung benötigt Internet für html2canvas; extrem lange Akten können Browser-Limits erreichen.
