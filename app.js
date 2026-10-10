@@ -656,7 +656,7 @@ function adminRecruit(r){
  let p=progress(r);
  return `<div class="card">
   <div class="record-head"><div><div class="eyebrow">AUSBILDUNGSAKTE</div><h2>${esc(r.name)}</h2></div><button class="record-close-btn" id="closeRecruitRecord" type="button" title="Ausbildungsakte schließen">✕ Ausbildungsakte schließen</button></div>
-  <p class="muted">${esc(r.serviceNo)} · ${esc(r.username)} · Ausbildungszeit <b>${fmtDuration(totalTrainingMinutes(r))}</b></p><div class="record-actions"><button class="secondary" id="printRecruitRecord" type="button">📄 Ausbildungsakte als PDF</button><span class="readiness-pill ${readiness(r)[1]}">${readiness(r)[0]}</span></div>
+  <p class="muted">${esc(r.serviceNo)} · ${esc(r.username)} · Ausbildungszeit <b>${fmtDuration(totalTrainingMinutes(r))}</b></p><div class="record-actions"><button class="secondary" id="printRecruitRecord" type="button">🖨️ Akte drucken / PNG</button><span class="readiness-pill ${readiness(r)[1]}">${readiness(r)[0]}</span></div>
   <div class="progress"><i style="width:${p}%"></i></div><p><b>${p}%</b> · ${r.completed.length}/22 Kapitel · ${stage(r)}</p>
   <div class="v640-record-meta">
    <div><small>Dienstnummer</small><b>${esc(r.serviceNo||"—")}</b></div><div><small>Rang</small><b>${esc(r.rank||"Recruit")}</b></div><div><small>Leiter FTO</small><b>${esc(r.fto||"—")}</b></div><div><small>Weiterer FTO</small><b>${esc(r.secondaryFto||"—")}</b></div><div><small>Status</small><b>${esc(r.status||"—")}</b></div>
@@ -1021,12 +1021,14 @@ function printRecruitRecord(r){
  .audit{display:grid;grid-template-columns:130px 1fr;gap:2px 12px;padding:7px 0;border-bottom:1px solid #edf1f4}.audit span{color:#718090;font-size:10px}.audit small{grid-column:2;color:#718090}
  .signatures{display:grid;grid-template-columns:1fr 1fr;gap:45px;margin-top:38px}.signature{padding-top:28px;border-top:1px solid #536778;text-align:center;color:#5d6b77;font-size:11px}
  .footer{padding:12px 34px 22px;color:#7b8995;font-size:9px;display:flex;justify-content:space-between}.empty{color:#788894;font-style:italic}
- .print-toolbar{position:sticky;top:0;z-index:100;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;background:#071d31;padding:12px 16px;color:#e7f4ff;box-shadow:0 6px 22px #0003}
- .print-toolbar button{background:#0b8ed8;color:white;border:1px solid #3eaddf;border-radius:8px;padding:11px 15px;font-weight:bold;cursor:pointer}.print-toolbar button.secondary{background:#183b54}
- .print-toolbar small{width:100%;text-align:center;color:#c0d8e8}
- @media print{body{background:#fff}.sheet{margin:0;box-shadow:none;max-width:none;width:100%}.print-toolbar{display:none!important}.section{break-inside:auto}.entry,.evaluation,.identity,.kpis{break-inside:avoid}.hero{border-radius:0}}
- @media print{html,body{margin:0!important;padding:0!important}.sheet{border:0!important}.content{padding:20px 24px 26px}.section{margin-bottom:12px}.footer{padding-bottom:10px}}
- @media print{thead{display:table-header-group}tr{break-inside:avoid}}
+ .export-toolbar{position:fixed;z-index:1000;right:18px;bottom:18px;display:flex;gap:9px;align-items:center;background:#09253b;padding:11px;border-radius:12px;box-shadow:0 8px 28px #0004}
+ .export-toolbar button{background:#0b8ed8;color:#fff;border:0;border-radius:8px;padding:11px 15px;font-weight:bold;cursor:pointer}
+ .export-toolbar button:disabled{opacity:.55;cursor:wait}
+ .export-toolbar #exportStatus{color:#fff;font-size:12px;max-width:230px}
+ .sheet{overflow:visible}
+ @media screen{.section{break-inside:auto}}
+
+ @media print{body{background:#fff}.sheet{margin:0;box-shadow:none;max-width:none}.export-toolbar{display:none}.section{break-inside:auto}.entry,.evaluation,.identity,.kpis{break-inside:avoid}.hero{border-radius:0}}
  </style></head><body><div class="sheet">
  <header class="hero"><div class="brand"><img src="apd-logo-v2.png"><div><small>ALTA POLICE DEPARTMENT</small><h1>Offizielle Ausbildungsakte</h1></div></div><div class="docno"><b>RECRUIT TRAINING DIVISION</b><span>Erstellt am ${printDate}</span></div></header>
  <main class="content">
@@ -1046,35 +1048,46 @@ function printRecruitRecord(r){
 
   <section class="section"><div class="section-title"><div><small>PRAXISAUSBILDUNG</small><h3>FTO-Berichte & Ausbildungsfahrten</h3></div><span>${fmtDuration(totalMinutes)} dokumentiert</span></div>${reportRows}</section>
 
-  <section class="section"><div class="section-title"><div><small>TERMINE</small><h3>Geplante Ausbildung</h3></div></div>${appointmentRows}</section>
 
   <section class="section"><div class="section-title"><div><small>FTO-VERMERKE</small><h3>Ausbildungsnotizen</h3></div><span>${notes.length} Einträge</span></div>${noteRows}</section>
 
-  <section class="section"><div class="section-title"><div><small>AKTENCHRONIK</small><h3>Änderungs- & Ausbildungsverlauf</h3></div></div>${auditRows}</section>
 
   <div class="signatures"><div class="signature">Recruit · Datum / Unterschrift</div><div class="signature">FTO / Ausbildungsleitung · Datum / Unterschrift</div></div>
  </main>
  <footer class="footer"><span>ALTA Police Department · Recruit Training Division</span><span>Ausbildungsakte ${safe(r.serviceNo)} · ${safe(r.name)}</span></footer>
- </div><div class="print-toolbar"><button type="button" onclick="printRecordAsLongPage()">📄 PDF · eine lange Seite</button><button type="button" class="secondary" onclick="printRecordAsA4()">🖨️ PDF · A4-Seiten</button><small>Im Druckdialog „Als PDF speichern“ wählen. Bei sehr langen Akten empfiehlt sich A4.</small></div>
+ </div>
+ <div class="export-toolbar"><button id="saveFullPng" type="button">⬇ Gesamte Akte als PNG</button><button type="button" onclick="window.print()">🖨 PDF / Drucken</button><span id="exportStatus" role="status"></span></div>
+ <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
  <script>
- function printRecordAsA4(){const old=document.getElementById('recordPageFormat');if(old)old.remove();window.print()}
- function printRecordAsLongPage(){
-  const old=document.getElementById('recordPageFormat');if(old)old.remove();
-  // DIN-A4-Breite; die tatsächliche Dokumenthöhe ergibt sich aus allen Aktenabschnitten.
-  const sheet=document.querySelector('.sheet');
-  const widthPx=sheet.getBoundingClientRect().width;
-  const heightPx=sheet.scrollHeight;
-  const mm=Math.ceil((heightPx/widthPx)*210+12);
-  if(mm>5000){alert('Diese Akte ist für ein einzelnes PDF-Blatt zu lang. Bitte A4-Seiten verwenden.');return}
-  const style=document.createElement('style');style.id='recordPageFormat';
-  style.textContent='@page{size:210mm '+mm+'mm;margin:0} @media print{.sheet{width:210mm!important;max-width:210mm!important;margin:0!important}.section,.entry{break-inside:avoid}}';
-  document.head.appendChild(style);
-  window.print();
- }
+ (function(){
+  const button=document.getElementById('saveFullPng');
+  const status=document.getElementById('exportStatus');
+  button.addEventListener('click',async function(){
+   button.disabled=true;status.textContent='Gesamte Akte wird erstellt …';
+   try{
+    if(typeof html2canvas!=='function')throw new Error('Bildbibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen.');
+    await document.fonts.ready;
+    await Promise.all(Array.from(document.querySelectorAll('.sheet img')).map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,3000)})));
+    const sheet=document.querySelector('.sheet');
+    const width=Math.ceil(sheet.scrollWidth),height=Math.ceil(sheet.scrollHeight);
+    // Browser begrenzen die maximale Canvas-Groesse. Skalierung fuer EIN PNG automatisch anpassen.
+    const scale=Math.min(2,30000/height,Math.sqrt(16000000/(width*height)));
+    if(scale<0.35)throw new Error('Die Akte ist fuer ein einzelnes Browser-Bild zu lang. Bitte PDF / Drucken verwenden.');
+    const canvas=await html2canvas(sheet,{backgroundColor:'#ffffff',scale:scale,useCORS:true,allowTaint:false,logging:false,scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,width),windowHeight:Math.max(document.documentElement.clientHeight,height)});
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if(!blob)throw new Error('PNG konnte nicht erzeugt werden.');
+    const link=document.createElement('a'),url=URL.createObjectURL(blob);
+    link.href=url;link.download='Ausbildungsakte-'+document.title.replace(/^Ausbildungsakte - /,'').replace(/[^a-z0-9_-]+/gi,'-')+'-Gesamt.png';
+    document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
+    status.textContent='PNG gespeichert – komplette Akte von oben bis unten.';
+   }catch(error){status.textContent=error.message||'Export fehlgeschlagen';console.error('Akte als PNG:',error)}
+   finally{button.disabled=false}
+  });
+ })();
  <\/script></body></html>`);
  w.document.close();
- // Druckansicht bleibt sichtbar, damit zwischen durchgehendem PDF und A4 gewählt werden kann.
- w.focus();
+ // Druckdialog nicht automatisch oeffnen; der Nutzer waehlt PNG oder PDF.
+ setTimeout(()=>{try{w.focus()}catch{}},150);
 }
 
 document.addEventListener("click",e=>{if(e.target.closest("#notifyBtn,.notify-btn,[data-notifications]")){e.preventDefault();openWorkflowNotifications()}});
