@@ -1,0 +1,37 @@
+/* ALTA PD – Dark Glassmorphism. Visual-only overlay; no JS/data changes. */
+:root{--bg:#06111f;--panel:rgba(14,33,54,.65);--panel2:rgba(20,45,70,.62);--line:rgba(145,200,243,.22);--shadow:0 16px 48px rgba(0,5,17,.30);--muted:#adc3d6;--glass-edge:rgba(158,212,255,.20);--glass-fill:rgba(15,35,56,.57)}
+html,body{background:#06111f;color:#f0f8ff}
+body{background:radial-gradient(ellipse at 13% 6%,rgba(20,112,199,.24),transparent 38%),radial-gradient(ellipse at 89% 42%,rgba(40,99,185,.15),transparent 43%),linear-gradient(150deg,#06111f,#081b2e 55%,#07111f);background-attachment:fixed}
+main{background:transparent!important}
+.sidebar{background:linear-gradient(165deg,rgba(9,26,46,.83),rgba(7,19,34,.72))!important;border-right:1px solid var(--glass-edge)!important;backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%)}
+.topbar{background:rgba(7,23,42,.68)!important;border-bottom:1px solid var(--glass-edge)!important;backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%)}
+/* Keep the original police-officer banner image clearly visible. */
+.hero{background:linear-gradient(90deg,rgba(5,17,33,.89),rgba(8,29,52,.43)),url('image26.png') center/cover!important;border:1px solid rgba(134,206,255,.35)!important;box-shadow:0 24px 64px rgba(0,8,25,.36),inset 0 1px rgba(255,255,255,.10)!important}
+.login-card,.card,.panel,.inner-card,.quick-panel,.service-card,.news-card,.notes-card,.question-card,.test-card,.record-card,.record-summary,.record-head,.record-kpi,.record-tab-panel,.v630-action-card,.v630-feed-card,.account-create-panel,.account-panel-v562,.practice-card,.today-card,.attention-card,.phase-release-card,.graduation-card,.milestone-card,.streak-card,.info-tile,.chapter-category-card,.lb-table-card,.mail-desktop,.mail-compose-window,.ae-modal-box,.v61-inbox-modal,.v640-masterdata,.v640-phase-group,.v640-graduation,.v640-completed{
+ background:linear-gradient(145deg,rgba(31,61,90,.58),rgba(9,26,44,.63))!important;
+ border:1px solid var(--glass-edge)!important;
+ box-shadow:0 12px 34px rgba(0,5,18,.22),inset 0 1px rgba(255,255,255,.055)!important;
+ backdrop-filter:blur(16px) saturate(135%);-webkit-backdrop-filter:blur(16px) saturate(135%);
+}
+.card,.panel,.inner-card,.record-card,.chapter-card,.login-card{border-radius:17px!important}
+.chapter-card{background:linear-gradient(155deg,rgba(21,52,83,.55),rgba(7,23,41,.75))!important;border:1px solid rgba(125,195,244,.24)!important;box-shadow:0 10px 32px rgba(0,8,23,.26),inset 0 1px rgba(255,255,255,.07)!important;backdrop-filter:blur(9px)}
+.chapter-card:hover{border-color:rgba(118,204,255,.64)!important;box-shadow:0 15px 38px rgba(4,35,77,.34),0 0 0 1px rgba(85,178,240,.10)!important}
+.nav-btn:hover,.nav-btn.active{background:linear-gradient(95deg,rgba(62,160,234,.24),rgba(62,160,234,.065))!important;border-color:rgba(107,194,250,.34)!important}
+button.primary,.primary{background:linear-gradient(130deg,rgba(54,172,244,.96),rgba(15,105,183,.94))!important;border:1px solid rgba(168,221,255,.35)!important;box-shadow:0 8px 24px rgba(10,104,190,.22),inset 0 1px rgba(255,255,255,.18)!important}
+button.secondary,.secondary,.user-pill,.v622-mail-top,.searchbox input,.search-results,.record-tabs,.v640-record-tabs,.v640-record-meta>div,.recruit-row,.trainer-row,.check,.answer,.v630-action-row,.v630-feed-row,.mail-list-item.selected{
+ background:rgba(20,48,75,.58)!important;border:1px solid rgba(135,195,238,.23)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)
+}
+input:not([type=checkbox]):not([type=radio]),select,textarea{background-color:rgba(6,24,42,.58)!important;border-color:rgba(122,183,225,.30)!important;color:#f1f8ff!important}
+input:focus,select:focus,textarea:focus{border-color:rgba(92,189,252,.78)!important;box-shadow:0 0 0 3px rgba(48,158,232,.13)!important}
+/* Restore inputs deliberately transparent in special contexts */
+.learn-line,.mail-search-wrap input,.mail-compose-window label input,.mail-compose-window label select{background:transparent!important}
+.table-wrap{background:rgba(10,30,50,.36)!important;border-color:rgba(135,195,238,.20)!important;backdrop-filter:blur(10px)}
+th{background:rgba(37,88,129,.35)!important}td{background:rgba(9,28,46,.18)}
+.mail-sidebar{background:rgba(8,25,43,.67)!important}.mail-window,.mail-list-pane,.mail-reading-pane{background:rgba(9,28,47,.42)!important}.mail-window-bar{background:rgba(23,52,77,.58)!important}
+.mail-compose-modal{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.ae-modal,.modal-overlay{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.status,.access-badge{backdrop-filter:blur(8px)}
+:focus-visible{outline:2px solid #79caff;outline-offset:2px}
+@media(max-width:760px){.sidebar{backdrop-filter:blur(18px)}.topbar{backdrop-filter:blur(16px)}.hero{background-position:center!important}}
+@media(prefers-reduced-motion:reduce){.chapter-card{transition:none!important}}
+@supports not (backdrop-filter:blur(2px)){.card,.panel,.sidebar,.topbar,.login-card,.mail-desktop{background-color:#10253a!important}}
