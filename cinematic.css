@@ -45,8 +45,8 @@ body:not(.cinematic-off) .content > .hero,body:not(.cinematic-off) .content > .c
 .chapter-header{isolation:isolate;background-color:#071727!important}
 .cinematic-academy{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:.58;pointer-events:none}
 .chapter-header:has(.cinematic-academy):before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(3,13,25,.93),rgba(4,15,28,.53));pointer-events:none}
-.cinematic-off .chapter-header{background-size:cover!important}
-@media(prefers-reduced-motion:reduce){.chapter-header{background-size:cover!important}}
+.cinematic-off .chapter-header{background:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.55)),url('image1.png') center/cover!important}
+@media(prefers-reduced-motion:reduce){.chapter-header{background:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.55)),url('image1.png') center/cover!important}}
 
 /* V1.1 Sichtbarkeits-FIX: Videos vor der Deckfläche, unter den Inhalten */
 .login-shell{isolation:isolate}
@@ -62,18 +62,50 @@ body:not(.cinematic-off) .content > .hero,body:not(.cinematic-off) .content > .c
 .chapter-header:has(> .cinematic-academy):before{z-index:1!important}
 .chapter-header:has(> .cinematic-academy) > :not(.cinematic-academy){position:relative;z-index:2}
 
-/* Standbilder statt MP4 – Login, Dashboard und jedes einzelne Ausbildungskapitel. */
-.login-shell,.cinematic-off .login-shell{background:linear-gradient(90deg,rgba(3,11,22,.84),rgba(3,11,22,.5)),url('image26.png') center/cover no-repeat!important}
-.cinematic-hero,.cinematic-off .cinematic-hero{background:linear-gradient(90deg,rgba(3,14,28,.92),rgba(4,17,31,.65),rgba(5,17,30,.28)),url('image26.png') center/cover no-repeat!important}
-.chapter-header,.cinematic-off .chapter-header{background-size:cover!important;background-position:center!important}
-.chapter-nav-thumb{background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;filter:none!important;border-color:rgba(103,185,233,.55)!important}
-body.sidebar-collapsed .nav-btn[data-chapter] .chapter-nav-thumb{width:44px!important;height:36px!important;flex:0 0 44px!important;border-radius:7px!important}
-.chapter-card-image,.chapter-category-card{background-size:cover;background-position:center}
+/* APD 2026 – static photographic backgrounds, no video or moving media */
+.login-shell{background:#071727 url('chapter-art-01.webp') center/cover no-repeat!important}
+.cinematic-login{background:url('chapter-art-01.webp') center/cover no-repeat!important;position:absolute;inset:0;display:block;pointer-events:none}
+.cinematic-hero{background:#071727 url('chapter-art-06.webp') center/cover no-repeat!important}
+.cinematic-dashboard{background:url('chapter-art-06.webp') center/cover no-repeat!important;position:absolute;inset:0;display:block;pointer-events:none}
+.chapter-header{background-color:#071727!important;background-size:cover!important;background-position:center 42%!important;background-repeat:no-repeat!important}
+.chapter-header:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,13,25,.90),rgba(4,15,28,.50));pointer-events:none;z-index:0}
+.chapter-header > *{position:relative;z-index:1}
+.cinematic-off .login-shell{background-image:url('chapter-art-01.webp')!important}
+.cinematic-off .cinematic-hero{background-image:url('chapter-art-06.webp')!important}
+.cinematic-off .chapter-header{background-size:cover!important}
+@media(prefers-reduced-motion:reduce){.login-shell{background-image:url('chapter-art-01.webp')!important}.cinematic-hero{background-image:url('chapter-art-06.webp')!important}.chapter-header{background-image:url('chapter-art-03.webp')!important}}
 
-/* 4K-Bilder: dezenteres Overlay, scharfe Darstellung, keine kuenstliche Vergroesserung. */
-.chapter-header,.cinematic-off .chapter-header{background-size:cover!important;background-position:center 44%!important;min-height:330px!important;image-rendering:auto}
-.chapter-header h1{text-shadow:0 2px 16px rgba(0,0,0,.85)}
-.chapter-card-image:before{transform:scale(1)!important;background-size:cover!important;background-position:center!important;filter:none!important;transition:transform .32s ease!important}
-.chapter-card-image:hover:before{transform:scale(1.035)!important}
-.chapter-card-shade{background:linear-gradient(90deg,rgba(4,15,26,.78) 0%,rgba(4,15,26,.47) 49%,rgba(4,15,26,.07) 100%),linear-gradient(0deg,rgba(3,12,21,.62),transparent 60%)!important}
-@media(max-width:760px){.chapter-header,.cinematic-off .chapter-header{min-height:245px!important;background-position:center!important}}
+/* 2026-10-10 – one thematic banner per chapter; emojis instead of thumbnails */
+.nav-btn[data-chapter] .chapter-nav-emoji{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 24px!important;width:24px!important;height:26px!important;font-size:18px!important;line-height:1!important;background:none!important;border:0!important;box-shadow:none!important;filter:none!important}
+body.sidebar-collapsed .nav-btn[data-chapter] .chapter-nav-emoji{width:38px!important;height:34px!important;flex:0 0 38px!important;font-size:22px!important}
+.chapter-header{min-height:165px!important;padding:22px 24px!important;background-size:cover!important;background-position:center 42%!important}
+.chapter-header:before{background:linear-gradient(90deg,rgba(3,13,25,.96) 0%,rgba(4,15,28,.80) 42%,rgba(4,15,28,.15) 100%)!important}
+@media(max-width:760px){.chapter-header{min-height:130px!important;padding:15px 17px!important}}
+
+/* Sharp chapter-specific banners; preserve crisp type and prevent stale fallback. */
+.chapter-header{background-repeat:no-repeat!important;background-size:cover!important;background-position:center!important;filter:none!important;image-rendering:auto!important;min-height:170px!important}
+.chapter-header:before{display:none!important}
+.chapter-header h1,.chapter-header .chapter-no,.chapter-header .status{position:relative;z-index:2}
+@media(max-width:760px){.chapter-header{min-height:150px!important;background-position:40% center!important}}
+
+/* 2026-10-10: Reliable shared chapter banner. Overrides legacy cinematic/off/reduced-motion rules. */
+.chapter-header,
+.cinematic-off .chapter-header {
+  background: linear-gradient(90deg,rgba(3,13,25,.82) 0%,rgba(3,13,25,.48) 36%,rgba(3,13,25,.08) 78%),url('kapitel-banner-original.png?v=20261010fix2') center 46% / cover no-repeat !important;
+  background-color:#071727 !important;
+  filter:none !important;
+}
+.chapter-header::before { display:none !important; }
+@media (prefers-reduced-motion:reduce) {
+  .chapter-header,.cinematic-off .chapter-header {
+    background:linear-gradient(90deg,rgba(3,13,25,.82),rgba(3,13,25,.08)),url('kapitel-banner-original.png?v=20261010fix2') center 46% / cover no-repeat !important;
+  }
+}
+
+/* Direct HTML image fix: never depend on legacy background-image overrides. */
+.chapter-header.apd-photo-banner{position:relative!important;isolation:isolate!important;overflow:hidden!important;background:#071727!important;min-height:260px!important;display:flex!important;align-items:flex-end!important;padding:24px!important}
+.chapter-header.apd-photo-banner .apd-banner-photo{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:cover!important;object-position:center 45%!important;opacity:1!important;filter:none!important;transform:none!important;z-index:0!important;pointer-events:none!important}
+.chapter-header.apd-photo-banner .apd-banner-shade{position:absolute!important;inset:0!important;display:block!important;background:linear-gradient(90deg,rgba(2,11,23,.82) 0%,rgba(2,11,23,.36) 50%,rgba(2,11,23,.08) 100%)!important;z-index:1!important;pointer-events:none!important}
+.chapter-header.apd-photo-banner .apd-banner-caption{position:relative!important;z-index:2!important;width:100%!important}
+.chapter-header.apd-photo-banner:before,.chapter-header.apd-photo-banner:after{display:none!important}
+@media(max-width:760px){.chapter-header.apd-photo-banner{min-height:180px!important;padding:18px!important}.chapter-header.apd-photo-banner .apd-banner-photo{object-position:42% center!important}}

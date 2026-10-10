@@ -1326,3 +1326,16 @@ body.sidebar-collapsed .nav-btn[data-chapter] .chapter-nav-thumb{width:42px!impo
 @media(max-width:680px){.apd-fto-permissions .apd-unlock-grid{grid-template-columns:1fr!important;gap:9px!important;}.apd-fto-permissions button.apd-unlock{min-height:73px!important;}}
 @media(prefers-reduced-motion:reduce){.apd-fto-permissions button.apd-unlock{transition:none!important;}.apd-fto-permissions button.apd-unlock:hover{transform:none;}}
 
+
+/* Academy Release – einheitliche Banner-Darstellung und FTO-Karten */
+.chapter-header.apd-photo-banner{position:relative!important;isolation:isolate;display:block!important;overflow:hidden!important;min-height:210px!important;height:clamp(210px,24vw,310px)!important;border-radius:18px!important;background:#10283c!important;border:1px solid rgba(114,200,250,.22)!important;}
+.chapter-header.apd-photo-banner .apd-banner-photo{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center 47%!important;opacity:1!important;filter:none!important;transform:none!important;z-index:0!important;}
+.chapter-header.apd-photo-banner .apd-banner-shade{position:absolute!important;inset:0!important;z-index:1!important;pointer-events:none!important;background:linear-gradient(90deg,rgba(3,13,25,.88),rgba(3,13,25,.38) 65%,rgba(3,13,25,.2))!important;}
+.chapter-header.apd-photo-banner .apd-banner-caption{position:relative!important;z-index:2!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-end!important;height:100%!important;padding:clamp(18px,3vw,32px)!important;color:#fff!important;}
+.chapter-header.apd-photo-banner .apd-banner-caption h1{color:#fff!important;text-shadow:0 2px 14px #000!important;max-width:90%;font-size:clamp(23px,3vw,39px)!important;}
+.apd-fto-permissions .apd-unlock-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;}
+.apd-fto-permissions button.apd-unlock{cursor:pointer!important;min-width:0!important;display:flex!important;align-items:center!important;gap:12px!important;border-radius:14px!important;padding:16px!important;background:linear-gradient(135deg,#0d293e,#0a1b2d)!important;border:1px solid #2d536d!important;color:#e9f6ff!important;text-align:left!important;}
+.apd-fto-permissions button.apd-unlock.is-open{background:linear-gradient(135deg,#103b3d,#0b292f)!important;border-color:#2d9679!important;}
+.apd-fto-permissions button.apd-unlock:focus-visible{outline:3px solid #73cfff!important;outline-offset:2px!important;}
+@media(max-width:1050px){.apd-fto-permissions .apd-unlock-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}}
+@media(max-width:620px){.apd-fto-permissions .apd-unlock-grid{grid-template-columns:1fr!important;}.chapter-header.apd-photo-banner{height:220px!important;}.chapter-header.apd-photo-banner .apd-banner-caption h1{font-size:24px!important;}}
