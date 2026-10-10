@@ -35,3 +35,22 @@ th{background:rgba(37,88,129,.35)!important}td{background:rgba(9,28,46,.18)}
 @media(max-width:760px){.sidebar{backdrop-filter:blur(18px)}.topbar{backdrop-filter:blur(16px)}.hero{background-position:center!important}}
 @media(prefers-reduced-motion:reduce){.chapter-card{transition:none!important}}
 @supports not (backdrop-filter:blur(2px)){.card,.panel,.sidebar,.topbar,.login-card,.mail-desktop{background-color:#10253a!important}}
+
+/* Final QA: consistent contrast, spacing, touch targets, and lighter mobile rendering */
+button,select,input,textarea{max-width:100%}
+button:not(:disabled){touch-action:manipulation}
+input::placeholder,textarea::placeholder{color:#a2b8cb;opacity:1}
+select option{background:#10253b;color:#f1f8ff}
+.card,.record-card,.mail-desktop,.login-card{min-width:0}
+.card p,.article p,.recruit-row,.record-card{overflow-wrap:break-word}
+.table-wrap{max-width:100%;overflow-x:auto}
+button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:760px){
+ .content{padding:16px!important}
+ .card,.login-card{padding:18px!important}
+ .topbar{min-height:72px;height:auto}
+ .search-results{max-width:min(92vw,390px)}
+ .chapter-card{min-height:150px}
+ .card,.chapter-card,.mail-desktop,.record-card{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:rgba(14,33,54,.90)!important}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}

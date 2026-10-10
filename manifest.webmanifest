@@ -1,0 +1,11 @@
+{
+  "name": "ALTA PD – Recruit Training Portal",
+  "short_name": "ALTA PD",
+  "description": "Ausbildungsportal des ALTA Police Department",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06111f",
+  "theme_color": "#071b30",
+  "icons": [{"src":"apd-logo-v2.png","sizes":"any","type":"image/png","purpose":"any"}]
+}
