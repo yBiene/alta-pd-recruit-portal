@@ -1,0 +1,49 @@
+/* ALTA PD – Cinematic Design Add-on. Druckansicht bleibt unberührt. */
+:root{--cin-blue:#3aaaff;--cin-soft:rgba(36,146,235,.16)}
+body:not(.cinematic-off){background-image:radial-gradient(circle at 85% 10%,rgba(23,101,170,.16),transparent 30%),radial-gradient(circle at 15% 65%,rgba(10,85,155,.12),transparent 38%)}
+.login-shell{position:relative;isolation:isolate;overflow:hidden}
+.cinematic-login{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:.8}
+.cinematic-login-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(3,11,22,.72),rgba(3,11,22,.43)),linear-gradient(0deg,rgba(2,8,17,.7),transparent 65%)}
+.login-card{position:relative;box-shadow:0 26px 75px rgba(0,0,0,.48),0 0 45px rgba(17,130,232,.12)!important}
+.cinematic-hero{position:relative;isolation:isolate;min-height:320px;display:flex;align-items:center;overflow:hidden;background-color:#071727!important}
+.cinematic-dashboard{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:.82}
+.cinematic-hero-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(3,14,28,.95) 0%,rgba(4,17,31,.80) 45%,rgba(5,17,30,.24) 100%)}
+.cinematic-hero-copy{position:relative;z-index:1;max-width:760px}
+.cinematic-hero-copy h1{font-size:clamp(30px,3.6vw,48px);text-shadow:0 3px 22px rgba(0,0,0,.45)}
+.cinematic-hero-copy p{color:#e0ebf7}
+/* glass depth, subtle highlights, textured empty areas */
+.content{position:relative;isolation:isolate}
+.content:before{content:"";position:fixed;pointer-events:none;z-index:-1;right:2%;bottom:4%;width:min(50vw,640px);height:65vh;background:radial-gradient(ellipse,rgba(30,118,201,.11),transparent 68%);animation:cin-drift 16s ease-in-out infinite alternate}
+.content .card{position:relative;transition:border-color .25s ease,box-shadow .3s ease,transform .25s ease;box-shadow:0 14px 35px rgba(0,0,0,.17),inset 0 1px 0 rgba(154,218,255,.045)}
+.content .card:hover{border-color:rgba(70,161,231,.48);box-shadow:0 17px 42px rgba(0,0,0,.25),0 0 24px rgba(29,119,197,.07)}
+.content .card:not(.chapter-card):hover{transform:translateY(-2px)}
+.content .card:not(.chapter-card):before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(130deg,rgba(119,192,255,.045),transparent 38%);opacity:.8}
+.content .chapter-card{transition:transform .24s ease,box-shadow .3s ease,border-color .24s ease}
+.content .chapter-card:hover{transform:translateY(-4px)}
+.content .progress i,.content .mini-progress i{transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.topbar{box-shadow:0 8px 25px rgba(0,0,0,.12)}
+.nav-btn{transition:background .22s ease,color .2s ease,transform .2s ease,border-color .2s ease}
+.nav-btn:hover{transform:translateX(3px)}
+.nav-btn.active{box-shadow:inset 3px 0 0 #47b7ff,0 0 16px rgba(25,137,220,.07)}
+.primary,.secondary{transition:filter .2s ease,transform .2s ease,box-shadow .2s ease}
+.primary:hover,.secondary:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.cinematic-toggle{border:1px solid rgba(70,156,216,.45);border-radius:10px;padding:9px 11px;background:rgba(15,45,70,.7);color:#b8e3ff;cursor:pointer;white-space:nowrap;font-size:12px}
+.cinematic-toggle:hover{border-color:#4baaf0;background:rgba(19,64,96,.9)}
+body:not(.cinematic-off) .content > .hero,body:not(.cinematic-off) .content > .card,body:not(.cinematic-off) .content > .grid{animation:cin-enter .45s ease-out both}
+@keyframes cin-enter{from{opacity:.55;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cin-drift{from{transform:translate(-25px,-15px)}to{transform:translate(40px,25px)}}
+.cinematic-off .cinematic-video{display:none!important}
+.cinematic-off .cinematic-hero{background:linear-gradient(90deg,rgba(5,17,30,.93),rgba(5,17,30,.55)),url('image26.png') center/cover!important}
+.cinematic-off .login-shell{background:linear-gradient(rgba(4,10,18,.72),rgba(4,10,18,.9)),url('image26.png') center/cover!important}
+.cinematic-off .content:before{animation:none}
+.cinematic-off .content .card,.cinematic-off .nav-btn,.cinematic-off .primary,.cinematic-off .secondary{transition:none}
+@media(max-width:760px){.cinematic-toggle{padding:8px;font-size:11px}.cinematic-hero{min-height:290px}.cinematic-hero-shade{background:rgba(3,13,25,.78)}.content .card:not(.chapter-card):hover{transform:none}}
+@media(prefers-reduced-motion:reduce){.cinematic-video{display:none!important}.content:before,.content .card,.content > .hero,.content > .grid{animation:none!important;transition:none!important}.cinematic-hero{background:linear-gradient(90deg,rgba(5,17,30,.94),rgba(5,17,30,.58)),url('image26.png') center/cover!important}}
+@media print{.cinematic-video,.cinematic-toggle,.cinematic-login-shade{display:none!important}.content:before{display:none!important}.content .card{animation:none!important;transform:none!important}}
+
+/* Academy header: video only behind chapter heading, never behind the learning text. */
+.chapter-header{isolation:isolate;background-color:#071727!important}
+.cinematic-academy{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:.58;pointer-events:none}
+.chapter-header:has(.cinematic-academy):before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(3,13,25,.93),rgba(4,15,28,.53));pointer-events:none}
+.cinematic-off .chapter-header{background:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.55)),url('image1.png') center/cover!important}
+@media(prefers-reduced-motion:reduce){.chapter-header{background:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.55)),url('image1.png') center/cover!important}}
