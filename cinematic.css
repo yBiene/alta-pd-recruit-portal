@@ -63,17 +63,17 @@ body:not(.cinematic-off) .content > .hero,body:not(.cinematic-off) .content > .c
 .chapter-header:has(> .cinematic-academy) > :not(.cinematic-academy){position:relative;z-index:2}
 
 /* APD 2026 – static photographic backgrounds, no video or moving media */
-.login-shell{background:#071727 url('chapter-art-01.webp') center/cover no-repeat!important}
-.cinematic-login{background:url('chapter-art-01.webp') center/cover no-repeat!important;position:absolute;inset:0;display:block;pointer-events:none}
-.cinematic-hero{background:#071727 url('chapter-art-06.webp') center/cover no-repeat!important}
-.cinematic-dashboard{background:url('chapter-art-06.webp') center/cover no-repeat!important;position:absolute;inset:0;display:block;pointer-events:none}
+.login-shell{background:#071727 url('image26.png?v=20261010restored') center/cover no-repeat!important}
+.cinematic-login{background:url('image26.png?v=20261010restored') center/cover no-repeat!important;position:absolute;inset:0;display:block;pointer-events:none}
+.cinematic-hero{background:#071727 url('image26.png?v=20261010restored') center/cover no-repeat!important}
+.cinematic-dashboard{background:url('image26.png?v=20261010restored') center/cover no-repeat!important;position:absolute;inset:0;display:block;pointer-events:none}
 .chapter-header{background-color:#071727!important;background-size:cover!important;background-position:center 42%!important;background-repeat:no-repeat!important}
 .chapter-header:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,13,25,.90),rgba(4,15,28,.50));pointer-events:none;z-index:0}
 .chapter-header > *{position:relative;z-index:1}
-.cinematic-off .login-shell{background-image:url('chapter-art-01.webp')!important}
-.cinematic-off .cinematic-hero{background-image:url('chapter-art-06.webp')!important}
+.cinematic-off .login-shell{background-image:url('image26.png?v=20261010restored')!important}
+.cinematic-off .cinematic-hero{background-image:url('image26.png?v=20261010restored')!important}
 .cinematic-off .chapter-header{background-size:cover!important}
-@media(prefers-reduced-motion:reduce){.login-shell{background-image:url('chapter-art-01.webp')!important}.cinematic-hero{background-image:url('chapter-art-06.webp')!important}.chapter-header{background-image:url('chapter-art-03.webp')!important}}
+@media(prefers-reduced-motion:reduce){.login-shell{background-image:url('image26.png?v=20261010restored')!important}.cinematic-hero{background-image:url('image26.png?v=20261010restored')!important}.chapter-header{background-image:url('chapter-art-03.webp')!important}}
 
 /* 2026-10-10 – one thematic banner per chapter; emojis instead of thumbnails */
 .nav-btn[data-chapter] .chapter-nav-emoji{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 24px!important;width:24px!important;height:26px!important;font-size:18px!important;line-height:1!important;background:none!important;border:0!important;box-shadow:none!important;filter:none!important}
