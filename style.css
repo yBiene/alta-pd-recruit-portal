@@ -1368,3 +1368,14 @@ button:disabled{cursor:default;opacity:.6}
 }
 
 .portal-chapter-meta{display:block;color:#cfdfeb;font-size:11px;margin-top:8px;line-height:1.4}
+
+/* Postfach: lesbare Empfängerauswahl statt schmaler Rasterspalte. */
+.mail-compose-window{width:min(820px,96vw)!important;max-height:92dvh;overflow:auto!important}
+.mail-compose-window form{gap:16px!important;padding:22px!important}
+.mail-compose-window form label{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;border:0!important;font-size:14px!important;min-width:0}
+.mail-compose-window form label input,.mail-compose-window form label select{display:block!important;width:100%!important;min-width:0!important;min-height:48px!important;box-sizing:border-box!important;padding:12px 14px!important;border:1px solid #335b78!important;border-radius:10px!important;background:#0b2032!important;color:#edf6ff!important;font-size:15px!important}
+.mail-compose-window form label select option,.mail-compose-window form label select optgroup{background:#0b2032;color:#edf6ff}
+.mail-compose-window form label input:focus,.mail-compose-window form label select:focus{outline:2px solid #5abaff!important;outline-offset:2px}
+.mail-compose-window form label>small{margin:0!important;font-size:12px}
+.mail-compose-window textarea{min-height:220px!important;padding:14px!important;font-size:15px!important}
+@media(max-width:760px){.mail-compose-window form{padding:16px!important;gap:12px!important}.mail-compose-window textarea{min-height:140px!important}.mail-compose-window footer{gap:12px;flex-wrap:wrap}}
