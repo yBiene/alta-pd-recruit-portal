@@ -61,3 +61,11 @@ body:not(.cinematic-off) .content > .hero,body:not(.cinematic-off) .content > .c
 .chapter-header > .cinematic-academy{z-index:0!important;opacity:.85!important;pointer-events:none}
 .chapter-header:has(> .cinematic-academy):before{z-index:1!important}
 .chapter-header:has(> .cinematic-academy) > :not(.cinematic-academy){position:relative;z-index:2}
+
+/* Standbilder statt MP4 – Login, Dashboard und jedes einzelne Ausbildungskapitel. */
+.login-shell,.cinematic-off .login-shell{background:linear-gradient(90deg,rgba(3,11,22,.84),rgba(3,11,22,.5)),url('image26.png') center/cover no-repeat!important}
+.cinematic-hero,.cinematic-off .cinematic-hero{background:linear-gradient(90deg,rgba(3,14,28,.92),rgba(4,17,31,.65),rgba(5,17,30,.28)),url('image26.png') center/cover no-repeat!important}
+.chapter-header,.cinematic-off .chapter-header{background-size:cover!important;background-position:center!important}
+.chapter-nav-thumb{background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;filter:none!important;border-color:rgba(103,185,233,.55)!important}
+body.sidebar-collapsed .nav-btn[data-chapter] .chapter-nav-thumb{width:44px!important;height:36px!important;flex:0 0 44px!important;border-radius:7px!important}
+.chapter-card-image,.chapter-category-card{background-size:cover;background-position:center}
