@@ -69,3 +69,11 @@ body:not(.cinematic-off) .content > .hero,body:not(.cinematic-off) .content > .c
 .chapter-nav-thumb{background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;filter:none!important;border-color:rgba(103,185,233,.55)!important}
 body.sidebar-collapsed .nav-btn[data-chapter] .chapter-nav-thumb{width:44px!important;height:36px!important;flex:0 0 44px!important;border-radius:7px!important}
 .chapter-card-image,.chapter-category-card{background-size:cover;background-position:center}
+
+/* 4K-Bilder: dezenteres Overlay, scharfe Darstellung, keine kuenstliche Vergroesserung. */
+.chapter-header,.cinematic-off .chapter-header{background-size:cover!important;background-position:center 44%!important;min-height:330px!important;image-rendering:auto}
+.chapter-header h1{text-shadow:0 2px 16px rgba(0,0,0,.85)}
+.chapter-card-image:before{transform:scale(1)!important;background-size:cover!important;background-position:center!important;filter:none!important;transition:transform .32s ease!important}
+.chapter-card-image:hover:before{transform:scale(1.035)!important}
+.chapter-card-shade{background:linear-gradient(90deg,rgba(4,15,26,.78) 0%,rgba(4,15,26,.47) 49%,rgba(4,15,26,.07) 100%),linear-gradient(0deg,rgba(3,12,21,.62),transparent 60%)!important}
+@media(max-width:760px){.chapter-header,.cinematic-off .chapter-header{min-height:245px!important;background-position:center!important}}
