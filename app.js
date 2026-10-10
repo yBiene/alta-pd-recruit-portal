@@ -171,7 +171,7 @@ const TESTS=[
 ];
 
 
-const chapterIcons={1:"📋",2:"🛡️",3:"🦺",4:"📡",5:"📻",6:"🗺️",7:"💻",8:"🔎",9:"🚓",10:"🤝",11:"⚖️",12:"🗂️",13:"🛡️",14:"🎯",15:"🎓",16:"📋",17:"🎙️",18:"🔫",19:"🧪",20:"📝",21:"🗺️",22:"⚠️"};
+const chapterIcons={1:"📋",2:"🏛️",3:"👔",4:"📱",5:"📢",6:"🗺️",7:"💻",8:"🚙",9:"🚓",10:"🤝",11:"⚖️",12:"📁",13:"🔫",14:"🎯",15:"🎓",16:"📑",17:"🎧",18:"🔋",19:"🧪",20:"📖",21:"📍",22:"⚠️"};
 const chapterCardImages=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,`chapter-art-${String(i+1).padStart(2,"0")}.webp?v=hd60`]));
 function nav(){
  const canCollapseTraining=hasExtraTrainerAccess(current);
@@ -183,7 +183,7 @@ function nav(){
  }else{
   html+=`<div class="nav-label">AUSBILDUNG</div>`;
  }
- for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon chapter-nav-thumb" aria-hidden="true" style="background-image:url('${chapterCardImages[x.n]}')"></span>${esc(x.title)}</button>`;
+ for(const x of titles) html+=`<button class="nav-btn" data-chapter="${x.n}"><span class="chapter-nav-icon chapter-nav-emoji" aria-hidden="true">${chapterIcons[x.n]||"📘"}</span>${esc(x.title)}</button>`;
  if(canCollapseTraining)html+=`</div>`;
  html+=`<div class="nav-label">PRÜFUNGEN</div><button class="nav-btn" data-view="tests">📝 Tests</button><div class="nav-label">PORTAL</div><button class="nav-btn" data-view="news">📢 Mitteilungen</button><button class="nav-btn" data-view="documents">📂 Dokumente</button>`;
  if(hasExtraTrainerAccess(current)) html+=`<div class="nav-label">FTO / ADMIN</div>${isOwner(current)?`<button class="nav-btn" data-view="command">⚡ Command Center</button><button class="nav-btn v58-command-live-nav" data-view="command-live">🟢 Live-Benutzer</button>`:""}<button class="nav-btn" data-view="accounts">👤 Account-Verwaltung</button><button class="nav-btn" data-view="admin">📂 Rekruten Ausbildungsakten</button>`;
@@ -362,7 +362,7 @@ function showChapter(n){
  const done=current.completed.includes(n);
  const chapterImages=(n===6||n===21)?["gebietskarte.png"]:(c.images||[]); const imgs=chapterImages.map(i=>`<img src="${i}" alt="Handbuch-Abbildung ${i}" onclick="window.open(this.src,'_blank')">`).join("");
  $("#content").innerHTML=`
- <div class="chapter-header" style="background-image:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.58)),url('${(n===6||n===21)?"gebietskarte.png":chapterCardImages[n]}')">
+ <div class="chapter-header" style="background-image:linear-gradient(90deg,rgba(4,13,24,.96),rgba(4,13,24,.58)),url('${chapterCardImages[n]}')">
   <div><div class="chapter-no">KAPITEL ${String(n).padStart(2,"0")}</div><h1>${esc(c.title)}</h1><span class="status">${done?"✓ Abgeschlossen":"● In Ausbildung"}</span></div>
  </div>
  <div class="chapter-body">
@@ -1581,115 +1581,7 @@ setTimeout(sidebarTooltipsV544,0);
  window.addEventListener('unhandledrejection',()=>{try{toast('⚠ Aktion fehlgeschlagen. Verbindung prüfen und erneut versuchen.')}catch{}});
 })();
 
-/* ===== V5.5.2 – Browser Zurück / Vorwärts ===== */
-(function(){
- let restoring=false;
- const viewFn=showView, chapterFn=showChapter;
- function routeState(route,extra={}){
-  return {apdPortal:true,route,chapter:extra.chapter||null,recruitId:extra.recruitId||null,recordClosed:extra.recordClosed??null};
- }
- function routeHash(s){
-  if(s.route==='chapter') return `#chapter-${s.chapter}`;
-  if(s.route==='admin'&&s.recruitId&&!s.recordClosed) return `#admin-recruit-${encodeURIComponent(s.recruitId)}`;
-  return `#${s.route||'dashboard'}`;
- }
- function same(a,b){return !!a?.apdPortal&&a.route===b.route&&String(a.chapter||'')===String(b.chapter||'')&&String(a.recruitId||'')===String(b.recruitId||'')&&Boolean(a.recordClosed)===Boolean(b.recordClosed)}
- function commit(s){
-  if(restoring)return;
-  const method=history.state?.apdPortal?(same(history.state,s)?'replaceState':'pushState'):'replaceState';
-  history[method](s,'',routeHash(s));
- }
- showView=function(v){
-  const result=viewFn(v);
-  commit(routeState(v,{recruitId:v==='admin'?selectedRecruit:null,recordClosed:v==='admin'?recruitRecordClosed:null}));
-  return result;
- };
- showChapter=function(n){
-  const result=chapterFn(n);
-  commit(routeState('chapter',{chapter:+n}));
-  return result;
- };
- function render(s){
-  if(!s?.apdPortal||!current)return;
-  restoring=true;
-  try{
-   if(s.route==='chapter'&&s.chapter) chapterFn(+s.chapter);
-   else {
-    if(s.route==='admin'){
-     selectedRecruit=s.recruitId||null;
-     recruitRecordClosed=s.recordClosed??!s.recruitId;
-    }
-    viewFn(s.route||'dashboard');
-   }
-   savePortalRoute(s.route==='chapter'?'chapter':s.route,{chapter:s.chapter||undefined,scrollY:0});
-   window.scrollTo({top:0,left:0,behavior:'auto'});
-  } finally {restoring=false}
- }
- window.addEventListener('popstate',e=>{if(e.state?.apdPortal)render(e.state)});
- // Nach Login/Restore die aktuell sichtbare Portal-Seite als ersten History-Eintrag markieren.
- document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{
-  if(!current||history.state?.apdPortal)return;
-  const s=readPortalRoute();
-  const initial=s?.route==='chapter'&&s.chapter?routeState('chapter',{chapter:+s.chapter}):routeState(s?.route||'dashboard',{recruitId:selectedRecruit,recordClosed:recruitRecordClosed});
-  history.replaceState(initial,'',routeHash(initial));
- },700));
-})();
-
-
-/* ===== V5.6 – Final Release: Deep Links, Reload & History QA ===== */
-(function(){
- const ROUTES=new Set(['dashboard','command','command-live','accounts','admin','tests','account','news','documents','calendar','scenario','radio','mapquiz','plan','rides','dienstbuch','messages','achievements','leaderboard']);
- let applying=false;
- function stateFor(route,extra={}){return {apdPortal:true,route:route||'dashboard',chapter:extra.chapter||null,recruitId:extra.recruitId||null,recordClosed:extra.recordClosed??null,v56:true}}
- function hashFor(s){if(s.route==='chapter'&&s.chapter)return '#chapter-'+s.chapter;if(s.route==='admin'&&s.recruitId&&!s.recordClosed)return '#admin-recruit-'+encodeURIComponent(s.recruitId);return '#'+(s.route||'dashboard')}
- function parseHash(){
-  const raw=(location.hash||'').replace(/^#/,'').trim(); if(!raw)return stateFor('dashboard');
-  let m=raw.match(/^chapter-(\d{1,2})$/); if(m){const n=+m[1];return n>=1&&n<=22?stateFor('chapter',{chapter:n}):null}
-  m=raw.match(/^admin-recruit-(.+)$/); if(m)return stateFor('admin',{recruitId:decodeURIComponent(m[1]),recordClosed:false});
-  return ROUTES.has(raw)?stateFor(raw):null;
- }
- function permitted(s){if(!current)return false;if(current.mustChangePassword)return s.route==='account';if(['command','accounts','admin','calendar'].includes(s.route)&&!isTrainer(current))return false;return true}
- function mark(s,mode='replaceState'){try{history[mode](s,'',hashFor(s))}catch{}}
- function renderState(s,fromHistory=false){
-  if(!current)return false;
-  if(!s||!permitted(s)){s=stateFor(current.mustChangePassword?'account':'dashboard');mark(s);if(!fromHistory)try{toast('Diese Ansicht ist nicht verfügbar.')}catch{}}
-  applying=true;
-  try{
-   mark(s);
-   if(s.route==='chapter')showChapter(+s.chapter);
-   else if(s.route==='admin'){selectedRecruit=s.recruitId||null;recruitRecordClosed=s.recordClosed??!s.recruitId;showView('admin')}
-   else showView(s.route);
-   savePortalRoute(s.route,{chapter:s.chapter||undefined,scrollY:0});
-   requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}));
-  }finally{applying=false}
-  return true;
- }
- let tries=0;
- const boot=setInterval(()=>{
-  tries++;
-  if(current){
-   clearInterval(boot);
-   if(location.hash)renderState(parseHash(),true);
-   else{
-    const saved=readPortalRoute();
-    const s=saved?.route==='chapter'&&saved.chapter?stateFor('chapter',{chapter:+saved.chapter}):stateFor(saved?.route||'dashboard');
-    mark(s);
-   }
-  }else if(tries>80)clearInterval(boot);
- },100);
- window.addEventListener('popstate',()=>{if(current)renderState(history.state?.apdPortal?history.state:parseHash(),true)});
- window.addEventListener('hashchange',()=>{if(current&&!applying){const s=parseHash();if(s)renderState(s,true)}});
- document.addEventListener('click',e=>{
-  const open=e.target.closest('[data-edit],[data-command-open],[data-v5-open],[data-v51-open]');
-  const close=e.target.closest('[data-close-record]');
-  if(open)setTimeout(()=>{if(current&&selectedRecruit&&!recruitRecordClosed){const s=stateFor('admin',{recruitId:selectedRecruit,recordClosed:false});if(location.hash!==hashFor(s))mark(s,'pushState');savePortalRoute('admin',{scrollY:0})}},0);
-  else if(close)setTimeout(()=>{if(current){const s=stateFor('admin',{recordClosed:true});if(location.hash!==hashFor(s))mark(s,'pushState');savePortalRoute('admin',{scrollY:0})}},0);
- });
- const logout=document.querySelector('#logoutBtn');
- if(logout)logout.addEventListener('click',()=>{try{sessionStorage.removeItem(APD_ROUTE_KEY)}catch{}try{history.replaceState(null,'',location.pathname+location.search)}catch{}},true);
-})();
-
-
+/* Alte Router V5.5.2 und V5.6 deaktiviert; nur V6.4.1 bleibt aktiv. */
 
 /* ===== V5.6.1 – Ausbilder-Ränge ===== */
 (function(){
