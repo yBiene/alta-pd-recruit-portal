@@ -1379,3 +1379,12 @@ button:disabled{cursor:default;opacity:.6}
 .mail-compose-window form label>small{margin:0!important;font-size:12px}
 .mail-compose-window textarea{min-height:220px!important;padding:14px!important;font-size:15px!important}
 @media(max-width:760px){.mail-compose-window form{padding:16px!important;gap:12px!important}.mail-compose-window textarea{min-height:140px!important}.mail-compose-window footer{gap:12px;flex-wrap:wrap}}
+
+.mail-upload{border-top:1px solid #29465e;padding-top:16px}.mail-upload>p{font-size:12px;line-height:1.5;margin:10px 0}.mail-upload>.secondary{width:100%;min-height:48px}
+.mail-selected-file{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px;border:1px solid #2d526e;border-radius:10px;background:#0b2032;margin-top:9px}
+.mail-selected-file>span{min-width:0}.mail-selected-file b,.mail-selected-file small{display:block;overflow-wrap:anywhere}.mail-selected-file small{color:#9cb8cc;margin-top:5px}
+.mail-selected-file button{flex:none;padding:8px 10px;border:1px solid #4b5263;border-radius:8px;background:#192637;color:#efbdc3;cursor:pointer}
+#mailUploadStatus{color:#a6d8f7;overflow-wrap:anywhere}.mail-attachments{padding:0 26px 24px}.mail-attachments h3{font-size:16px}
+.mail-file-download{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:14px;margin:9px 0;border:1px solid #315c79;border-radius:11px;background:#0c2235;color:#edf5fb;cursor:pointer}
+.mail-file-download>span:nth-child(2){flex:1;min-width:0}.mail-file-download b,.mail-file-download small{display:block;overflow-wrap:anywhere}.mail-file-download small{color:#9db8cc;margin-top:4px}.mail-file-download>span:last-child{color:#83ccfa;font-size:12px}
+@media(max-width:760px){.mail-attachments{padding:0 16px 20px}.mail-file-download{flex-wrap:wrap}.mail-file-download>span:last-child{width:100%;padding-left:28px}.mail-selected-file{align-items:flex-start}.mail-selected-file button{min-height:44px}}
