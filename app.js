@@ -993,7 +993,11 @@ async function printRecruitRecord(r){
  if(!w){alert("Pop-up wurde blockiert. Bitte Pop-ups für diese Seite erlauben.");return}
 
  const documentBrand=window.APD_SHEETS?.brandAssets?.()||{};
- let savedDocumentSheets='';
+ let savedDocumentSheets='',savedRecord=null;
+ if(!window.APD_RECORD_EDITOR){w.close();alert('Die Datei record-documents.js fehlt. Bitte das aktuelle Update vollständig hochladen.');return}
+ try{savedRecord=await window.APD_RECORD_EDITOR.load(r)}catch(error){w.close();alert(error.message);return}
+ const recordFields=savedRecord?.fields||{};
+ const completedCount=Number.isInteger(recordFields.chapters)?Math.max(0,Math.min(22,recordFields.chapters)):r.completed.length;
  try{if(window.APD_SHEETS)savedDocumentSheets=await window.APD_SHEETS.printAttachments(r)}
  catch(error){w.close();alert(error.message);return}
  const ev=typeof v53Eval==="function"?v53Eval(r.id):null;
@@ -1001,21 +1005,21 @@ async function printRecruitRecord(r){
  const audit=typeof v53Audit==="function"?v53Audit(r.id):[];
  const quals=typeof qualifications==="function"?qualifications(r):[];
  const tests=(r.testResults||[]).slice().reverse();
- const reports=(r.reports||[]).slice().reverse();
+ const reports=Array.isArray(recordFields.reports)?recordFields.reports:(r.reports||[]).slice().reverse();
  const goals=r.goals||[];
  const notes=(r.notes||[]).slice().reverse();
  const doneChapters=new Set(r.completed||[]);
- const pct=progress(r);
+ const pct=Math.round(completedCount/22*100);
  const passedTests=tests.filter(x=>x.passed).length;
- const totalMinutes=totalTrainingMinutes(r);
+ const totalMinutes=reports.reduce((sum,x)=>sum+(+x.duration||0),0);
  const printDate=new Date().toLocaleString("de-DE");
  const safe=v=>esc(v||"—");
  const fmt=v=>{try{return v?new Date(v).toLocaleString("de-DE"):"—"}catch{return v||"—"}};
- const chapterRows=titles.map(({n,title})=>`<tr><td class="num">${chapterNumber(n)}</td><td>${safe(title)}</td><td><span class="badge ${doneChapters.has(+n)?"green":"gray"}">${doneChapters.has(+n)?"ABGESCHLOSSEN":"OFFEN"}</span></td></tr>`).join("");
+
  const testRows=tests.length?tests.map(x=>{const t=TESTS.find(t=>t.id===x.testId);return `<tr><td>${safe(t?.title||x.testId)}</td><td>${safe(x.date)}</td><td>${x.score}/${x.total}</td><td>${x.percent}%</td><td><span class="badge ${x.passed?"green":"red"}">${x.passed?"BESTANDEN":"NICHT BESTANDEN"}</span></td></tr>`}).join(""):`<tr><td colspan="5" class="empty">Noch keine Testversuche vorhanden.</td></tr>`;
- const reportRows=reports.length?reports.map((x,i)=>`<article class="entry"><div class="entry-head"><b>Praxisbericht ${reports.length-i}</b><span>${safe(x.date)} · ${fmtDuration(x.duration||0)}</span></div><div class="entry-meta">Ausbilder: <b>${safe(x.author)}</b></div><div class="entry-grid"><div><small>Schwerpunkte</small><p>${safe(x.topics)}</p></div><div><small>Positiv</small><p>${safe(x.positive)}</p></div><div><small>Verbesserungen</small><p>${safe(x.improve)}</p></div><div><small>Nächste Schritte</small><p>${safe(x.next)}</p></div></div></article>`).join(""):`<p class="empty">Noch keine Praxisberichte vorhanden.</p>`;
+ const reportRows=window.APD_RECORD_EDITOR.reportHtml(reports);
  const goalRows=goals.length?goals.map(g=>`<div class="line-item"><span class="check ${g.done?"done":""}">${g.done?"✓":"○"}</span><div><b>${safe(g.text)}</b><small>${g.done?"Erledigt":"Offen"} · eingetragen von ${safe(g.authorName)}</small></div></div>`).join(""):`<p class="empty">Keine Ausbildungsziele eingetragen.</p>`;
- const qualRows=quals.length?quals.map(q=>`<div class="qual"><span>${q[2]?"✓":"○"}</span><div><b>${safe(q[1])}</b><small>${q[2]?"Freigabe erfüllt":"Noch offen"}</small></div></div>`).join(""):`<p class="empty">Keine Qualifikationen vorhanden.</p>`;
+ const qualRows=window.APD_RECORD_EDITOR.qualificationHtml(quals,recordFields);
  const noteRows=notes.length?notes.map(n=>`<div class="note"><div><b>${safe(n.authorRank)} ${safe(n.authorName)}</b><span>${safe(n.date)}</span></div><p>${safe(n.text)}</p></div>`).join(""):`<p class="empty">Keine Vermerke vorhanden.</p>`;
  const appointmentRows=appointments.length?appointments.map(a=>`<div class="line-item"><span class="calendar">▣</span><div><b>${safe(a.title)}</b><small>${fmt(a.starts_at)} · ${safe(a.location||"Ort offen")}${a.notes?" · "+safe(a.notes):""}</small></div></div>`).join(""):`<p class="empty">Keine kommenden Ausbildungstermine.</p>`;
  const auditRows=audit.length?audit.slice(0,30).map(a=>`<div class="audit"><span>${fmt(a.created_at)}</span><b>${safe(a.action)}</b><small>${safe(a.actor_name||"System")}${a.details?" · "+safe(a.details):""}</small></div>`).join(""):`<p class="empty">Kein Änderungsverlauf vorhanden.</p>`;
@@ -1068,24 +1072,36 @@ async function printRecruitRecord(r){
  .apd-saved-sheet{padding:14px!important;background:#f4f8fc}.apd-saved-sheet img{border-radius:8px;border:1px solid #dce7ef}
  .footer{border-top:1px solid #d9e7f0;background:#f5f9fc;padding-top:15px}.signature{border-top-color:#2087b2}
  @media print{.hero{min-height:155px;padding:22px}.hero .brand img{width:90px;height:85px}.hero h1{font-size:30px}.section{box-shadow:none}.hero .docno{font-size:8px}}
+
+ .doc-help{display:flex;flex-direction:column;gap:4px;padding:13px 16px;border:1px solid #a4d4eb;border-radius:10px;background:#edf8ff;margin-bottom:18px;color:#23485f;font-size:11px}.doc-help b{font-size:14px}
+ .doc-count-label{display:grid;gap:6px;margin-top:15px;color:#527086;font-size:11px}.doc-count-label input{width:85px;margin:auto;font:bold 20px Arial;text-align:center;padding:7px;border:1px solid #87b9d4;border-radius:8px;color:#123b55;background:#fff}
+ .doc-modules{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.doc-module{display:flex;gap:10px;align-items:center;background:#f1f8fc;border:1px solid #c5dce9;border-radius:10px;padding:14px}.doc-module small{display:block;font-size:10px;color:#668295}.doc-module input,.doc-qualification input{width:19px;height:19px;accent-color:#148eae;flex:none}.doc-qualification{cursor:pointer;align-items:center}.doc-qualification>span{width:auto;height:auto;display:block;background:none;border-radius:0}.doc-checked b{color:#087563}
+ .doc-report-meta{display:grid;grid-template-columns:1fr .7fr 1.4fr;gap:10px;margin-top:10px}.doc-report-meta label{display:grid;font-size:10px;color:#527087;gap:4px}.doc-report-meta input{width:100%;font:12px Arial;border:1px solid #bfd4e2;border-radius:6px;padding:7px;background:#fff;color:#183b52;min-width:0}
+ .doc-editable{min-height:45px;outline:none;border:1px dashed #b6d1e2;border-radius:6px;padding:7px!important;overflow-wrap:anywhere;white-space:pre-wrap!important}.doc-editable:focus{border-color:#168fc1;background:#fff}.doc-editable:empty:before{content:'Hier eintragen …';color:#92a8b7;font-style:italic}
+ button.doc-control,.doc-savebar button{border:1px solid #257b9d;background:#126a8d;color:#fff;font:700 11px Arial;border-radius:7px;padding:8px 12px;cursor:pointer}.entry-head button.doc-control{color:#a34040;background:#fff7f5;border-color:#e6bab4}
+ .doc-savebar{position:sticky;top:0;z-index:1001;padding:11px 18px;background:#0c2d43;display:flex;align-items:center;gap:14px;color:#d6ecf8;font:11px Arial;box-shadow:0 4px 14px #0002}.doc-savebar button{background:#087f87}.doc-savebar button:disabled{opacity:.5}.doc-savebar span{max-width:75%}.sheet{margin-bottom:100px}
+ @media(max-width:700px){.doc-modules,.doc-report-meta{grid-template-columns:1fr}.doc-savebar{flex-wrap:wrap}.doc-savebar span{max-width:100%}}
+ @media print{.doc-control,.doc-savebar{display:none!important}.doc-editable{border:0;padding:0!important;min-height:0}.doc-editable:empty:before{content:''}.doc-report-meta input,.doc-count-label input{border:0;background:transparent;padding:0}.sheet{margin-bottom:0}.doc-report{break-inside:avoid}}
  </style></head><body><div class="sheet">
  <header class="hero"><div class="brand"><img src="${documentBrand.logo||'apd-logo-v2.png'}"><div><small>ALTA POLICE DEPARTMENT</small><h1>Gesamtakte</h1><p class="hero-motto">DIENST VERSTEHEN. VERANTWORTUNG ÜBERNEHMEN.</p></div></div><div class="docno"><b>RECRUIT TRAINING DIVISION</b><span>Erstellt am ${printDate}</span></div></header>
  <main class="content">
+ <div class="doc-control doc-help"><b>✎ Bearbeitbare Gesamtakte</b><span>Kapitelstand, Module, Berichte und Qualifikationen hier bearbeiten. Änderungen gelten für dieses Dokument; die Ausbildungsdaten und Freigaben im Portal bleiben unverändert.</span></div>
   <section class="identity"><div class="identity-card"><div class="kicker">AKTENINHABER / RECRUIT</div><h2>${safe(r.name)}</h2><div class="meta"><div><small>Dienstnummer</small><b>${safe(r.serviceNo)}</b></div><div><small>Benutzername</small><b>${safe(r.username)}</b></div><div><small>Rang</small><b>${safe(r.rank||"Recruit")}</b></div><div><small>Status</small><b>${safe(r.status)}</b></div><div><small>Leiter FTO</small><b>${safe(r.fto)}</b></div><div><small>Weiterer FTO</small><b>${safe(r.secondaryFto)}</b></div><div><small>Ausbildungsbeginn</small><b>${r.start?new Date(r.start+"T00:00:00").toLocaleDateString("de-DE"):"—"}</b></div><div><small>Ausbildungsphase</small><b>${safe(stage(r))}</b></div></div></div>
-  <div class="progress-card"><div class="circle"><strong>${pct}%</strong></div><b>Gesamtfortschritt</b><p>${r.completed.length} von 22 Kapiteln</p></div></section>
-  <div class="kpis"><div class="kpi"><small>Kapitel</small><b>${r.completed.length}/22</b></div><div class="kpi"><small>Tests bestanden</small><b>${passedTests}/5</b></div><div class="kpi"><small>Praxisberichte</small><b>${reports.length}</b></div><div class="kpi"><small>Ausbildungszeit</small><b>${fmtDuration(totalMinutes)}</b></div><div class="kpi"><small>Offene Ziele</small><b>${goals.filter(g=>!g.done).length}</b></div></div>
+  <div class="progress-card"><div class="circle"><strong data-document-percent>${pct}%</strong></div><b>Gesamtfortschritt</b><p><span data-document-chapters>${completedCount}</span> von 22 Kapiteln</p><label class="doc-count-label">Abgeschlossene Kapitel<input id="recordChapterCount" type="number" min="0" max="22" step="1" value="${completedCount}"></label></div></section>
+  <div class="kpis"><div class="kpi"><small>Kapitel</small><b><span data-document-chapters>${completedCount}</span>/22</b></div><div class="kpi"><small>Tests bestanden</small><b>${passedTests}/5</b></div><div class="kpi"><small>Praxisberichte</small><b data-document-report-count>${reports.length}</b></div><div class="kpi"><small>Ausbildungszeit</small><b data-document-minutes>${fmtDuration(totalMinutes)}</b></div><div class="kpi"><small>Offene Ziele</small><b>${goals.filter(g=>!g.done).length}</b></div></div>
 
   <section class="section evaluation"><div class="section-title"><div><small>FTO-ABSCHLUSSBEWERTUNG</small><h3>Bewertung & Empfehlung</h3></div><span>${ev?`${fmt(ev.updated_at||ev.created_at)} · ${safe(ev.author_name||"FTO")}`:"Noch keine Abschlussbewertung"}</span></div>
    ${ev?`<div class="eval-grid"><div class="eval-box"><small>STÄRKEN</small><p>${safe(ev.strengths)}</p></div><div class="eval-box"><small>VERBESSERUNGEN</small><p>${safe(ev.improvements)}</p></div><div class="eval-box wide"><small>EMPFEHLUNG</small><p>${safe(ev.recommendation)}</p></div></div><span class="result">${safe(ev.result)}</span>`:`<p class="empty">Es wurde noch keine FTO-Abschlussbewertung hinterlegt.</p>`}
   </section>
 
+  ${window.APD_RECORD_EDITOR.moduleHtml(recordFields)}
   <div class="two"><section class="section"><div class="section-title"><div><small>AUSBILDUNGSZIELE</small><h3>Ziele & Status</h3></div></div>${goalRows}</section><section class="section"><div class="section-title"><div><small>FREIGABEN</small><h3>Qualifikationen</h3></div></div>${qualRows}</section></div>
 
-  <section class="section"><div class="section-title"><div><small>THEORIE</small><h3>Kapitelübersicht</h3></div><span>${r.completed.length}/22 abgeschlossen</span></div><table><thead><tr><th>Nr.</th><th>Ausbildungsbereich</th><th>Status</th></tr></thead><tbody>${chapterRows}</tbody></table></section>
+
 
   <section class="section"><div class="section-title"><div><small>PRÜFUNGEN</small><h3>Test- und Prüfungsergebnisse</h3></div><span>${passedTests} bestanden</span></div><table><thead><tr><th>Test</th><th>Datum</th><th>Punkte</th><th>Ergebnis</th><th>Status</th></tr></thead><tbody>${testRows}</tbody></table></section>
 
-  <section class="section"><div class="section-title"><div><small>PRAXISAUSBILDUNG</small><h3>FTO-Berichte & Ausbildungsfahrten</h3></div><span>${fmtDuration(totalMinutes)} dokumentiert</span></div>${reportRows}</section>
+  <section class="section"><div class="section-title"><div><small>PRAXISAUSBILDUNG</small><h3>FTO-Berichte & Ausbildungsfahrten</h3></div><span><span data-document-minutes>${fmtDuration(totalMinutes)}</span> dokumentiert</span></div><div id="documentReports">${reportRows}</div><p id="docNoReports" class="empty" ${reports.length?'hidden':''}>Noch keine Praxisberichte. Über „Bericht hinzufügen“ einen Eintrag anlegen.</p><button class="doc-control" id="addDocumentReport" type="button">＋ Bericht hinzufügen</button></section>
 
 
   <section class="section"><div class="section-title"><div><small>FTO-VERMERKE</small><h3>Ausbildungsnotizen</h3></div><span>${notes.length} Einträge</span></div>${noteRows}</section>
@@ -1096,7 +1112,7 @@ async function printRecruitRecord(r){
  </main>
  <footer class="footer"><span>ALTA Police Department · Recruit Training Division</span><span>Ausbildungsakte ${safe(r.serviceNo)} · ${safe(r.name)}</span></footer>
  </div>
- <div class="export-toolbar"><button data-export-image="png" type="button">⬇ PNG speichern</button><button data-export-image="jpeg" type="button">⬇ JPEG speichern</button><button type="button" onclick="window.print()">🖨 PDF / Drucken</button><span id="exportStatus" role="status"></span></div>
+ <div class="doc-savebar"><button id="saveDocumentRecord" type="button">✓ Gesamtakte speichern</button><span id="recordSaveStatus" role="status" aria-live="polite"></span></div><div class="export-toolbar"><button data-export-image="png" type="button">⬇ PNG speichern</button><button data-export-image="jpeg" type="button">⬇ JPEG speichern</button><button type="button" id="recordPrint">🖨 PDF / Drucken</button><span id="exportStatus" role="status"></span></div>
  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
  <script>
  (function(){
@@ -1106,6 +1122,7 @@ async function printRecruitRecord(r){
    buttons.forEach(button=>button.disabled=true);
    status.textContent='Gesamte Akte wird erstellt …';
    try{
+    if(typeof window.apdSaveRecord==='function')await window.apdSaveRecord();
     if(typeof html2canvas!=='function')throw new Error('Bildbibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen.');
     await document.fonts.ready;
     await Promise.all(Array.from(document.querySelectorAll('.sheet img')).map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,3000)})));
@@ -1114,7 +1131,7 @@ async function printRecruitRecord(r){
     // Eine einzige lange Datei; Canvas-Grenzen des Browsers beachten.
     const scale=Math.min(2,30000/height,Math.sqrt(16000000/(width*height)));
     if(scale<0.35)throw new Error('Die Akte ist fuer ein einzelnes Browser-Bild zu lang. Bitte PDF / Drucken verwenden.');
-    const canvas=await html2canvas(sheet,{backgroundColor:'#ffffff',scale:scale,useCORS:true,allowTaint:false,logging:false,scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,width),windowHeight:Math.max(document.documentElement.clientHeight,height)});
+    const canvas=await html2canvas(sheet,{backgroundColor:'#ffffff',scale:scale,useCORS:true,allowTaint:false,logging:false,onclone:function(copy){copy.querySelectorAll('.doc-control,.doc-savebar').forEach(function(node){node.remove()});copy.querySelectorAll('[contenteditable]').forEach(function(node){node.removeAttribute('contenteditable')})},scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,width),windowHeight:Math.max(document.documentElement.clientHeight,height)});
     const mime=format==='jpeg'?'image/jpeg':'image/png';
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,mime,format==='jpeg'?0.94:undefined));
     if(!blob)throw new Error('Bild konnte nicht erzeugt werden.');
@@ -1129,6 +1146,7 @@ async function printRecruitRecord(r){
  })();
  <\/script></body></html>`);
  w.document.close();
+ window.APD_RECORD_EDITOR.bind(w,r,savedRecord);
  // Druckdialog nicht automatisch oeffnen; der Nutzer waehlt PNG oder PDF.
  setTimeout(()=>{try{w.focus()}catch{}},150);
 }
