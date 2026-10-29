@@ -17,3 +17,11 @@
 .apd-sheet-editor>footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 20px;border-top:1px solid #31536c;background:#0e293f}.apd-sheet-editor footer>div{display:flex;gap:7px;flex-wrap:wrap}.apd-sheet-editor footer span{font-size:11px;color:#a9d0e7;max-width:50%}.apd-sheet-editor [data-action=save]{background:#116d8a}
 @media(max-width:850px){.apd-sheet-work{display:block;overflow:auto}#apdSheetForm{overflow:visible}.apd-sheet-preview{height:560px}.apd-sheet-editor footer{flex-wrap:wrap}.apd-sheet-editor footer span{max-width:100%}.apd-sheet-editor h2 span{display:block}.apd-record-compact .record-actions .readiness-pill{margin-left:0}}
 @media(prefers-reduced-motion:reduce){.apd-record-compact .record-actions button{transition:none}}
+
+/* A4 preview uses a canvas so blocked or missing browser PDF viewers cannot create an empty panel. */
+#apdSheetEditor .apd-sheet-work{min-height:0;overflow:hidden;align-items:stretch}
+#apdSheetEditor .apd-sheet-preview{overflow:auto;display:flex;align-items:flex-start;justify-content:center;min-width:0;padding:20px}
+#apdSheetEditor .apd-sheet-preview canvas{display:block;width:100%;max-width:640px;height:auto;flex:none;border-radius:5px;box-shadow:0 12px 35px #0005}
+#apdSheetEditor [hidden]{display:none!important}
+#apdSheetEditor>header,#apdSheetEditor>footer,#apdSheetEditor>.apd-sheet-help{flex-shrink:0}
+@media(max-width:850px){#apdSheetEditor .apd-sheet-work{overflow:auto}#apdSheetEditor .apd-sheet-preview{height:auto;min-height:0;overflow:visible}#apdSheetEditor .apd-sheet-preview canvas{max-width:550px}}
