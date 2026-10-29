@@ -1,0 +1,15 @@
+/* APD seasonal treatment: amber incident-light accents, restrained motion and clear UI. */
+.apd-halloween{position:fixed;inset:0;z-index:1200;pointer-events:none;overflow:hidden;color:#9fbad1;isolation:isolate}
+.apd-hw-web{position:absolute;width:clamp(115px,19vw,225px);height:auto;fill:none;stroke:#adc4d3;stroke-width:1.1;opacity:.26;filter:drop-shadow(0 0 5px #8ba9bb66)}
+.apd-hw-web-tr{top:0;right:0}.apd-hw-web-bl{bottom:0;left:0;transform:rotate(180deg);opacity:.17}
+.apd-hw-spider{position:absolute;width:clamp(28px,4vw,46px);height:auto;top:-2px;right:clamp(62px,10vw,135px);color:#c8d6e1;animation:apdSpiderDrop 6s ease-in-out infinite;filter:drop-shadow(0 2px 5px #000)}
+.apd-hw-ghost{position:absolute;width:clamp(38px,5vw,62px);height:auto;left:clamp(12px,3vw,36px);bottom:10vh;opacity:.6;filter:drop-shadow(0 0 12px #b8dcff88);animation:apdGhostFloat 8s ease-in-out infinite}
+.apd-hw-pumpkin{position:absolute;width:clamp(62px,8vw,100px);height:auto;right:clamp(15px,3vw,40px);bottom:12px;opacity:.84;filter:drop-shadow(0 0 15px #ff8b3266);animation:apdPumpkinGlow 4s ease-in-out infinite}
+.apd-hw-mist{position:absolute;z-index:-1;bottom:-15vh;width:48vw;height:42vh;opacity:.15;filter:blur(36px);border-radius:50%;background:radial-gradient(ellipse,#9baebf55 0%,#74899b18 45%,transparent 72%);animation:apdMistDrift 22s ease-in-out infinite alternate}
+.apd-hw-mist-one{left:-15vw}.apd-hw-mist-two{right:-18vw;animation-delay:-9s;animation-duration:28s;opacity:.11}
+@keyframes apdSpiderDrop{0%,100%{transform:translateY(0)}45%{transform:translateY(22px)}60%{transform:translateY(17px)}}
+@keyframes apdGhostFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-18px) rotate(5deg)}}
+@keyframes apdPumpkinGlow{0%,100%{filter:drop-shadow(0 0 12px #ff8b3255)}50%{filter:drop-shadow(0 0 22px #ff8b32a6)}}
+@keyframes apdMistDrift{from{transform:translateX(-3vw) scale(1)}to{transform:translateX(6vw) scale(1.12)}}
+@media(max-width:680px){.apd-hw-web{width:115px;opacity:.16}.apd-hw-spider{right:35px;width:27px}.apd-hw-ghost{left:6px;bottom:9vh;width:35px;opacity:.42}.apd-hw-pumpkin{right:6px;bottom:5px;width:58px;opacity:.55}.apd-hw-mist{opacity:.08;filter:blur(24px)}}
+@media(prefers-reduced-motion:reduce){.apd-hw-spider,.apd-hw-ghost,.apd-hw-pumpkin,.apd-hw-mist{animation:none!important}}
