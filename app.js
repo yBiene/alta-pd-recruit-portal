@@ -1000,14 +1000,14 @@ async function printRecruitRecord(r){
  const completedCount=Number.isInteger(recordFields.chapters)?Math.max(0,Math.min(22,recordFields.chapters)):r.completed.length;
  try{if(window.APD_SHEETS)savedDocumentSheets=await window.APD_SHEETS.printAttachments(r)}
  catch(error){w.close();alert(error.message);return}
- const ev=typeof v53Eval==="function"?v53Eval(r.id):null;
+ const ev=recordFields.evaluation??(typeof v53Eval==="function"?v53Eval(r.id):null);
  const appointments=typeof v53Upcoming==="function"?v53Upcoming(r.id):[];
  const audit=typeof v53Audit==="function"?v53Audit(r.id):[];
  const quals=typeof qualifications==="function"?qualifications(r):[];
- const tests=(r.testResults||[]).slice().reverse();
+ const tests=Array.isArray(recordFields.tests)?recordFields.tests:(r.testResults||[]).slice().reverse().map(t=>({...t,title:TESTS.find(x=>x.id===t.testId)?.title||t.testId}));
  const reports=Array.isArray(recordFields.reports)?recordFields.reports:(r.reports||[]).slice().reverse();
- const goals=r.goals||[];
- const notes=(r.notes||[]).slice().reverse();
+ const goals=Array.isArray(recordFields.goals)?recordFields.goals:r.goals||[];
+ const notes=Array.isArray(recordFields.notes)?recordFields.notes:(r.notes||[]).slice().reverse();
  const doneChapters=new Set(r.completed||[]);
  const pct=Math.round(completedCount/22*100);
  const passedTests=tests.filter(x=>x.passed).length;
@@ -1016,11 +1016,11 @@ async function printRecruitRecord(r){
  const safe=v=>esc(v||"—");
  const fmt=v=>{try{return v?new Date(v).toLocaleString("de-DE"):"—"}catch{return v||"—"}};
 
- const testRows=tests.length?tests.map(x=>{const t=TESTS.find(t=>t.id===x.testId);return `<tr><td>${safe(t?.title||x.testId)}</td><td>${safe(x.date)}</td><td>${x.score}/${x.total}</td><td>${x.percent}%</td><td><span class="badge ${x.passed?"green":"red"}">${x.passed?"BESTANDEN":"NICHT BESTANDEN"}</span></td></tr>`}).join(""):`<tr><td colspan="5" class="empty">Noch keine Testversuche vorhanden.</td></tr>`;
+ const testRows=window.APD_RECORD_EDITOR.entriesHtml('tests',tests);
  const reportRows=window.APD_RECORD_EDITOR.reportHtml(reports);
- const goalRows=goals.length?goals.map(g=>`<div class="line-item"><span class="check ${g.done?"done":""}">${g.done?"✓":"○"}</span><div><b>${safe(g.text)}</b><small>${g.done?"Erledigt":"Offen"} · eingetragen von ${safe(g.authorName)}</small></div></div>`).join(""):`<p class="empty">Keine Ausbildungsziele eingetragen.</p>`;
+ const goalRows=window.APD_RECORD_EDITOR.entriesHtml('goals',goals);
  const qualRows=window.APD_RECORD_EDITOR.qualificationHtml(quals,recordFields);
- const noteRows=notes.length?notes.map(n=>`<div class="note"><div><b>${safe(n.authorRank)} ${safe(n.authorName)}</b><span>${safe(n.date)}</span></div><p>${safe(n.text)}</p></div>`).join(""):`<p class="empty">Keine Vermerke vorhanden.</p>`;
+ const noteRows=window.APD_RECORD_EDITOR.entriesHtml('notes',notes);
  const appointmentRows=appointments.length?appointments.map(a=>`<div class="line-item"><span class="calendar">▣</span><div><b>${safe(a.title)}</b><small>${fmt(a.starts_at)} · ${safe(a.location||"Ort offen")}${a.notes?" · "+safe(a.notes):""}</small></div></div>`).join(""):`<p class="empty">Keine kommenden Ausbildungstermine.</p>`;
  const auditRows=audit.length?audit.slice(0,30).map(a=>`<div class="audit"><span>${fmt(a.created_at)}</span><b>${safe(a.action)}</b><small>${safe(a.actor_name||"System")}${a.details?" · "+safe(a.details):""}</small></div>`).join(""):`<p class="empty">Kein Änderungsverlauf vorhanden.</p>`;
 
@@ -1082,29 +1082,36 @@ async function printRecruitRecord(r){
  .doc-savebar{position:sticky;top:0;z-index:1001;padding:11px 18px;background:#0c2d43;display:flex;align-items:center;gap:14px;color:#d6ecf8;font:11px Arial;box-shadow:0 4px 14px #0002}.doc-savebar button{background:#087f87}.doc-savebar button:disabled{opacity:.5}.doc-savebar span{max-width:75%}.sheet{margin-bottom:100px}
  @media(max-width:700px){.doc-modules,.doc-report-meta{grid-template-columns:1fr}.doc-savebar{flex-wrap:wrap}.doc-savebar span{max-width:100%}}
  @media print{.doc-control,.doc-savebar{display:none!important}.doc-editable{border:0;padding:0!important;min-height:0}.doc-editable:empty:before{content:''}.doc-report-meta input,.doc-count-label input{border:0;background:transparent;padding:0}.sheet{margin-bottom:0}.doc-report{break-inside:avoid}}
+
+ .doc-result-label{display:grid;gap:6px;margin-top:14px;color:#44647a;font-size:11px}.doc-result-label select{padding:9px;border:1px solid #b6d1e2;border-radius:7px;background:#fff;color:#173e58;font:12px Arial;max-width:320px}
+ .doc-item{background:#fbfdff}.doc-goal-check{display:flex;align-items:center;gap:8px;font-size:12px;color:#315b70;margin:9px 0}.doc-goal-check input{width:18px;height:18px;accent-color:#148eae}
+ .doc-item small{font-size:10px;display:block;color:#567387}.doc-item [data-entry-percent]{display:block;margin-top:8px;color:#123b55;font-size:16px}
+ @media print{.doc-result-label select{appearance:none;border:0;background:none;padding:0}.doc-editable:empty{min-height:12px}}
+
+ .hero>.hero-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 39%;z-index:0;opacity:.75}.hero:before{display:none}.hero:after{z-index:1}.hero>.brand,.hero>.docno{position:relative;z-index:2}
  </style></head><body><div class="sheet">
- <header class="hero"><div class="brand"><img src="${documentBrand.logo||'apd-logo-v2.png'}"><div><small>ALTA POLICE DEPARTMENT</small><h1>Gesamtakte</h1><p class="hero-motto">DIENST VERSTEHEN. VERANTWORTUNG ÜBERNEHMEN.</p></div></div><div class="docno"><b>RECRUIT TRAINING DIVISION</b><span>Erstellt am ${printDate}</span></div></header>
+ <header class="hero">${documentBrand.scene?`<img class="hero-scene" src="${documentBrand.scene}" alt="APD Officers vor der Skyline">`:""}<div class="brand"><img src="${documentBrand.logo||'apd-logo-v2.png'}"><div><small>ALTA POLICE DEPARTMENT</small><h1>Gesamtakte</h1><p class="hero-motto">DIENST VERSTEHEN. VERANTWORTUNG ÜBERNEHMEN.</p></div></div><div class="docno"><b>RECRUIT TRAINING DIVISION</b><span data-record-saved-at>Stand: ${savedRecord?fmt(savedRecord.updated_at):printDate}</span></div></header>
  <main class="content">
- <div class="doc-control doc-help"><b>✎ Bearbeitbare Gesamtakte</b><span>Kapitelstand, Module, Berichte und Qualifikationen hier bearbeiten. Änderungen gelten für dieses Dokument; die Ausbildungsdaten und Freigaben im Portal bleiben unverändert.</span></div>
+ <div class="doc-control doc-help"><b>✎ Bearbeitbare Gesamtakte</b><span>Alle Felder mit Rahmen direkt bearbeiten. Ziele, Prüfungen, Notizen und Praxisberichte lassen sich hinzufügen und entfernen. Beim PNG-/JPEG-Export wird der aktuelle Stand zuerst gespeichert. Änderungen gelten für dieses Dokument; die Ausbildungsdaten und Freigaben im Portal bleiben unverändert.</span></div>
   <section class="identity"><div class="identity-card"><div class="kicker">AKTENINHABER / RECRUIT</div><h2>${safe(r.name)}</h2><div class="meta"><div><small>Dienstnummer</small><b>${safe(r.serviceNo)}</b></div><div><small>Benutzername</small><b>${safe(r.username)}</b></div><div><small>Rang</small><b>${safe(r.rank||"Recruit")}</b></div><div><small>Status</small><b>${safe(r.status)}</b></div><div><small>Leiter FTO</small><b>${safe(r.fto)}</b></div><div><small>Weiterer FTO</small><b>${safe(r.secondaryFto)}</b></div><div><small>Ausbildungsbeginn</small><b>${r.start?new Date(r.start+"T00:00:00").toLocaleDateString("de-DE"):"—"}</b></div><div><small>Ausbildungsphase</small><b>${safe(stage(r))}</b></div></div></div>
   <div class="progress-card"><div class="circle"><strong data-document-percent>${pct}%</strong></div><b>Gesamtfortschritt</b><p><span data-document-chapters>${completedCount}</span> von 22 Kapiteln</p><label class="doc-count-label">Abgeschlossene Kapitel<input id="recordChapterCount" type="number" min="0" max="22" step="1" value="${completedCount}"></label></div></section>
-  <div class="kpis"><div class="kpi"><small>Kapitel</small><b><span data-document-chapters>${completedCount}</span>/22</b></div><div class="kpi"><small>Tests bestanden</small><b>${passedTests}/5</b></div><div class="kpi"><small>Praxisberichte</small><b data-document-report-count>${reports.length}</b></div><div class="kpi"><small>Ausbildungszeit</small><b data-document-minutes>${fmtDuration(totalMinutes)}</b></div><div class="kpi"><small>Offene Ziele</small><b>${goals.filter(g=>!g.done).length}</b></div></div>
+  <div class="kpis"><div class="kpi"><small>Kapitel</small><b><span data-document-chapters>${completedCount}</span>/22</b></div><div class="kpi"><small>Tests bestanden</small><b><span data-document-passed-tests>${passedTests}</span> bestanden</b></div><div class="kpi"><small>Praxisberichte</small><b data-document-report-count>${reports.length}</b></div><div class="kpi"><small>Ausbildungszeit</small><b data-document-minutes>${fmtDuration(totalMinutes)}</b></div><div class="kpi"><small>Offene Ziele</small><b data-document-goal-count>${goals.filter(g=>!g.done).length}</b></div></div>
 
-  <section class="section evaluation"><div class="section-title"><div><small>FTO-ABSCHLUSSBEWERTUNG</small><h3>Bewertung & Empfehlung</h3></div><span>${ev?`${fmt(ev.updated_at||ev.created_at)} · ${safe(ev.author_name||"FTO")}`:"Noch keine Abschlussbewertung"}</span></div>
-   ${ev?`<div class="eval-grid"><div class="eval-box"><small>STÄRKEN</small><p>${safe(ev.strengths)}</p></div><div class="eval-box"><small>VERBESSERUNGEN</small><p>${safe(ev.improvements)}</p></div><div class="eval-box wide"><small>EMPFEHLUNG</small><p>${safe(ev.recommendation)}</p></div></div><span class="result">${safe(ev.result)}</span>`:`<p class="empty">Es wurde noch keine FTO-Abschlussbewertung hinterlegt.</p>`}
+  <section class="section evaluation"><div class="section-title"><div><small>FTO-ABSCHLUSSBEWERTUNG</small><h3>Bewertung & Empfehlung</h3></div><span data-record-evaluation-meta>${savedRecord?`${fmt(savedRecord.updated_at)} · ${safe(savedRecord.author_name||"FTO")}`:ev?`${fmt(ev.updated_at||ev.created_at)} · ${safe(ev.author_name||"FTO")}`:"Noch keine Abschlussbewertung"}</span></div>
+   ${window.APD_RECORD_EDITOR.evaluationHtml(ev||{})}
   </section>
 
   ${window.APD_RECORD_EDITOR.moduleHtml(recordFields)}
-  <div class="two"><section class="section"><div class="section-title"><div><small>AUSBILDUNGSZIELE</small><h3>Ziele & Status</h3></div></div>${goalRows}</section><section class="section"><div class="section-title"><div><small>FREIGABEN</small><h3>Qualifikationen</h3></div></div>${qualRows}</section></div>
+  <div class="two"><section class="section"><div class="section-title"><div><small>AUSBILDUNGSZIELE</small><h3>Ziele & Status</h3></div></div><div data-document-list="goals">${goalRows}</div>${window.APD_RECORD_EDITOR.emptyAndAdd('goals','Ziel hinzufügen')}</section><section class="section"><div class="section-title"><div><small>FREIGABEN</small><h3>Qualifikationen</h3></div></div>${qualRows}</section></div>
 
 
 
-  <section class="section"><div class="section-title"><div><small>PRÜFUNGEN</small><h3>Test- und Prüfungsergebnisse</h3></div><span>${passedTests} bestanden</span></div><table><thead><tr><th>Test</th><th>Datum</th><th>Punkte</th><th>Ergebnis</th><th>Status</th></tr></thead><tbody>${testRows}</tbody></table></section>
+  <section class="section"><div class="section-title"><div><small>PRÜFUNGEN</small><h3>Test- und Prüfungsergebnisse</h3></div><span><span data-document-passed-tests>${passedTests}</span> bestanden</span></div><div data-document-list="tests">${testRows}</div>${window.APD_RECORD_EDITOR.emptyAndAdd('tests','Prüfung hinzufügen')}</section>
 
-  <section class="section"><div class="section-title"><div><small>PRAXISAUSBILDUNG</small><h3>FTO-Berichte & Ausbildungsfahrten</h3></div><span><span data-document-minutes>${fmtDuration(totalMinutes)}</span> dokumentiert</span></div><div id="documentReports">${reportRows}</div><p id="docNoReports" class="empty" ${reports.length?'hidden':''}>Noch keine Praxisberichte. Über „Bericht hinzufügen“ einen Eintrag anlegen.</p><button class="doc-control" id="addDocumentReport" type="button">＋ Bericht hinzufügen</button></section>
+  <section class="section"><div class="section-title"><div><small>PRAXISAUSBILDUNG</small><h3>FTO-Berichte & Ausbildungsfahrten</h3></div><span><span data-document-minutes>${fmtDuration(totalMinutes)}</span> dokumentiert</span></div><div id="documentReports">${reportRows}</div><p id="docNoReports" class="empty" ${reports.length?'hidden':''}>Noch keine Praxisberichte.</p><button class="doc-control" id="addDocumentReport" type="button">＋ Bericht hinzufügen</button></section>
 
 
-  <section class="section"><div class="section-title"><div><small>FTO-VERMERKE</small><h3>Ausbildungsnotizen</h3></div><span>${notes.length} Einträge</span></div>${noteRows}</section>
+  <section class="section"><div class="section-title"><div><small>FTO-VERMERKE</small><h3>Ausbildungsnotizen</h3></div><span><span data-document-note-count>${notes.length}</span> Einträge</span></div><div data-document-list="notes">${noteRows}</div>${window.APD_RECORD_EDITOR.emptyAndAdd('notes','Notiz hinzufügen')}</section>
 
 
   ${savedDocumentSheets}
@@ -1113,7 +1120,6 @@ async function printRecruitRecord(r){
  <footer class="footer"><span>ALTA Police Department · Recruit Training Division</span><span>Ausbildungsakte ${safe(r.serviceNo)} · ${safe(r.name)}</span></footer>
  </div>
  <div class="doc-savebar"><button id="saveDocumentRecord" type="button">✓ Gesamtakte speichern</button><span id="recordSaveStatus" role="status" aria-live="polite"></span></div><div class="export-toolbar"><button data-export-image="png" type="button">⬇ PNG speichern</button><button data-export-image="jpeg" type="button">⬇ JPEG speichern</button><button type="button" id="recordPrint">🖨 PDF / Drucken</button><span id="exportStatus" role="status"></span></div>
- <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
  <script>
  (function(){
   const buttons=Array.from(document.querySelectorAll('[data-export-image]'));
@@ -1121,6 +1127,7 @@ async function printRecruitRecord(r){
   async function saveImage(format){
    buttons.forEach(button=>button.disabled=true);
    status.textContent='Gesamte Akte wird erstellt …';
+   const editingSheet=document.querySelector('.sheet');editingSheet.inert=true;
    try{
     if(typeof window.apdSaveRecord==='function')await window.apdSaveRecord();
     if(typeof html2canvas!=='function')throw new Error('Bildbibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen.');
@@ -1131,7 +1138,7 @@ async function printRecruitRecord(r){
     // Eine einzige lange Datei; Canvas-Grenzen des Browsers beachten.
     const scale=Math.min(2,30000/height,Math.sqrt(16000000/(width*height)));
     if(scale<0.35)throw new Error('Die Akte ist fuer ein einzelnes Browser-Bild zu lang. Bitte PDF / Drucken verwenden.');
-    const canvas=await html2canvas(sheet,{backgroundColor:'#ffffff',scale:scale,useCORS:true,allowTaint:false,logging:false,onclone:function(copy){copy.querySelectorAll('.doc-control,.doc-savebar').forEach(function(node){node.remove()});copy.querySelectorAll('[contenteditable]').forEach(function(node){node.removeAttribute('contenteditable')})},scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,width),windowHeight:Math.max(document.documentElement.clientHeight,height)});
+    const canvas=await html2canvas(sheet,{backgroundColor:'#ffffff',scale:scale,useCORS:true,allowTaint:false,logging:false,onclone:function(copy){copy.querySelectorAll('.doc-control,.doc-savebar').forEach(function(node){node.remove()});copy.querySelectorAll('[contenteditable]').forEach(function(node){node.removeAttribute('contenteditable')});copy.querySelectorAll('.hero-scene').forEach(function(img){const host=img.parentElement;const width=host.clientWidth,height=host.clientHeight,iw=img.naturalWidth||1672,ih=img.naturalHeight||941;const scale=Math.max(width/iw,height/ih);img.style.inset='auto';img.style.width=iw*scale+'px';img.style.height=ih*scale+'px';img.style.left=(width-iw*scale)*.5+'px';img.style.top=(height-ih*scale)*.39+'px'});copy.querySelectorAll('.circle').forEach(function(node){const percent=parseFloat(node.querySelector('strong').textContent)||0;const ring=copy.createElement('canvas');ring.width=210;ring.height=210;const ctx=ring.getContext('2d');ctx.lineWidth=24;ctx.strokeStyle='#dce7ef';ctx.beginPath();ctx.arc(105,105,93,0,2*Math.PI);ctx.stroke();ctx.strokeStyle='#169fe8';ctx.beginPath();ctx.arc(105,105,93,-Math.PI/2,-Math.PI/2+2*Math.PI*percent/100);ctx.stroke();node.style.background='url('+ring.toDataURL()+') center/cover'});const clean=copy.createElement('style');clean.textContent='.doc-editable{border:0!important;min-height:0!important;padding:0!important}.doc-editable:empty:before{content:none!important}';copy.head.append(clean)},scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,width),windowHeight:Math.max(document.documentElement.clientHeight,height)});
     const mime=format==='jpeg'?'image/jpeg':'image/png';
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,mime,format==='jpeg'?0.94:undefined));
     if(!blob)throw new Error('Bild konnte nicht erzeugt werden.');
@@ -1140,7 +1147,7 @@ async function printRecruitRecord(r){
     document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
     status.textContent=(format==='jpeg'?'JPEG':'PNG')+' gespeichert – komplette Akte von oben bis unten.';
    }catch(error){status.textContent=error.message||'Export fehlgeschlagen';console.error('Akte als Bild:',error)}
-   finally{buttons.forEach(button=>button.disabled=false)}
+   finally{editingSheet.inert=false;buttons.forEach(button=>button.disabled=false)}
   }
   buttons.forEach(button=>button.addEventListener('click',()=>saveImage(button.dataset.exportImage)));
  })();
