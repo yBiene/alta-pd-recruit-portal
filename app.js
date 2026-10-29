@@ -2535,3 +2535,118 @@ if(a==='reset'){if(!confirm('Alle lokalen Übungsakten, Registerdaten und Ergebn
 }catch(err){notice('⚠ '+err.message)}}
 window.APD_CAD_SIM={render};
 })();
+
+/* Compact recruit record: presentation only; existing IDs and save handlers stay intact. */
+(function compactRecruitRecord(){
+ const originalRecord=adminRecruit;
+ adminRecruit=function(r){
+  const template=document.createElement('template');
+  template.innerHTML=originalRecord(r);
+  const root=template.content.firstElementChild;
+  if(!root)return template.innerHTML;
+  root.classList.add('apd-record-compact');
+  const rememberKey='alta_record_sections_'+r.id;
+  let expanded=[];
+  try{expanded=JSON.parse(sessionStorage.getItem(rememberKey)||'[]')}catch{}
+  if(!Array.isArray(expanded))expanded=[];
+  function fold(node,title,key,hint='Details und Aktionen',open=false){
+   if(!node||node.closest('details'))return;
+   const details=document.createElement('details');
+   details.className='apd-record-fold';
+   details.dataset.recordSection=key;
+   details.open=expanded.includes(key)||open;
+   const summary=document.createElement('summary');
+   const label=document.createElement('span');label.textContent=title;
+   const sub=document.createElement('small');sub.textContent=hint;
+   summary.append(label,sub);details.append(summary);
+   node.replaceWith(details);details.append(node);
+  }
+  root.querySelectorAll('.record-tab-panel').forEach(panel=>{
+   const name=panel.dataset.recordPanel;
+   panel.classList.add('apd-record-panel-compact');
+   // Keep the overview's KPIs and next step first; supporting workflows follow.
+   if(name==='overview'){
+    const title=panel.querySelector('.v640-section-title');
+    const kpis=panel.querySelector('.v640-kpis');
+    const next=panel.querySelector('.v640-overview-columns');
+    const front=document.createElement('div');front.className='apd-record-at-a-glance';
+    [title,kpis,next].filter(Boolean).forEach(node=>front.append(node));
+    panel.prepend(front);
+   }
+   const cards=[...panel.querySelectorAll('.card')].filter(card=>!card.querySelector('.card')&&!card.closest('.apd-record-at-a-glance'));
+   cards.forEach((card,index)=>{
+    const heading=card.querySelector('h3,h2');
+    if(!heading)return;
+    const title=card.classList.contains('v54-next')?'Weitere Ausbildungsempfehlung':heading.textContent.trim();
+    const key=name+':'+(card.querySelector('form[id]')?.id||card.querySelector('[id]')?.id||index);
+    const entries=card.querySelectorAll('article,.field-report,.note-entry,.v54-observation,.test-result-row,.timeline-row').length;
+    const hint=entries?entries+' Einträge · anzeigen / bearbeiten':card.querySelector('form,textarea,button,input')?'Öffnen / bearbeiten':'Details anzeigen';
+    fold(card,title,key,hint,!!card.querySelector('#stopSessionV51'));
+   });
+   // Notes and goal forms are not always wrapped in standalone cards.
+   panel.querySelectorAll('.notes-admin-section').forEach((node,i)=>fold(node,'Ausbildungsvermerke',name+':notes-'+i,`${(r.notes||[]).length} Vermerke`));
+   if(name==='overview'){
+    const groups=[['Übergabe & Planung',/Übergabe|Termine|Ausbildungsempfehlung/],['Freigaben & Abschluss',/Freigab|Abschluss|Streifenfreigabe|Voraussetzungen/],['Bewertung & Verlauf',/.*/]];
+    const details=[...panel.querySelectorAll('details')].filter(node=>!node.parentElement.closest('details'));
+    const front=panel.querySelector('.apd-record-at-a-glance');
+    const grouped=groups.map(([title])=>{const box=document.createElement('div');box.className='apd-record-group-body';return {title,box}});
+    details.forEach(node=>{
+     const text=node.querySelector('summary')?.textContent||'';
+     const index=groups.findIndex(([,pattern])=>pattern.test(text));
+     grouped[index].box.append(node);
+    });
+    // All overview content is retained inside these three compact categories.
+    [...panel.children].filter(node=>node!==front).forEach(node=>{
+     if(node.textContent.trim()||node.querySelector('input,button'))grouped[2].box.append(node);
+     else node.remove();
+    });
+    grouped.forEach(({title,box},i)=>{
+     if(!box.children.length)return;
+     panel.append(box);fold(box,title,'overview:group-'+i,box.children.length+' Bereiche');
+    });
+   }
+  });
+  const actions=document.createElement('div');actions.className='apd-record-management-body';
+  const master=root.querySelector('.v640-masterdata');
+  if(master){
+   const body=master.querySelector('.v640-masterdata-body');
+   if(body)actions.append(body);master.remove();
+  }
+  ['resetRecruitPassword','deleteRecruit'].forEach(id=>{const button=root.querySelector('#'+id);if(button)actions.append(button)});
+  if(actions.children.length){
+   root.querySelector('.record-tabs')?.before(actions);
+   fold(actions,'Verwalten','management','Stammdaten · FTO-Zuordnung · Account');
+  }
+  // Keep details compact without deleting original values or historical entries.
+  return template.innerHTML;
+ };
+ document.addEventListener('toggle',event=>{
+  const section=event.target;
+  if(!section.matches?.('details[data-record-section]'))return;
+  const root=section.closest('.apd-record-compact');
+  if(!root||!selectedRecruit)return;
+  const key='alta_record_sections_'+selectedRecruit;
+  try{
+   let open=JSON.parse(sessionStorage.getItem(key)||'[]');
+   if(!Array.isArray(open))open=[];
+   const names=new Set(open);
+   section.open?names.add(section.dataset.recordSection):names.delete(section.dataset.recordSection);
+   sessionStorage.setItem(key,JSON.stringify([...names]));
+  }catch{}
+ },true);
+ const originalAdmin=admin;
+ admin=function(){
+  originalAdmin();
+  const root=document.querySelector('.apd-record-compact');
+  if(!root)return;
+  const grid=root.closest('.admin-grid');grid?.classList.add('apd-record-layout');
+  const list=grid?.querySelector('.recruit-record-list');
+  if(list&&!list.closest('details')){
+   const picker=document.createElement('details');picker.className='apd-record-picker';
+   const summary=document.createElement('summary');
+   const recruit=db.users.find(u=>u.id===selectedRecruit);
+   summary.textContent='👤 '+(recruit?.name||'Rekrut')+' · Rekrut wechseln';
+   list.replaceWith(picker);picker.append(summary,list);
+  }
+ };
+})();
