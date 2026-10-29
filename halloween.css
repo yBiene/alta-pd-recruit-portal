@@ -1,15 +1,24 @@
-/* APD seasonal treatment: amber incident-light accents, restrained motion and clear UI. */
-.apd-halloween{position:fixed;inset:0;z-index:1200;pointer-events:none;overflow:hidden;color:#9fbad1;isolation:isolate}
-.apd-hw-web{position:absolute;width:clamp(115px,19vw,225px);height:auto;fill:none;stroke:#adc4d3;stroke-width:1.1;opacity:.26;filter:drop-shadow(0 0 5px #8ba9bb66)}
-.apd-hw-web-tr{top:0;right:0}.apd-hw-web-bl{bottom:0;left:0;transform:rotate(180deg);opacity:.17}
-.apd-hw-spider{position:absolute;width:clamp(28px,4vw,46px);height:auto;top:-2px;right:clamp(62px,10vw,135px);color:#c8d6e1;animation:apdSpiderDrop 6s ease-in-out infinite;filter:drop-shadow(0 2px 5px #000)}
-.apd-hw-ghost{position:absolute;width:clamp(38px,5vw,62px);height:auto;left:clamp(12px,3vw,36px);bottom:10vh;opacity:.6;filter:drop-shadow(0 0 12px #b8dcff88);animation:apdGhostFloat 8s ease-in-out infinite}
-.apd-hw-pumpkin{position:absolute;width:clamp(62px,8vw,100px);height:auto;right:clamp(15px,3vw,40px);bottom:12px;opacity:.84;filter:drop-shadow(0 0 15px #ff8b3266);animation:apdPumpkinGlow 4s ease-in-out infinite}
-.apd-hw-mist{position:absolute;z-index:-1;bottom:-15vh;width:48vw;height:42vh;opacity:.15;filter:blur(36px);border-radius:50%;background:radial-gradient(ellipse,#9baebf55 0%,#74899b18 45%,transparent 72%);animation:apdMistDrift 22s ease-in-out infinite alternate}
-.apd-hw-mist-one{left:-15vw}.apd-hw-mist-two{right:-18vw;animation-delay:-9s;animation-duration:28s;opacity:.11}
-@keyframes apdSpiderDrop{0%,100%{transform:translateY(0)}45%{transform:translateY(22px)}60%{transform:translateY(17px)}}
-@keyframes apdGhostFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-18px) rotate(5deg)}}
-@keyframes apdPumpkinGlow{0%,100%{filter:drop-shadow(0 0 12px #ff8b3255)}50%{filter:drop-shadow(0 0 22px #ff8b32a6)}}
-@keyframes apdMistDrift{from{transform:translateX(-3vw) scale(1)}to{transform:translateX(6vw) scale(1.12)}}
-@media(max-width:680px){.apd-hw-web{width:115px;opacity:.16}.apd-hw-spider{right:35px;width:27px}.apd-hw-ghost{left:6px;bottom:9vh;width:35px;opacity:.42}.apd-hw-pumpkin{right:6px;bottom:5px;width:58px;opacity:.55}.apd-hw-mist{opacity:.08;filter:blur(24px)}}
-@media(prefers-reduced-motion:reduce){.apd-hw-spider,.apd-hw-ghost,.apd-hw-pumpkin,.apd-hw-mist{animation:none!important}}
+/* Cinematic seasonal banner integrated into the Alta PD interface. */
+.apd-nightshift-hero{position:relative;isolation:isolate;display:flex;align-items:center;min-height:clamp(160px,17vw,220px);margin:0;overflow:hidden;border-bottom:1px solid rgba(226,152,93,.2);background-color:#081320;background-image:linear-gradient(90deg,rgba(5,14,25,.96) 0%,rgba(5,14,25,.85) 30%,rgba(5,14,25,.36) 58%,rgba(5,14,25,.08) 100%),linear-gradient(0deg,rgba(6,15,25,.55),transparent 34%,rgba(6,15,25,.06)),url('halloween-nightpatrol.png');background-position:center 53%;background-size:cover;background-repeat:no-repeat;box-shadow:inset 0 -18px 35px rgba(4,11,18,.22)}
+.apd-nightshift-hero:before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 85% 90%,rgba(235,74,44,.1),transparent 27%),linear-gradient(90deg,transparent 53%,rgba(19,47,67,.12));pointer-events:none}
+.apd-nightshift-content{position:relative;z-index:1;padding:20px clamp(22px,3.2vw,54px);max-width:720px;text-shadow:0 2px 14px #000b}
+.apd-nightshift-meta{display:flex;align-items:center;gap:10px;color:#c5d0d9;font-size:9px;font-weight:800;letter-spacing:.2em}.apd-nightshift-meta i{display:inline-block;width:4px;height:4px;margin:0 6px 2px;border-radius:50%;background:#dd8f54;box-shadow:0 0 8px #e99b5c}
+.apd-nightshift-emblem{display:grid;place-items:center;width:28px;height:28px;border:1px solid rgba(211,153,104,.55);border-radius:50%;color:#e6ad7d;font-size:8px;letter-spacing:.06em;background:rgba(7,18,30,.55);box-shadow:0 0 18px rgba(206,123,69,.14)}
+.apd-nightshift-content h1{margin:14px 0 5px;color:#f5f7fa;font-size:clamp(25px,3vw,40px);font-weight:900;letter-spacing:.055em;line-height:1.02}.apd-nightshift-content h1 span{color:#e4a16b;font-weight:650}
+.apd-nightshift-rule{height:1px;width:min(340px,65vw);background:linear-gradient(90deg,#c87b46aa,#d7e1e500);margin:12px 0 9px}.apd-nightshift-content p{margin:0;color:#bac7d2;font-size:10px;font-weight:650;letter-spacing:.1em;text-transform:uppercase}.apd-nightshift-content p b{color:#e4a16b;padding:0 4px}
+.apd-nightshift-stamp{position:absolute;z-index:1;right:clamp(18px,3vw,48px);top:50%;transform:translateY(-50%) rotate(5deg);display:flex;flex-direction:column;align-items:center;justify-content:center;width:55px;height:55px;border:1px solid rgba(228,161,107,.55);border-radius:50%;background:rgba(7,16,26,.5);color:#e8b084;box-shadow:0 0 22px rgba(231,123,58,.14),inset 0 0 16px rgba(220,147,88,.08);text-shadow:0 1px 8px #000}.apd-nightshift-stamp span{font-size:19px;line-height:1;font-weight:900}.apd-nightshift-stamp small{margin-top:2px;font-size:8px;font-weight:850;letter-spacing:.18em}
+.apd-nightshift-grain{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.12;background-image:repeating-linear-gradient(0deg,transparent 0 3px,rgba(220,232,241,.035) 4px,transparent 5px);mix-blend-mode:screen}
+@media(max-width:760px){.apd-nightshift-hero{min-height:155px;background-position:59% center}.apd-nightshift-content{padding:18px 16px;max-width:84%}.apd-nightshift-meta{font-size:7px;letter-spacing:.13em;gap:7px}.apd-nightshift-emblem{width:24px;height:24px;font-size:7px}.apd-nightshift-content h1{font-size:clamp(22px,6.2vw,30px);margin-top:11px}.apd-nightshift-content p{font-size:8px;letter-spacing:.07em}.apd-nightshift-stamp{right:12px;width:43px;height:43px}.apd-nightshift-stamp span{font-size:15px}}
+@media(max-width:430px){.apd-nightshift-hero{min-height:145px;background-position:63% center}.apd-nightshift-hero:after{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(90deg,rgba(5,14,25,.45),transparent 100%)}.apd-nightshift-content{max-width:92%;padding:14px 12px}.apd-nightshift-stamp{display:none}}
+/* One animated spider, never more than one: descends, pauses, then retracts. */
+.apd-spider-event{position:absolute;z-index:3;top:0;right:clamp(100px,17%,270px);width:30px;height:105px;opacity:0;color:#c9d4dd;pointer-events:none;filter:drop-shadow(0 2px 6px #000c)}
+.apd-spider-thread{position:absolute;top:0;left:50%;height:0;border-left:1px solid rgba(205,218,227,.75);transform:translateX(-50%)}
+.apd-spider-event svg{position:absolute;top:-22px;left:50%;width:28px;height:35px;transform:translateX(-50%)}
+.apd-spider-event.is-active{opacity:1;animation:apdSpiderFade 7.6s ease both}
+.apd-spider-event.is-active .apd-spider-thread{animation:apdThreadDrop 7.6s ease both}
+.apd-spider-event.is-active svg{animation:apdSpiderDrop 7.6s ease both}
+@keyframes apdThreadDrop{0%,100%{height:0}22%,70%{height:82px}}
+@keyframes apdSpiderDrop{0%{top:-22px}22%,70%{top:60px}100%{top:-22px}}
+@keyframes apdSpiderFade{0%,5%{opacity:0}14%,72%{opacity:1}100%{opacity:0}}
+@media(max-width:520px){.apd-spider-event{right:22%;transform:scale(.82);transform-origin:top center}}
+@media(prefers-reduced-motion:reduce){.apd-spider-event,.apd-spider-event *{animation:none!important;display:none!important}}
