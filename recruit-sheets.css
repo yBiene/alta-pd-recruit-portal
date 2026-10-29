@@ -25,3 +25,14 @@
 #apdSheetEditor [hidden]{display:none!important}
 #apdSheetEditor>header,#apdSheetEditor>footer,#apdSheetEditor>.apd-sheet-help{flex-shrink:0}
 @media(max-width:850px){#apdSheetEditor .apd-sheet-work{overflow:auto}#apdSheetEditor .apd-sheet-preview{height:auto;min-height:0;overflow:visible}#apdSheetEditor .apd-sheet-preview canvas{max-width:550px}}
+/* Academy document identity: logo, light traces and restrained motion. */
+#apdSheetEditor{border-color:#3983a5;background:radial-gradient(ellipse at 5% 0,#17476788,transparent 55%),#081b2d}
+#apdSheetEditor>header{position:relative;overflow:hidden;background:linear-gradient(110deg,#153e59,#0b263e 65%,#14506b);border-bottom:2px solid #2bb4dd}
+#apdSheetEditor>header:after{content:'';position:absolute;right:65px;top:-65px;width:200px;height:200px;border:1px solid #70ccf72b;border-radius:50%;pointer-events:none}
+#apdSheetEditor .apd-studio-logo{width:64px;height:60px;object-fit:contain;filter:drop-shadow(0 3px 10px #0005);flex:none}
+#apdSheetEditor>header>div{flex:1;min-width:0}
+#apdSheetEditor h2{letter-spacing:-.5px}#apdSheetEditor .apd-sheet-preview{background:radial-gradient(ellipse at 50% 15%,#295a72,#112b3e 70%);scrollbar-color:#407996 #0e283b}
+#apdSheetForm fieldset{background:linear-gradient(135deg,#112d4388,#07192999);border-color:#2d546f;box-shadow:0 4px 14px #0001}
+#apdSheetForm legend{color:#80d6f9}#apdSheetForm legend:before{content:'◆ ';color:#d7af69}
+#apdSheetEditor [data-action=save]{background:linear-gradient(140deg,#198e9e,#116282);box-shadow:0 4px 14px #0b91a22b}
+@media(prefers-reduced-motion:no-preference){#apdSheetEditor[open]{animation:apdStudioIn .18s ease-out}@keyframes apdStudioIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}}

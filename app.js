@@ -992,6 +992,7 @@ async function printRecruitRecord(r){
  const w=window.open("","_blank","width=1120,height=900");
  if(!w){alert("Pop-up wurde blockiert. Bitte Pop-ups für diese Seite erlauben.");return}
 
+ const documentBrand=window.APD_SHEETS?.brandAssets?.()||{};
  let savedDocumentSheets='';
  try{if(window.APD_SHEETS)savedDocumentSheets=await window.APD_SHEETS.printAttachments(r)}
  catch(error){w.close();alert(error.message);return}
@@ -1053,8 +1054,22 @@ async function printRecruitRecord(r){
  @media screen{.section{break-inside:auto}}
 
  @media print{body{background:#fff}.sheet{margin:0;box-shadow:none;max-width:none}.export-toolbar{display:none}.section{break-inside:auto}.entry,.evaluation,.identity,.kpis{break-inside:avoid}.hero{border-radius:0}}
+
+ .hero{position:relative;isolation:isolate;overflow:hidden;padding:34px;min-height:210px;background:#071d31;border-bottom:4px solid #28b9ef}
+ .hero:before{content:"";position:absolute;z-index:-2;inset:0;background:url('${documentBrand.scene||'image26.png'}') center 39%/cover no-repeat;opacity:.75}
+ .hero:after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#04182af5 8%,#061e32d9 48%,#061e3255)}
+ .hero .brand{display:flex;gap:20px;align-items:center}.hero .brand img{width:112px;height:108px;object-fit:contain;filter:drop-shadow(0 5px 16px #0009);background:transparent;border-radius:0;padding:0}
+ .hero .brand small{letter-spacing:2.3px;color:#84d9ff;font-size:10px}.hero h1{font-size:36px;letter-spacing:-1px;margin:8px 0}.hero-motto{font-size:8px;letter-spacing:1.3px;color:#aecddd;margin:0}
+ .hero .docno{border-left:2px solid #d4a354;padding-left:15px;font-size:9px;color:#d5e4ed;background:#061d3166;padding:13px 15px;border-radius:0 8px 8px 0;flex-shrink:0}
+ .identity-card{border-top:3px solid #159ac8;border-radius:12px;background:linear-gradient(120deg,#f1f8fd,#fff)}.identity-card h2{color:#102f48;font-size:29px;letter-spacing:-.6px}
+ .kpi{border:1px solid #d6e4ee;border-top:3px solid #209cc6;border-radius:10px;background:linear-gradient(145deg,#f4faff,#fff);box-shadow:0 5px 14px #0f385409}.kpi:nth-child(2),.kpi:nth-child(5){border-top-color:#d0a052}.kpi b{color:#102f48}.kpi small{color:#526f82}
+ .section{border-radius:12px;border:1px solid #dae6ee;box-shadow:0 4px 15px #0e2f4c06}.section-title{border-bottom:1px solid #e0eaf2;padding-bottom:11px}.section-title h3{color:#102f48}.section-title small{color:#187da7;letter-spacing:1.6px}
+ .section-title h3:before{content:'◆';font-size:10px;color:#d4a354;margin-right:9px}.badge{border-radius:20px}.note{border-radius:0 9px 9px 0}
+ .apd-saved-sheet{padding:14px!important;background:#f4f8fc}.apd-saved-sheet img{border-radius:8px;border:1px solid #dce7ef}
+ .footer{border-top:1px solid #d9e7f0;background:#f5f9fc;padding-top:15px}.signature{border-top-color:#2087b2}
+ @media print{.hero{min-height:155px;padding:22px}.hero .brand img{width:90px;height:85px}.hero h1{font-size:30px}.section{box-shadow:none}.hero .docno{font-size:8px}}
  </style></head><body><div class="sheet">
- <header class="hero"><div class="brand"><img src="apd-logo-v2.png"><div><small>ALTA POLICE DEPARTMENT</small><h1>Offizielle Ausbildungsakte</h1></div></div><div class="docno"><b>RECRUIT TRAINING DIVISION</b><span>Erstellt am ${printDate}</span></div></header>
+ <header class="hero"><div class="brand"><img src="${documentBrand.logo||'apd-logo-v2.png'}"><div><small>ALTA POLICE DEPARTMENT</small><h1>Gesamtakte</h1><p class="hero-motto">DIENST VERSTEHEN. VERANTWORTUNG ÜBERNEHMEN.</p></div></div><div class="docno"><b>RECRUIT TRAINING DIVISION</b><span>Erstellt am ${printDate}</span></div></header>
  <main class="content">
   <section class="identity"><div class="identity-card"><div class="kicker">AKTENINHABER / RECRUIT</div><h2>${safe(r.name)}</h2><div class="meta"><div><small>Dienstnummer</small><b>${safe(r.serviceNo)}</b></div><div><small>Benutzername</small><b>${safe(r.username)}</b></div><div><small>Rang</small><b>${safe(r.rank||"Recruit")}</b></div><div><small>Status</small><b>${safe(r.status)}</b></div><div><small>Leiter FTO</small><b>${safe(r.fto)}</b></div><div><small>Weiterer FTO</small><b>${safe(r.secondaryFto)}</b></div><div><small>Ausbildungsbeginn</small><b>${r.start?new Date(r.start+"T00:00:00").toLocaleDateString("de-DE"):"—"}</b></div><div><small>Ausbildungsphase</small><b>${safe(stage(r))}</b></div></div></div>
   <div class="progress-card"><div class="circle"><strong>${pct}%</strong></div><b>Gesamtfortschritt</b><p>${r.completed.length} von 22 Kapiteln</p></div></section>
