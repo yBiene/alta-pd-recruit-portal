@@ -988,10 +988,13 @@ function openWorkflowNotifications(){
  d.querySelector(".notify-open-mail").onclick=()=>{d.remove();messagesView()};
  d.querySelectorAll("[data-notify-mail]").forEach(b=>b.onclick=()=>{d.remove();messagesView();setTimeout(()=>document.querySelector(`[data-mail="${b.dataset.notifyMail}"]`)?.scrollIntoView({behavior:"smooth",block:"center"}),60)});
 }
-function printRecruitRecord(r){
+async function printRecruitRecord(r){
  const w=window.open("","_blank","width=1120,height=900");
  if(!w){alert("Pop-up wurde blockiert. Bitte Pop-ups für diese Seite erlauben.");return}
 
+ let savedDocumentSheets='';
+ try{if(window.APD_SHEETS)savedDocumentSheets=await window.APD_SHEETS.printAttachments(r)}
+ catch(error){w.close();alert(error.message);return}
  const ev=typeof v53Eval==="function"?v53Eval(r.id):null;
  const appointments=typeof v53Upcoming==="function"?v53Upcoming(r.id):[];
  const audit=typeof v53Audit==="function"?v53Audit(r.id):[];
@@ -1073,6 +1076,7 @@ function printRecruitRecord(r){
   <section class="section"><div class="section-title"><div><small>FTO-VERMERKE</small><h3>Ausbildungsnotizen</h3></div><span>${notes.length} Einträge</span></div>${noteRows}</section>
 
 
+  ${savedDocumentSheets}
   <div class="signatures"><div class="signature">Recruit · Datum / Unterschrift</div><div class="signature">FTO / Ausbildungsleitung · Datum / Unterschrift</div></div>
  </main>
  <footer class="footer"><span>ALTA Police Department · Recruit Training Division</span><span>Ausbildungsakte ${safe(r.serviceNo)} · ${safe(r.name)}</span></footer>
