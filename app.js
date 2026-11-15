@@ -13,7 +13,7 @@ function authEmail(username){
 }
 function mapProfile(p){
  return {
-  id:p.id, username:p.username, name:p.name, serviceNo:p.service_no||"",
+  id:p.id, username:p.username, name:p.name, serviceNo:p.service_no||"", archivedAt:p.archived_at||null, accountEnabled:p.account_enabled!==false,
   role:p.role, access:p.access_level||"standard", rank:p.rank||"",
   fto:p.fto||"", start:p.training_start||"", status:p.status||"In Ausbildung",
   mustChangePassword:!!p.must_change_password, secondaryFto:p.secondary_fto||"", leaderFtoId:p.leader_fto_id||null, secondaryFtoId:p.secondary_fto_id||null, lastLogin:p.last_login||null, unlockedPhase:+p.unlocked_phase||1,
@@ -258,7 +258,7 @@ function graduationChecklist(u){
 function commandCenter(){
  if(!isTrainer(current)) return dashboard();
  setActive('[data-view="command"]');$("#pageTitle").textContent="Command Center";
- const rs=db.users.filter(x=>x.role==="recruit"), ts=db.users.filter(x=>x.role==="trainer");
+ const rs=db.users.filter(x=>x.role==="recruit"&&!x.archivedAt), ts=db.users.filter(x=>x.role==="trainer");
  const ready=rs.filter(x=>readiness(x)[0]==="Abschlussbereit").length;
  const attention=rs.filter(x=>readiness(x)[0]==="Handlungsbedarf").length;
  const open=rs.reduce((a,x)=>a+(x.goals||[]).filter(g=>!g.done).length,0);
@@ -275,7 +275,7 @@ function commandCenter(){
 
 function v630IssueRows(){
  const now=Date.now(),day=86400000,rows=[];
- db.users.filter(r=>r.role==="recruit").forEach(r=>{
+ db.users.filter(r=>r.role==="recruit"&&!r.archivedAt).forEach(r=>{
   const open=(r.goals||[]).filter(g=>!g.done);
   const fails=(r.testResults||[]).filter(t=>!t.passed);
   const last=(r.activity||[])[0]?.when;
@@ -288,7 +288,7 @@ function v630IssueRows(){
 }
 function v630AcademyFeed(limit=10){
  const a=[];
- db.users.filter(r=>r.role==="recruit").forEach(r=>{
+ db.users.filter(r=>r.role==="recruit"&&!r.archivedAt).forEach(r=>{
   (r.notes||[]).forEach(x=>a.push({when:x.createdAt,icon:"📝",r,text:`${x.authorRank||""} ${x.authorName||"Ausbilder"}: Vermerk hinzugefügt`}));
   (r.goals||[]).forEach(x=>a.push({when:x.createdAt,icon:"🎯",r,text:`${x.authorRank||""} ${x.authorName||"Ausbilder"}: Ausbildungsziel erstellt`}));
   (r.reports||[]).forEach(x=>a.push({when:x.createdAt,icon:"🚓",r,text:`${x.authorRank||""} ${x.author||"Ausbilder"}: Ausbildungsfahrt bewertet`}));
@@ -325,7 +325,7 @@ function dashboard(){
   <div class="card stat"><span>FORTSCHRITT</span><b>${p}%</b><div class="progress"><i style="width:${p}%"></i></div></div>
  </div>
  <div class="card"><div class="section-head" style="margin:0 0 12px"><div><div class="eyebrow">AKTUELLE STUFE</div><h2>${stage(u)}</h2></div><span>${u.completed.length} / 22 Kapitel</span></div><div class="progress"><i style="width:${p}%"></i></div></div>
- ${isTrainer(u)?`<div class="section-head"><div><div class="eyebrow">FTO-ÜBERSICHT</div><h2>${isFtoLead(u)?"Leitung der FTO":"Ausbildungsleitung"}</h2>${isFtoLead(u)?`<span class="fto-lead-badge">🎖️ Sgt Carter · Leitung der FTO</span>`:""}</div></div><div class="grid fto-stats">${(()=>{const rs=db.users.filter(x=>x.role==="recruit"),ready=rs.filter(x=>progress(x)===100).length,open=rs.reduce((a,x)=>a+(x.goals||[]).filter(g=>!g.done).length,0),tests=rs.reduce((a,x)=>a+(x.assignedTests||[]).length,0);return `<div class="card stat"><span>RECRUITS</span><b>${rs.length}</b></div><div class="card stat"><span>STREIFENFREIGABE</span><b>${ready}</b></div><div class="card stat"><span>OFFENE ZIELE</span><b>${open}</b></div><div class="card stat"><span>ZUGEWIESENE TESTS</span><b>${tests}</b></div>`})()}</div><div class="card"><div class="eyebrow">FORTSCHRITT DER RECRUITS</div><div class="fto-recruit-list">${db.users.filter(x=>x.role==="recruit").map(r=>`<div class="fto-recruit"><div><b>${esc(r.name)}</b><small>${esc(r.fto||"—")} · ${stage(r)}</small></div><div class="mini-progress"><i style="width:${progress(r)}%"></i></div><strong>${progress(r)}%</strong></div>`).join("")||"<p class='muted'>Noch keine Recruits.</p>"}</div></div>`:`<div class="dashboard-two"><div class="card"><div class="eyebrow">🎯 OFFENE AUSBILDUNGSZIELE</div><h2>Meine nächsten Ziele</h2>${(u.goals||[]).filter(g=>!g.done).length?(u.goals||[]).filter(g=>!g.done).map(g=>`<div class="goal-mini"><span>📌</span><b>${esc(g.text)}</b></div>`).join(""):"<p class='muted'>Aktuell keine offenen Ausbildungsziele.</p>"}</div><div class="card"><div class="eyebrow">🏅 QUALIFIKATIONEN</div><h2>Freigaben</h2>${qualificationHtml(u)}</div></div>`}
+ ${isTrainer(u)?`<div class="section-head"><div><div class="eyebrow">FTO-ÜBERSICHT</div><h2>${isFtoLead(u)?"Leitung der FTO":"Ausbildungsleitung"}</h2>${isFtoLead(u)?`<span class="fto-lead-badge">🎖️ Sgt Carter · Leitung der FTO</span>`:""}</div></div><div class="grid fto-stats">${(()=>{const rs=db.users.filter(x=>x.role==="recruit"&&!x.archivedAt),ready=rs.filter(x=>progress(x)===100).length,open=rs.reduce((a,x)=>a+(x.goals||[]).filter(g=>!g.done).length,0),tests=rs.reduce((a,x)=>a+(x.assignedTests||[]).length,0);return `<div class="card stat"><span>RECRUITS</span><b>${rs.length}</b></div><div class="card stat"><span>STREIFENFREIGABE</span><b>${ready}</b></div><div class="card stat"><span>OFFENE ZIELE</span><b>${open}</b></div><div class="card stat"><span>ZUGEWIESENE TESTS</span><b>${tests}</b></div>`})()}</div><div class="card"><div class="eyebrow">FORTSCHRITT DER RECRUITS</div><div class="fto-recruit-list">${db.users.filter(x=>x.role==="recruit"&&!x.archivedAt).map(r=>`<div class="fto-recruit"><div><b>${esc(r.name)}</b><small>${esc(r.fto||"—")} · ${stage(r)}</small></div><div class="mini-progress"><i style="width:${progress(r)}%"></i></div><strong>${progress(r)}%</strong></div>`).join("")||"<p class='muted'>Noch keine Recruits.</p>"}</div></div>`:`<div class="dashboard-two"><div class="card"><div class="eyebrow">🎯 OFFENE AUSBILDUNGSZIELE</div><h2>Meine nächsten Ziele</h2>${(u.goals||[]).filter(g=>!g.done).length?(u.goals||[]).filter(g=>!g.done).map(g=>`<div class="goal-mini"><span>📌</span><b>${esc(g.text)}</b></div>`).join(""):"<p class='muted'>Aktuell keine offenen Ausbildungsziele.</p>"}</div><div class="card"><div class="eyebrow">🏅 QUALIFIKATIONEN</div><h2>Freigaben</h2>${qualificationHtml(u)}</div></div>`}
  ${isTrainer(u)?`<div class="v630-command-grid">
   <div class="card v630-action-card"><div class="section-head compact"><div><div class="eyebrow">⚠️ HANDLUNGSBEDARF</div><h2>Heute im Blick</h2></div><span class="v630-count">${v630IssueRows().length}</span></div>
    <div class="v630-action-list">${v630IssueRows().slice(0,8).map(x=>`<button class="v630-action-row sev-${x.sev}" data-v630-recruit="${x.r.id}"><span>${x.icon}</span><div><b>${esc(x.r.name)}</b><small>${esc(x.text)}</small></div><strong>Öffnen →</strong></button>`).join("")||`<div class="v630-empty">✓ Aktuell kein dringender Handlungsbedarf.</div>`}</div>
@@ -466,7 +466,7 @@ function accountManagement(){
   <label>Status / Zugriff<select name="access"><option value="standard">Ausbilder</option><option value="extra">Ausbilder + Extra-Zugriff</option></select></label>
   <button class="primary" type="submit">Ausbilder-Account erstellen</button>
  </form></section>`:"";
- const recruits=db.users.filter(x=>x.role==="recruit");
+ const recruits=db.users.filter(x=>x.role==="recruit"&&!x.archivedAt);
  const rankOptions=["Chief of Police","Assistant Chief","Deputy Chief","Commander","Captain","Sergeant","Detective","Police Officer","Recruit"];
  const accountEditor=isOwner()?`<section class="card account-editor-v562">
   <div class="section-head"><div><div class="eyebrow">HAUPTADMIN</div><h2>Andere Accounts bearbeiten</h2><p class="muted">Ausbilder- und Recruit-Accounts verwalten, Passwörter zurücksetzen oder Accounts entfernen.</p></div><span class="access-badge owner">Nur Hauptadmin</span></div>
@@ -501,7 +501,7 @@ function admin(){
  if(!hasExtraTrainerAccess(current)) return dashboard();
  setActive('[data-view="admin"]');
  $("#pageTitle").textContent=recruitRecordsOnly?"Rekruten Ausbildungsakten":"Recruit-Verwaltung";
- const recruits=db.users.filter(x=>x.role==="recruit");
+ const recruits=db.users.filter(x=>x.role==="recruit"&&!x.archivedAt);
  const trainers=db.users.filter(x=>x.role==="trainer");
  /* V5.3.3: Akte öffnet sich ausschließlich über „Öffnen“. */
  let sel=db.users.find(x=>x.id===selectedRecruit && x.role==="recruit");
@@ -660,8 +660,8 @@ function admin(){
   try{await invokeAccountAction({action:"reset_password",userId:sel.id});alert("Passwort wurde auf 123456 zurückgesetzt. Beim nächsten Login muss ein eigenes Passwort vergeben werden.");await refreshData();admin()}catch(err){alert("Passwort konnte nicht zurückgesetzt werden: "+err.message)}
  });
  $("#deleteRecruit")?.addEventListener("click",async()=>{
- if(!canCreateRecruit()){alert("Zum Löschen von Accounts ist Extra-Zugriff erforderlich.");return}
- if(confirm("Recruit-Account wirklich löschen?"))try{await invokeAccountAction({action:"delete",userId:sel.id});selectedRecruit=null;await refreshData();admin()}catch(err){alert(err.message)}
+ if(!canCreateRecruit()){alert("Zum Archivieren ist Extra-Zugriff erforderlich.");return}
+ if(confirm(sel.archivedAt?"Ausbildungsakte wiederherstellen?":"Ausbildungsakte unter Alte Rekruten archivieren? Alle Daten bleiben erhalten."))try{const {error}=await sb.rpc("apd_archive_recruit",{p_id:sel.id,p_archive:!sel.archivedAt});if(error)throw error;selectedRecruit=null;recruitRecordClosed=true;await refreshData();admin()}catch(err){alert(err.message)}
 });
 }
 function v625FtoOptions(selectedId="",selectedName="",allowEmpty=false){
@@ -711,7 +711,7 @@ function adminRecruit(r){
   <div class="card inner-card graduation-card"><div class="eyebrow">🎓 ABSCHLUSS-CHECK</div><h3>Voraussetzungen</h3>${graduationChecklist(r)}</div></section><section class="record-tab-panel" data-record-panel="notes"><div id="record-notes"></div><div class="notes-admin-section"><div class="section-head compact"><div><div class="eyebrow">📝 AUSBILDUNGSVERMERKE</div><h3>Vermerke für ${esc(r.name)}</h3></div><span class="note-count">${(r.notes||[]).length}</span></div><form id="addRecruitNote" class="note-form"><textarea id="recruitNoteText" maxlength="1200" required placeholder="z. B. Gute Streifenfahrt, sichere Kommunikation und saubere Maßnahmenbegründung."></textarea><button class="primary" type="submit">➕ Vermerk hinzufügen</button></form><div class="note-list">${(r.notes||[]).length?r.notes.slice().reverse().map(n=>`<article class="note-entry"><div class="note-meta"><b>${esc(n.authorRank||"Ausbilder")} ${esc(n.authorName||"")}</b><span>${esc(n.date)}</span></div><p>${esc(n.text)}</p>${isOwner()?`<button class="note-delete" data-delete-note="${n.id}">Vermerk löschen</button>`:""}</article>`).join(""):`<div class="empty-note">Noch keine Vermerke vorhanden.</div>`}</div></div>
   </section><section class="record-tab-panel" data-record-panel="communication"><div class="card inner-card"><div class="eyebrow">💬 FTO-KOMMUNIKATION</div><h3>Interne Unterhaltung zu ${esc(r.name)}</h3><p class="muted">Nur für Ausbilder/Command. Nachrichten werden im Postfach gespeichert und können beantwortet bzw. als gelesen markiert werden.</p><form id="v62RecordMessage" class="note-form"><select name="recipient" required><option value="">Empfänger auswählen…</option>${v62AssignedFtos(r).filter(u=>u.id!==current.id).map(u=>`<option value="${u.id}">${String(r.fto||"").toLowerCase().includes(String(u.name||"").toLowerCase())?"Leiter FTO":"Weiterer FTO"} · ${esc(u.rank||"")} ${esc(u.name)}</option>`).join("")}${db.users.filter(u=>["trainer","admin"].includes(u.role)&&u.id!==current.id&&!v62AssignedFtos(r).some(f=>f.id===u.id)).map(u=>`<option value="${u.id}">${esc(u.rank||"")} ${esc(u.name)}</option>`).join("")}</select><textarea name="body" maxlength="3000" required placeholder="Nachricht zur Ausbildungsakte…"></textarea><button class="primary">Nachricht senden</button></form><div class="record-thread">${(db.messages||[]).filter(x=>x.recruit_id===r.id).slice(0,30).map(x=>`<article class="thread-msg ${x.recipient_id===current.id&&!x.read_at?'unread':''}"><div><b>${esc(v62UserLabel(x.sender_id))}</b><small>${new Date(x.created_at).toLocaleString("de-DE")}</small></div><p>${esc(x.body)}</p><div class="mail-actions">${x.recipient_id===current.id&&!x.read_at?`<button data-read="${x.id}">✓ Gelesen</button>`:""}<button data-reply="${x.id}">↩ Antworten</button></div></article>`).join("")||`<p class="muted">Noch keine Aktenkommunikation.</p>`}</div></div>
   </section>${isOwner()?`<button id="resetRecruitPassword" class="secondary" style="margin-top:18px">🔑 Passwort auf 123456 zurücksetzen</button>`:""}
-  <button id="deleteRecruit" style="margin-top:18px;background:transparent;color:#ff7c87;border:1px solid #66333b;border-radius:8px;padding:9px 12px;cursor:pointer">Recruit löschen</button>
+  <button id="deleteRecruit" style="margin-top:18px;background:transparent;color:#ff7c87;border:1px solid #66333b;border-radius:8px;padding:9px 12px;cursor:pointer">${r.archivedAt?"Akte wiederherstellen":"In Alte Rekruten archivieren"}</button>
  </div>`;
 }
 
@@ -851,13 +851,13 @@ function ensureChrome(){setupTopAccountLink();if(!document.querySelector(".conne
 const _navV43=nav;nav=function(){_navV43();ensureChrome();if(isOwner()){const host=$("#nav");host.insertAdjacentHTML("beforeend",`<div class="nav-label">COMMAND</div><button class="nav-btn" data-view="calendar">📅 Ausbildungskalender</button><button class="nav-btn" data-view="command">🧑‍✈️ Command Center</button>`);host.querySelectorAll('[data-view="calendar"],[data-view="command"]').forEach(b=>b.onclick=()=>showView(b.dataset.view))}}
 const _showViewV43=showView;showView=function(v){if(v==="calendar")return calendarView();if(v==="command")return commandView();return _showViewV43(v)};
 function calendarView(){setActive('[data-view="calendar"]');$("#pageTitle").textContent="Ausbildungskalender";$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">📅 PLANUNG</div><h1>Ausbildungskalender</h1></div><span class="shift-pill"></span></div><div class="card"><h2>Kommende Termine</h2>${trainingEvents.length?trainingEvents.map(e=>`<div class="test-result-row"><div><b>${esc(e.title)}</b><small>${new Date(e.starts_at).toLocaleString("de-DE")} · ${esc(e.location||"—")}</small></div><span class="state-badge">${esc(e.event_type)}</span></div>`).join(""):`<p class="muted">Noch keine Termine eingetragen.</p>`}</div>`;updateClock()}
-function commandView(){if(!isOwner())return dashboard();setActive('[data-view="command"]');$("#pageTitle").textContent="Command Center";const rs=db.users.filter(x=>x.role==="recruit");const load={};rs.forEach(r=>{load[r.fto||"Nicht zugewiesen"]=(load[r.fto||"Nicht zugewiesen"]||0)+1});$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">🧑‍✈️ FÜHRUNG</div><h1>Command Center</h1></div><span class="status">Nur Hauptadmin</span></div>${commandStrip()}<div class="grid dashboard-two"><div class="card"><h2>FTO-Auslastung</h2>${Object.entries(load).map(([n,c])=>`<div class="test-result-row"><b>${esc(n)}</b><span class="state-badge">${c} Recruit${c===1?"":"s"}</span></div>`).join("")}</div><div class="card"><h2>Berechtigungsmatrix</h2><div class="table-wrap"><table><thead><tr><th>Rolle</th><th>Ausbildung</th><th>Verwalten</th><th>Accounts</th></tr></thead><tbody><tr><td>Recruit</td><td>Eigene</td><td>—</td><td>—</td></tr><tr><td>FTO</td><td>Alle</td><td>✓</td><td>—</td></tr><tr><td>Extra-FTO</td><td>Alle</td><td>✓</td><td>Recruits</td></tr><tr><td>Hauptadmin</td><td>Alle</td><td>✓</td><td>Alle</td></tr></tbody></table></div></div></div><div class="card"><h2>Portal-Einstellungen</h2><div class="account-info-grid"><div class="info-tile"><small>Department</small><b>${esc(portalSettings.department_name)}</b></div><div class="info-tile"><small>Handbuch</small><b>${esc(portalSettings.handbook_version)}</b></div><div class="info-tile"><small>Portal-Version</small><b>${esc(portalSettings.portal_version)}</b></div><div class="info-tile"><small>Wartungsmodus</small><b>${portalSettings.maintenance_mode?"AKTIV":"Aus"}</b></div></div></div>`}
+function commandView(){if(!isOwner())return dashboard();setActive('[data-view="command"]');$("#pageTitle").textContent="Command Center";const rs=db.users.filter(x=>x.role==="recruit"&&!x.archivedAt);const load={};rs.forEach(r=>{load[r.fto||"Nicht zugewiesen"]=(load[r.fto||"Nicht zugewiesen"]||0)+1});$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">🧑‍✈️ FÜHRUNG</div><h1>Command Center</h1></div><span class="status">Nur Hauptadmin</span></div>${commandStrip()}<div class="grid dashboard-two"><div class="card"><h2>FTO-Auslastung</h2>${Object.entries(load).map(([n,c])=>`<div class="test-result-row"><b>${esc(n)}</b><span class="state-badge">${c} Recruit${c===1?"":"s"}</span></div>`).join("")}</div><div class="card"><h2>Berechtigungsmatrix</h2><div class="table-wrap"><table><thead><tr><th>Rolle</th><th>Ausbildung</th><th>Verwalten</th><th>Accounts</th></tr></thead><tbody><tr><td>Recruit</td><td>Eigene</td><td>—</td><td>—</td></tr><tr><td>FTO</td><td>Alle</td><td>✓</td><td>—</td></tr><tr><td>Extra-FTO</td><td>Alle</td><td>✓</td><td>Recruits</td></tr><tr><td>Hauptadmin</td><td>Alle</td><td>✓</td><td>Alle</td></tr></tbody></table></div></div></div><div class="card"><h2>Portal-Einstellungen</h2><div class="account-info-grid"><div class="info-tile"><small>Department</small><b>${esc(portalSettings.department_name)}</b></div><div class="info-tile"><small>Handbuch</small><b>${esc(portalSettings.handbook_version)}</b></div><div class="info-tile"><small>Portal-Version</small><b>${esc(portalSettings.portal_version)}</b></div><div class="info-tile"><small>Wartungsmodus</small><b>${portalSettings.maintenance_mode?"AKTIV":"Aus"}</b></div></div></div>`}
 const _dashboardV43=dashboard;dashboard=function(){_dashboardV43();ensureChrome();const c=$("#content");if(!c)return;const urgent=portalSettings.urgent_banner?`<div class="urgent-banner">🚨 ${esc(portalSettings.urgent_banner)}</div>`:"";c.insertAdjacentHTML("afterbegin",urgent+commandStrip());const h=c.querySelector(".hero");if(h)h.insertAdjacentHTML("beforeend",`<div class="hero-command-meta"><span class="shift-pill"></span></div>`);updateClock();if(current.role==="recruit"){const stats=c.querySelector(".stats");if(stats)stats.insertAdjacentHTML("afterend",`<div class="grid dashboard-two"><div class="card"><div class="eyebrow">🧑‍🏫 MEIN FTO</div><h2>${esc(current.fto||"Noch nicht zugewiesen")}</h2><p>${esc(current.secondaryFto?"Weiterer FTO: "+current.secondaryFto:"Dein zuständiger Ausbilder")}</p></div><div class="card"><div class="eyebrow">📅 AUSBILDUNGSDAUER</div><h2>${serviceDuration(current)}</h2><p class="muted">Beginn: ${current.start?new Date(current.start+"T00:00:00").toLocaleDateString("de-DE"):"—"}</p></div></div>`)} }
 const _accountV43=account;account=function(){setActive('[data-view="account"]');$("#pageTitle").textContent="Mein Konto";const u=current,p=progress(u),avatar=u.avatarUrl||"apd-logo-v2.png";$("#content").innerHTML=`<div class="section-head"><div><div class="eyebrow">MEINE DIENSTAKTE</div><h1>Mein Konto</h1></div><div>${rankBadge(u)} <span class="state-badge ${u.accountEnabled===false?"state-off":""}"><i class="state-dot"></i>${esc(statusName(u))}</span></div></div><div class="account-command"><section class="service-card"><div class="service-head"><img class="service-avatar" src="${esc(avatar)}" onerror="this.src='apd-logo-v2.png'"><div class="service-name"><small>ALTA POLICE DEPARTMENT</small><h2>${esc(u.name)}</h2>${rankBadge(u)}</div></div><div class="service-meta"><div><small>Badge / Dienstnummer</small><b>${esc(u.serviceNo||"—")}</b></div><div><small>Funktion</small><b>${esc(roleLabel(u))}</b></div><div><small>Status</small><b>● ${esc(statusName(u))}</b></div><div><small>Eintritt / Ausbildung</small><b>${u.start?new Date(u.start+"T00:00:00").toLocaleDateString("de-DE"):"—"}</b></div></div></section><div class="account-panels"><section class="card"><div class="eyebrow">👤 ACCOUNTINFORMATIONEN</div><h2>Profil</h2><div class="account-info-grid"><div class="info-tile"><small>Benutzername</small><b>${esc(u.username)}</b></div><div class="info-tile"><small>Berechtigung</small><b>${esc(roleLabel(u))}</b></div><div class="info-tile"><small>Letzter Login</small><b>${u.lastLogin?new Date(u.lastLogin).toLocaleString("de-DE"):"—"}</b></div><div class="info-tile"><small>Ausbildungsdauer</small><b>${serviceDuration(u)}</b></div></div><label style="display:block;margin-top:12px">Dienstnummer<input id="myServiceNo" value="${esc(u.serviceNo||"")}"></label><button class="primary" id="saveMyAccount">💾 Speichern</button></section><section class="card"><div class="eyebrow">🔐 SICHERHEIT</div><h2>Passwort</h2>${u.mustChangePassword?`<div class="notice password-warning"><b>Erstanmeldung:</b> Lege jetzt dein persönliches Passwort fest.</div>`:""}<form id="changeMyPassword" class="password-form"><label>Neues Passwort<input id="newPassword" type="password" minlength="8" required></label><label>Wiederholen<input id="repeatPassword" type="password" minlength="8" required></label><button class="primary">🔑 Passwort ändern</button></form><p class="muted">Zuletzt geändert: ${u.passwordChangedAt?new Date(u.passwordChangedAt).toLocaleString("de-DE"):"—"}</p></section>${u.role==="recruit"?`<section class="card wide"><div class="eyebrow">📊 AUSBILDUNG</div><h2>${p}% · ${stage(u)}</h2><div class="progress"><i style="width:${p}%"></i></div><div class="account-info-grid" style="margin-top:12px"><div class="info-tile"><small>Leiter FTO</small><b>${esc(u.fto||"—")}</b></div><div class="info-tile"><small>Weiterer FTO</small><b>${esc(u.secondaryFto||"—")}</b></div><div class="info-tile"><small>Kapitel</small><b>${u.completed.length}/22</b></div><div class="info-tile"><small>Offene Ziele</small><b>${(u.goals||[]).filter(g=>!g.done).length}</b></div></div></section>`:""}</div></div>${u.role==="recruit"?`<div class="grid dashboard-two"><div class="card"><div class="eyebrow">🏅 DIENST & QUALIFIKATIONEN</div><h2>Freigaben</h2>${qualificationHtml(u)}</div><div class="card"><div class="eyebrow">⭐ FAVORITEN & ZULETZT</div><h2>Schnellzugriff</h2>${(u.favorites||[]).length?u.favorites.map(n=>`<button class="secondary" data-open-fav="${n}">★ Kapitel ${chapterNumber(n)}</button>`).join(" "):"<p class='muted'>Noch keine Favoriten.</p>"}</div></div><div class="card activity-card account-history-compact"><div class="eyebrow">🕒 MEINE AKTIVITÄT · DIENSTBUCH</div><h2>Ausbildungsverlauf</h2><div class="history-first">${timelineHtml(u,3)}</div>${(u.activity||[]).length>3?`<details class="history-more"><summary>Weitere ${(u.activity||[]).length-3} Einträge anzeigen</summary><div>${(u.activity||[]).slice(3,20).map(x=>`<div class="timeline-row"><span class="timeline-icon">${x.icon}</span><div><b>${esc(x.text)}</b><small>${new Date(x.when).toLocaleString("de-DE")}</small></div></div>`).join("")}</div></details>`:""}</div><div class="card"><button class="secondary" onclick="window.print()">📄 Meine Ausbildungsakte drucken / PDF</button></div>`:""}`;
  $("#saveMyAccount").onclick=async()=>{const value=$("#myServiceNo").value.trim();if(!value)return toast("⚠ Dienstnummer fehlt");const {error}=await sb.rpc("update_my_service_no",{new_service_no:value});if(error)return toast("⚠ "+error.message);await refreshData();toast("✓ Gespeichert");account()};
  $("#changeMyPassword").onsubmit=async e=>{e.preventDefault();const pw=$("#newPassword").value,rep=$("#repeatPassword").value;if(pw.length<8)return toast("⚠ Mindestens 8 Zeichen");if(pw!==rep)return toast("⚠ Passwörter stimmen nicht überein");if(pw==="123456")return toast("⚠ Bitte eigenes Passwort wählen");const {error}=await sb.auth.updateUser({password:pw});if(error)return toast("⚠ "+error.message);await sb.rpc("mark_password_changed");await refreshData();toast("✓ Passwort geändert");account()};document.querySelectorAll("[data-open-fav]").forEach(b=>b.onclick=()=>showChapter(+b.dataset.openFav));ensureChrome()}
 const _showChapterV43=showChapter;showChapter=async function(n){_showChapterV43(n);try{await sb.from("chapter_state").upsert({user_id:current.id,chapter:n,last_opened_at:new Date().toISOString()},{onConflict:"user_id,chapter"})}catch{}const side=document.querySelector(".chapter-side")||document.querySelector(".chapter-layout aside");if(side){const st=chapterStates.find(x=>x.chapter===n);side.insertAdjacentHTML("beforeend",`<div class="chapter-state-box"><div><small>Gelesen</small><b>${st?.read_at?"✓ Ja":"Offen"}</b></div><div><small>Notizen</small><b>Auto-Save</b></div><div><small>Status</small><b>${current.completed.includes(n)?"Praxis ✓":"Offen"}</b></div></div><div class="chapter-actions"><button class="secondary" id="markRead">👁️ Als gelesen</button>${current.role==="recruit"?`<button class="secondary" id="askFto">❓ FTO fragen</button>`:""}</div>`);$("#markRead").onclick=async()=>{await sb.from("chapter_state").upsert({user_id:current.id,chapter:n,read_at:new Date().toISOString(),last_opened_at:new Date().toISOString()},{onConflict:"user_id,chapter"});toast("✓ Kapitel als gelesen markiert")};$("#askFto")?.addEventListener("click",async()=>{const q=prompt("Welche Frage möchtest du deinem FTO zu diesem Kapitel stellen?");if(!q?.trim())return;const {error}=await sb.from("fto_questions").insert({recruit_id:current.id,chapter:n,question:q.trim()});if(error)return toast("⚠ "+error.message);toast("✓ Frage an FTO gesendet")})}}
-const _adminV43=admin;admin=function(){_adminV43();if(!isTrainer(current))return;const c=$("#content");const firstCard=c?.querySelector(".admin-grid > div > .card");if(firstCard)firstCard.insertAdjacentHTML("beforebegin",`<div class="admin-toolbar"><input id="adminSearch" placeholder="🔍 Name, Benutzername oder Dienstnummer"><select id="adminFilter"><option>Alle</option><option>In Ausbildung</option><option>Abgeschlossen</option><option>Archiviert</option></select><select id="adminSort"><option>Name</option><option>Fortschritt</option><option>Dienstnummer</option></select></div>`);document.querySelectorAll(".trainer-row").forEach(r=>r.classList.add("roomy"));document.querySelectorAll(".recruit-row").forEach(r=>{const txt=r.textContent.toLowerCase();r.dataset.search=txt});$("#adminSearch")?.addEventListener("input",e=>{const q=e.target.value.toLowerCase();document.querySelectorAll(".recruit-row").forEach(r=>r.style.display=r.dataset.search.includes(q)?"":"none")});const rs=db.users.filter(x=>x.role==="recruit");if(rs.some(r=>attentionCount(r)>0)){const grid=c.querySelector(".admin-grid");grid?.insertAdjacentHTML("beforebegin",`<div class="card attention-card"><div class="eyebrow">🚦 AUFMERKSAMKEIT ERFORDERLICH</div><h2>${rs.filter(r=>attentionCount(r)>0).length} Recruit(s) mit offenen Punkten</h2><p class="muted">Offene Ausbildungsziele oder nicht bestandene Tests werden hier berücksichtigt.</p></div>`)}}
+const _adminV43=admin;admin=function(){_adminV43();if(!isTrainer(current))return;const c=$("#content");const firstCard=c?.querySelector(".admin-grid > div > .card");if(firstCard)firstCard.insertAdjacentHTML("beforebegin",`<div class="admin-toolbar"><input id="adminSearch" placeholder="🔍 Name, Benutzername oder Dienstnummer"><select id="adminFilter"><option>Alle</option><option>In Ausbildung</option><option>Abgeschlossen</option><option>Archiviert</option></select><select id="adminSort"><option>Name</option><option>Fortschritt</option><option>Dienstnummer</option></select></div>`);document.querySelectorAll(".trainer-row").forEach(r=>r.classList.add("roomy"));document.querySelectorAll(".recruit-row").forEach(r=>{const txt=r.textContent.toLowerCase();r.dataset.search=txt});$("#adminSearch")?.addEventListener("input",e=>{const q=e.target.value.toLowerCase();document.querySelectorAll(".recruit-row").forEach(r=>r.style.display=r.dataset.search.includes(q)?"":"none")});const rs=db.users.filter(x=>x.role==="recruit"&&!x.archivedAt);if(rs.some(r=>attentionCount(r)>0)){const grid=c.querySelector(".admin-grid");grid?.insertAdjacentHTML("beforebegin",`<div class="card attention-card"><div class="eyebrow">🚦 AUFMERKSAMKEIT ERFORDERLICH</div><h2>${rs.filter(r=>attentionCount(r)>0).length} Recruit(s) mit offenen Punkten</h2><p class="muted">Offene Ausbildungsziele oder nicht bestandene Tests werden hier berücksichtigt.</p></div>`)}}
 const _restoreNotesV43=restoreChapterNotes;restoreChapterNotes=async function(n){await _restoreNotesV43(n);document.querySelectorAll(".learn-line").forEach(el=>el.addEventListener("change",()=>toast("✓ Gespeichert")))};
 ensureChrome();
 
@@ -969,7 +969,7 @@ function workflowNotifications(){
   if(progress(current)<100)n.push(`📚 Noch ${22-(current.completed||[]).length} Kapitel bis 100 %`);
   return n;
  }
- const rs=db.users.filter(x=>x.role==="recruit"), n=[];
+ const rs=db.users.filter(x=>x.role==="recruit"&&!x.archivedAt), n=[];
  const att=rs.filter(x=>readiness(x)[0]==="Handlungsbedarf").length;if(att)n.push(`⚠️ ${att} Recruit${att===1?"":"s"} mit Handlungsbedarf`);
  const ready=rs.filter(x=>readiness(x)[0]==="Abschlussbereit").length;if(ready)n.push(`🎓 ${ready} Recruit${ready===1?"":"s"} abschlussbereit`);
  const open=rs.reduce((a,x)=>a+(x.goals||[]).filter(g=>!g.done).length,0);if(open)n.push(`🎯 ${open} offene Ausbildungsziele`);
@@ -2580,117 +2580,3 @@ if(a==='reset'){if(!confirm('Alle lokalen Übungsakten, Registerdaten und Ergebn
 window.APD_CAD_SIM={render};
 })();
 
-/* Compact recruit record: presentation only; existing IDs and save handlers stay intact. */
-(function compactRecruitRecord(){
- const originalRecord=adminRecruit;
- adminRecruit=function(r){
-  const template=document.createElement('template');
-  template.innerHTML=originalRecord(r);
-  const root=template.content.firstElementChild;
-  if(!root)return template.innerHTML;
-  root.classList.add('apd-record-compact');
-  const rememberKey='alta_record_sections_'+r.id;
-  let expanded=[];
-  try{expanded=JSON.parse(sessionStorage.getItem(rememberKey)||'[]')}catch{}
-  if(!Array.isArray(expanded))expanded=[];
-  function fold(node,title,key,hint='Details und Aktionen',open=false){
-   if(!node||node.closest('details'))return;
-   const details=document.createElement('details');
-   details.className='apd-record-fold';
-   details.dataset.recordSection=key;
-   details.open=expanded.includes(key)||open;
-   const summary=document.createElement('summary');
-   const label=document.createElement('span');label.textContent=title;
-   const sub=document.createElement('small');sub.textContent=hint;
-   summary.append(label,sub);details.append(summary);
-   node.replaceWith(details);details.append(node);
-  }
-  root.querySelectorAll('.record-tab-panel').forEach(panel=>{
-   const name=panel.dataset.recordPanel;
-   panel.classList.add('apd-record-panel-compact');
-   // Keep the overview's KPIs and next step first; supporting workflows follow.
-   if(name==='overview'){
-    const title=panel.querySelector('.v640-section-title');
-    const kpis=panel.querySelector('.v640-kpis');
-    const next=panel.querySelector('.v640-overview-columns');
-    const front=document.createElement('div');front.className='apd-record-at-a-glance';
-    [title,kpis,next].filter(Boolean).forEach(node=>front.append(node));
-    panel.prepend(front);
-   }
-   const cards=[...panel.querySelectorAll('.card')].filter(card=>!card.querySelector('.card')&&!card.closest('.apd-record-at-a-glance'));
-   cards.forEach((card,index)=>{
-    const heading=card.querySelector('h3,h2');
-    if(!heading)return;
-    const title=card.classList.contains('v54-next')?'Weitere Ausbildungsempfehlung':heading.textContent.trim();
-    const key=name+':'+(card.querySelector('form[id]')?.id||card.querySelector('[id]')?.id||index);
-    const entries=card.querySelectorAll('article,.field-report,.note-entry,.v54-observation,.test-result-row,.timeline-row').length;
-    const hint=entries?entries+' Einträge · anzeigen / bearbeiten':card.querySelector('form,textarea,button,input')?'Öffnen / bearbeiten':'Details anzeigen';
-    fold(card,title,key,hint,!!card.querySelector('#stopSessionV51'));
-   });
-   // Notes and goal forms are not always wrapped in standalone cards.
-   panel.querySelectorAll('.notes-admin-section').forEach((node,i)=>fold(node,'Ausbildungsvermerke',name+':notes-'+i,`${(r.notes||[]).length} Vermerke`));
-   if(name==='overview'){
-    const groups=[['Übergabe & Planung',/Übergabe|Termine|Ausbildungsempfehlung/],['Freigaben & Abschluss',/Freigab|Abschluss|Streifenfreigabe|Voraussetzungen/],['Bewertung & Verlauf',/.*/]];
-    const details=[...panel.querySelectorAll('details')].filter(node=>!node.parentElement.closest('details'));
-    const front=panel.querySelector('.apd-record-at-a-glance');
-    const grouped=groups.map(([title])=>{const box=document.createElement('div');box.className='apd-record-group-body';return {title,box}});
-    details.forEach(node=>{
-     const text=node.querySelector('summary')?.textContent||'';
-     const index=groups.findIndex(([,pattern])=>pattern.test(text));
-     grouped[index].box.append(node);
-    });
-    // All overview content is retained inside these three compact categories.
-    [...panel.children].filter(node=>node!==front).forEach(node=>{
-     if(node.textContent.trim()||node.querySelector('input,button'))grouped[2].box.append(node);
-     else node.remove();
-    });
-    grouped.forEach(({title,box},i)=>{
-     if(!box.children.length)return;
-     panel.append(box);fold(box,title,'overview:group-'+i,box.children.length+' Bereiche');
-    });
-   }
-  });
-  const actions=document.createElement('div');actions.className='apd-record-management-body';
-  const master=root.querySelector('.v640-masterdata');
-  if(master){
-   const body=master.querySelector('.v640-masterdata-body');
-   if(body)actions.append(body);master.remove();
-  }
-  ['resetRecruitPassword','deleteRecruit'].forEach(id=>{const button=root.querySelector('#'+id);if(button)actions.append(button)});
-  if(actions.children.length){
-   root.querySelector('.record-tabs')?.before(actions);
-   fold(actions,'Verwalten','management','Stammdaten · FTO-Zuordnung · Account');
-  }
-  // Keep details compact without deleting original values or historical entries.
-  return template.innerHTML;
- };
- document.addEventListener('toggle',event=>{
-  const section=event.target;
-  if(!section.matches?.('details[data-record-section]'))return;
-  const root=section.closest('.apd-record-compact');
-  if(!root||!selectedRecruit)return;
-  const key='alta_record_sections_'+selectedRecruit;
-  try{
-   let open=JSON.parse(sessionStorage.getItem(key)||'[]');
-   if(!Array.isArray(open))open=[];
-   const names=new Set(open);
-   section.open?names.add(section.dataset.recordSection):names.delete(section.dataset.recordSection);
-   sessionStorage.setItem(key,JSON.stringify([...names]));
-  }catch{}
- },true);
- const originalAdmin=admin;
- admin=function(){
-  originalAdmin();
-  const root=document.querySelector('.apd-record-compact');
-  if(!root)return;
-  const grid=root.closest('.admin-grid');grid?.classList.add('apd-record-layout');
-  const list=grid?.querySelector('.recruit-record-list');
-  if(list&&!list.closest('details')){
-   const picker=document.createElement('details');picker.className='apd-record-picker';
-   const summary=document.createElement('summary');
-   const recruit=db.users.find(u=>u.id===selectedRecruit);
-   summary.textContent='👤 '+(recruit?.name||'Rekrut')+' · Rekrut wechseln';
-   list.replaceWith(picker);picker.append(summary,list);
-  }
- };
-})();
