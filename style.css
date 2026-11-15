@@ -224,7 +224,7 @@ body{background:#061321}
 .command-strip{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;margin:0 0 16px}.command-chip{background:linear-gradient(180deg,#0d2538,#091b2a);border:1px solid #204c69;border-radius:12px;padding:12px 14px}.command-chip small{display:block;color:#7fa4bb;font-size:10px;letter-spacing:.1em}.command-chip b{font-size:20px}
 .live-clock{font-variant-numeric:tabular-nums;color:#9bc7df;font-size:12px;white-space:nowrap}.shift-pill{padding:7px 10px;border:1px solid #244b65;border-radius:999px;background:#0a1d2d;color:#9fc5dc}
 .rank-badge,.state-badge{display:inline-flex;align-items:center;gap:6px;border:1px solid #28516d;background:#0c2436;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}.rank-Recruit{color:#a7c7dc}.rank-Officer{color:#7dd3fc}.rank-Sergeant{color:#67e8f9}.rank-Lieutenant{color:#facc15}.rank-Captain{color:#f59e0b}.rank-Commander{color:#f0abfc}.state-dot{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399}.state-off .state-dot{background:#ff6673;box-shadow:none}
-.account-command{display:grid;grid-template-columns:minmax(340px,.85fr) minmax(0,1.4fr);gap:16px}.service-card{position:relative;overflow:hidden;min-height:220px;background:radial-gradient(circle at 90% 15%,rgba(41,156,225,.18),transparent 38%),linear-gradient(145deg,#0c2639,#081a29);border:1px solid #2b5d7d;border-radius:18px;padding:24px}.service-card:after{content:"";position:absolute;right:-25px;bottom:-35px;width:210px;height:210px;background:url('apd-logo.png') center/contain no-repeat;opacity:.07}.service-head{display:flex;align-items:center;gap:16px}.service-avatar{width:76px;height:76px;border-radius:18px;border:1px solid #356885;background:#061522;object-fit:cover;padding:7px}.service-name h2{font-size:26px;margin:2px 0}.service-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:22px}.service-meta div{background:#071a29;border:1px solid #1e465f;border-radius:10px;padding:10px}.service-meta small{display:block;color:#769db5}.account-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.account-panels .wide{grid-column:1/-1}.account-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.info-tile{background:#081c2b;border:1px solid #1d445e;border-radius:11px;padding:12px}.info-tile small{display:block;color:#769db5;margin-bottom:4px}.info-tile b{word-break:break-word}
+.account-command{display:grid;grid-template-columns:minmax(340px,.85fr) minmax(0,1.4fr);gap:16px}.service-card{position:relative;overflow:hidden;min-height:220px;background:radial-gradient(circle at 90% 15%,rgba(41,156,225,.18),transparent 38%),linear-gradient(145deg,#0c2639,#081a29);border:1px solid #2b5d7d;border-radius:18px;padding:24px}.service-card:after{content:"";position:absolute;right:-25px;bottom:-35px;width:210px;height:210px;background:url('assets/mrpd-logo.svg') center/contain no-repeat;opacity:.07}.service-head{display:flex;align-items:center;gap:16px}.service-avatar{width:76px;height:76px;border-radius:18px;border:1px solid #356885;background:#061522;object-fit:cover;padding:7px}.service-name h2{font-size:26px;margin:2px 0}.service-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:22px}.service-meta div{background:#071a29;border:1px solid #1e465f;border-radius:10px;padding:10px}.service-meta small{display:block;color:#769db5}.account-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.account-panels .wide{grid-column:1/-1}.account-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.info-tile{background:#081c2b;border:1px solid #1d445e;border-radius:11px;padding:12px}.info-tile small{display:block;color:#769db5;margin-bottom:4px}.info-tile b{word-break:break-word}
 .trainer-list{display:grid;gap:14px}.trainer-row{display:grid!important;grid-template-columns:minmax(220px,1.25fr) minmax(150px,.7fr) minmax(210px,1fr) minmax(190px,.9fr) minmax(110px,.45fr)!important;gap:12px!important;align-items:center!important;padding:16px!important;min-height:88px}.trainer-row>div:first-child{min-width:0}.trainer-row select,.trainer-row button{width:100%;min-height:42px}.recruit-row{padding:14px 16px!important;gap:14px}.recruit-row .mini-progress{min-width:120px}
 .chapter-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.chapter-actions button{margin:0!important}.chapter-state-box{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.chapter-state-box>div{background:#081b2a;border:1px solid #1f445c;border-radius:10px;padding:10px;text-align:center}.chapter-state-box small{display:block;color:#759bb2}.chapter-state-box b{font-size:16px}
 .admin-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:10px;margin:12px 0 16px}.admin-toolbar input,.admin-toolbar select{min-height:42px}.attention-card{border-color:#6d5422!important;background:linear-gradient(180deg,rgba(122,88,22,.13),rgba(8,25,39,.8))}.overdue{color:#fbbf24}.notification-dot{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#e33b4b;color:#fff;font-size:10px;font-weight:900}
@@ -276,7 +276,7 @@ select{color-scheme:dark;cursor:pointer}
 
 
 /* ===== V4.4.3 LAYOUT FIX: Scrollbar, Ausbilder, Kategorien ===== */
-/* Scrollbars an das APD-Design anpassen */
+/* Scrollbars an das MRPD-Design anpassen */
 *{scrollbar-width:thin;scrollbar-color:#2b678c #071522}
 *::-webkit-scrollbar{width:9px;height:9px}
 *::-webkit-scrollbar-track{background:#071522;border-radius:999px}
@@ -757,7 +757,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 /* ===== V5.6.2 – Account-Verwaltung ===== */
 .account-editor-v562{margin-top:30px}.account-editor-tabs-v562{display:flex;gap:10px;margin:18px 0 22px;flex-wrap:wrap}.account-panel-v562{display:grid;gap:12px}.account-edit-row-v562{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(170px,.8fr) minmax(220px,1fr) auto;gap:14px;align-items:end;padding:16px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.025)}.account-edit-person-v562{display:flex;flex-direction:column;gap:5px;align-self:center}.account-edit-person-v562 small{color:var(--muted)}.account-edit-row-v562 label{display:grid;gap:6px;font-size:12px;color:var(--muted)}.account-edit-row-v562 select{width:100%}.account-edit-actions-v562{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.account-edit-meta-v562{display:flex;gap:10px;align-items:center;flex-wrap:wrap;align-self:center}@media(max-width:1100px){.account-edit-row-v562{grid-template-columns:1fr 1fr}.account-edit-actions-v562{grid-column:1/-1}}@media(max-width:680px){.account-edit-row-v562{grid-template-columns:1fr}.account-edit-actions-v562{grid-column:auto}.account-editor-tabs-v562 button{flex:1}}
 
-/* ===== V5.6.4 – APD Brand Logo Upgrade ===== */
+/* ===== V5.6.4 – MRPD Brand Logo Upgrade ===== */
 @keyframes apdBrandBreath{0%,100%{transform:scale(1);filter:drop-shadow(0 7px 14px rgba(0,0,0,.55)) drop-shadow(0 0 0 rgba(56,166,255,0))}50%{transform:scale(1.055);filter:drop-shadow(0 9px 16px rgba(0,0,0,.62)) drop-shadow(0 0 12px rgba(56,166,255,.34))}}
 .brand{min-height:92px;gap:15px;padding:8px 8px 20px!important}
 .brand img{width:70px!important;height:70px!important;flex:0 0 70px;object-fit:contain;transform-origin:center;animation:apdBrandBreath 3.8s ease-in-out infinite;will-change:transform,filter;transition:transform .22s ease,filter .22s ease}
@@ -777,7 +777,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(max-width:760px){.lb-hero{align-items:flex-start}.lb-week-badge{min-width:105px}.lb-podium-wrap{grid-template-columns:1fr;align-items:stretch}.lb-place-1{order:-1}.lb-podium{min-height:0!important;padding:18px}.lb-highlights{grid-template-columns:1fr}.lb-row{grid-template-columns:36px minmax(0,1fr) 70px;gap:8px}.lb-row>div:nth-child(3),.lb-row>div:nth-child(5),.lb-row>div:nth-child(6),.lb-row>div:nth-child(8){display:none}.lb-person small{max-width:180px}.lb-hero:after{display:none}}
 
 
-/* ===== V5.6.6 – Größeres animiertes APD-Logo ===== */
+/* ===== V5.6.6 – Größeres animiertes MRPD-Logo ===== */
 .sidebar .brand,
 .sidebar .sidebar-brand,
 .sidebar .brand-wrap {
@@ -867,7 +867,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 }
 
 
-/* ===== V5.6.7 – APD Logo XXL + transparent ===== */
+/* ===== V5.6.7 – MRPD Logo XXL + transparent ===== */
 .sidebar .brand,
 .sidebar .sidebar-brand,
 .sidebar .brand-wrap{
@@ -1017,7 +1017,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 }
 
 
-/* ===== V5.6.10 – Neues APD-Wappen, groß, transparent, cache-sicher ===== */
+/* ===== V5.6.10 – Neues MRPD-Wappen, groß, transparent, cache-sicher ===== */
 .brand{height:145px !important;min-height:145px !important;padding:0 7px 14px !important;gap:2px !important;overflow:visible !important}
 .brand>img{width:136px !important;height:136px !important;min-width:136px !important;max-width:136px !important;margin-left:-27px !important;margin-right:-3px !important;object-fit:contain !important;background:transparent !important;border:0 !important;box-shadow:none !important;opacity:.96 !important;mix-blend-mode:normal !important;transform-origin:center;animation:apdNewLogo5610 3.8s ease-in-out infinite !important;filter:drop-shadow(0 0 9px rgba(28,153,255,.34)) !important}
 .brand>div{position:relative;z-index:2;flex:0 0 auto}.brand>div strong{font-size:20px}.brand>div small{font-size:9px}
@@ -1105,7 +1105,7 @@ body.ae-exam-mode #sidebar,body.ae-exam-mode .sidebar,body.ae-exam-mode #nav,bod
 
 .v590-hub-grid.v601-hub-single{grid-template-columns:1fr!important}
 
-/* ===== V6.0.2 – APD COLOR HIERARCHY ===== */
+/* ===== V6.0.2 – MRPD COLOR HIERARCHY ===== */
 :root{
  --apd-bg-deep:#050b12;
  --apd-surface:#0b1622;

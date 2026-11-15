@@ -1,4 +1,4 @@
-/* ALTA PD – Cinematic Design Add-on. Druckansicht bleibt unberührt. */
+/* MRPD – Cinematic Design Add-on. Druckansicht bleibt unberührt. */
 :root{--cin-blue:#3aaaff;--cin-soft:rgba(36,146,235,.16)}
 body:not(.cinematic-off){background-image:radial-gradient(circle at 85% 10%,rgba(23,101,170,.16),transparent 30%),radial-gradient(circle at 15% 65%,rgba(10,85,155,.12),transparent 38%)}
 .login-shell{position:relative;isolation:isolate;overflow:hidden}
@@ -62,7 +62,7 @@ body:not(.cinematic-off) .content > .hero,body:not(.cinematic-off) .content > .c
 .chapter-header:has(> .cinematic-academy):before{z-index:1!important}
 .chapter-header:has(> .cinematic-academy) > :not(.cinematic-academy){position:relative;z-index:2}
 
-/* APD 2026 – static photographic backgrounds, no video or moving media */
+/* MRPD 2026 – static photographic backgrounds, no video or moving media */
 .login-shell{background:#071727 url('image26.png?v=20261010restored') center/cover no-repeat!important}
 .cinematic-login{background:url('image26.png?v=20261010restored') center/cover no-repeat!important;position:absolute;inset:0;display:block;pointer-events:none}
 .cinematic-hero{background:#071727 url('image26.png?v=20261010restored') center/cover no-repeat!important}

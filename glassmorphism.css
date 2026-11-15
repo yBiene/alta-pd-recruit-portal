@@ -1,4 +1,4 @@
-/* ALTA PD – Dark Glassmorphism. Visual-only overlay; no JS/data changes. */
+/* MRPD – Dark Glassmorphism. Visual-only overlay; no JS/data changes. */
 :root{--bg:#06111f;--panel:rgba(14,33,54,.65);--panel2:rgba(20,45,70,.62);--line:rgba(145,200,243,.22);--shadow:0 16px 48px rgba(0,5,17,.30);--muted:#adc3d6;--glass-edge:rgba(158,212,255,.20);--glass-fill:rgba(15,35,56,.57)}
 html,body{background:#06111f;color:#f0f8ff}
 body{background:radial-gradient(ellipse at 13% 6%,rgba(20,112,199,.24),transparent 38%),radial-gradient(ellipse at 89% 42%,rgba(40,99,185,.15),transparent 43%),linear-gradient(150deg,#06111f,#081b2e 55%,#07111f);background-attachment:fixed}

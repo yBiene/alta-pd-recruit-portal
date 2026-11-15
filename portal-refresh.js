@@ -1,4 +1,4 @@
-/* ALTA PD / POLARIS 2026 – visual shell, winter dashboard and recruit archive. */
+/* MRPD / POLARIS 2026 – visual shell, winter dashboard and recruit archive. */
 (()=>{'use strict';
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let archiveTab=false,search='';
@@ -90,7 +90,7 @@ function winterHero(){
 function startSnow(hero){cancelAnimationFrame(frame);snowCanvas=hero.querySelector('canvas');snowContext=snowCanvas.getContext('2d');const width=hero.clientWidth,height=hero.clientHeight,ratio=Math.min(devicePixelRatio||1,2);snowCanvas.width=width*ratio;snowCanvas.height=height*ratio;snowContext.setTransform(ratio,0,0,ratio,0,0);flakes=Array.from({length:65},()=>({x:Math.random()*width,y:Math.random()*height,r:Math.random()*1.8+.4,v:Math.random()*25+12}));last=0;
  function tick(t){if(!hero.isConnected)return;const dt=last?Math.min((t-last)/1000,.05):0;last=t;snowContext.clearRect(0,0,width,height);snowContext.fillStyle='rgba(230,248,255,.6)';for(const f of flakes){f.y=(f.y+f.v*dt)%height;f.x=(f.x+7*dt)%width;snowContext.beginPath();snowContext.arc(f.x,f.y,f.r,0,Math.PI*2);snowContext.fill()}frame=requestAnimationFrame(tick)}frame=requestAnimationFrame(tick);
 }
-function countdown(){const hero=document.querySelector('.pr-winter');if(!hero)return;const distance=Math.max(0,new Date('2026-12-24T00:00:00+01:00').getTime()-Date.now()),seconds=Math.floor(distance/1000);for(const [key,value] of Object.entries({days:Math.floor(seconds/86400),hours:Math.floor(seconds/3600)%24,minutes:Math.floor(seconds/60)%60,seconds:seconds%60})){const el=hero.querySelector('[data-'+key+']');if(el)el.textContent=String(value).padStart(2,'0')}if(!distance)hero.querySelector('.pr-until').innerHTML='FROHE WEIHNACHTEN<small>ALTA POLICE DEPARTMENT</small>'}
+function countdown(){const hero=document.querySelector('.pr-winter');if(!hero)return;const distance=Math.max(0,new Date('2026-12-24T00:00:00+01:00').getTime()-Date.now()),seconds=Math.floor(distance/1000);for(const [key,value] of Object.entries({days:Math.floor(seconds/86400),hours:Math.floor(seconds/3600)%24,minutes:Math.floor(seconds/60)%60,seconds:seconds%60})){const el=hero.querySelector('[data-'+key+']');if(el)el.textContent=String(value).padStart(2,'0')}if(!distance)hero.querySelector('.pr-until').innerHTML='FROHE WEIHNACHTEN<small>Mission Row Police Department</small>'}
 setInterval(countdown,1000);
 const heroContent=document.querySelector('#content');if(heroContent)new MutationObserver(countdown).observe(heroContent,{childList:true});
 document.addEventListener('visibilitychange',()=>{const hero=document.querySelector('.pr-winter'),video=hero?.querySelector('video');if(!hero)return;if(document.hidden){video.pause();cancelAnimationFrame(frame)}else if(!reduced.matches){video.play().catch(()=>{});startSnow(hero)}});

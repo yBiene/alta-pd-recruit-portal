@@ -1,4 +1,4 @@
-/* ALTA PD premium: CSS-only enhancement; existing app logic unchanged. */
+/* MRPD premium: CSS-only enhancement; existing app logic unchanged. */
 :root{--premium-glow:rgba(73,178,255,.24);--premium-edge:rgba(102,193,255,.42)}
 body:not(.cinematic-off) .sidebar{background-image:radial-gradient(ellipse at 5% 10%,rgba(42,130,211,.10),transparent 48%)}
 body:not(.cinematic-off) .topbar{box-shadow:0 8px 34px rgba(1,9,21,.18),inset 0 -1px rgba(95,180,245,.09)}
