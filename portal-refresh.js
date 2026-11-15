@@ -44,13 +44,35 @@ function recordLayout(r){
 // Personalakten löschen in der Account-Verwaltung bedeutet für Rekruten ebenfalls archivieren.
 const originalAccounts=accountManagement;accountManagement=function(){originalAccounts();document.querySelectorAll('[data-account-delete]').forEach(b=>{if(db.users.find(u=>u.id===b.dataset.accountDelete)?.role==='recruit'){b.textContent='Archivieren';b.onclick=async()=>{if(!confirm('Rekrut unter Alte Rekruten archivieren? Alle Ausbildungsdaten bleiben erhalten.'))return;try{await invokeAccountAction({action:'delete',userId:b.dataset.accountDelete});await refreshData();accountManagement()}catch(e){alert(e.message)}}}})};
 
-function navigation(){const nav=document.querySelector('#nav');if(!nav||nav.querySelector('.pr-academy-nav'))return;
- const chapters=[...nav.querySelectorAll('[data-chapter]')];if(chapters.length){const group=document.createElement('details');group.className='pr-academy-nav';const title=document.createElement('summary');title.innerHTML='<span>◈ Ausbildungskapitel</span><small>22</small>';group.append(title);const old=chapters[0].closest('#trainingNavItems');if(old){old.before(group);chapters.forEach(b=>group.append(b));old.remove();document.querySelector('#trainingNavToggle')?.remove()}else{chapters[0].before(group);chapters.forEach(b=>group.append(b))}}
+function navigation(){
+ const host=document.querySelector('#nav');if(!host)return;
+ const buttons=[...host.querySelectorAll('button.nav-btn')].filter(b=>b.dataset.view||b.dataset.chapter);
+ if(!buttons.length)return;
+ const signature=buttons.map(b=>b.dataset.view||'chapter:'+b.dataset.chapter).sort().join('|');
+ if(host.dataset.prSignature===signature&&host.querySelector('.pr-menu-group')&&!host.querySelector(':scope > button.nav-btn:not([data-pr-essential])'))return;
+ const openState=new Map([...host.querySelectorAll('details[data-menu-group]')].map(g=>[g.dataset.menuGroup,g.open]));
+ const unique=[...new Map(buttons.map(b=>[(b.dataset.view||'chapter:'+b.dataset.chapter),b])).values()];
+ const essentials=['dashboard','evidence','admin'];
+ const primary=essentials.map(key=>unique.find(b=>b.dataset.view===key)).filter(Boolean);
+ primary.forEach(b=>b.dataset.prEssential='true');
+ const groups=[{key:'academy',title:'Ausbildung & Prüfungen',icon:'◈',views:['tests'],chapters:true},{key:'practice',title:'Training & Simulatoren',icon:'◇',views:['cad','scenario','radio','mapquiz','rides','dienstbuch','achievements','leaderboard']},{key:'planning',title:'Planung & Termine',icon:'▦',views:['calendar','plan']},{key:'department',title:'Department & Dokumente',icon:'▤',views:['news','documents','messages']},{key:'management',title:'FTO & Verwaltung',icon:'⚙',views:['command','command-live','accounts']}];
+ const used=new Set(primary),elements=[...primary];
+ for(const group of groups){const members=unique.filter(b=>!used.has(b)&&(group.views.includes(b.dataset.view)||(group.chapters&&b.dataset.chapter)));if(!members.length)continue;
+  const details=document.createElement('details');details.className='pr-menu-group';details.dataset.menuGroup=group.key;
+  let remembered=false;try{remembered=sessionStorage.getItem('apd_menu_'+group.key)==='1'}catch{}
+  details.open=openState.has(group.key)?openState.get(group.key):remembered;
+  const summary=document.createElement('summary');summary.innerHTML='<span class="pr-menu-icon">'+group.icon+'</span><span>'+group.title+'</span><small>'+members.length+'</small>';
+  details.append(summary);members.forEach(b=>{delete b.dataset.prEssential;used.add(b);details.append(b)});
+  details.addEventListener('toggle',()=>{try{sessionStorage.setItem('apd_menu_'+group.key,details.open?'1':'0')}catch{}});elements.push(details);
+ }
+ const rest=unique.filter(b=>!used.has(b));if(rest.length){const d=document.createElement('details');d.className='pr-menu-group';d.dataset.menuGroup='other';const summary=document.createElement('summary');summary.textContent='Weitere Funktionen';d.append(summary,...rest);elements.push(d)}
+ host.dataset.prSignature=signature;host.replaceChildren(...elements);
  const brand=document.querySelector('.brand small');if(brand)brand.textContent='PERSONNEL & OPERATIONS';
 }
 const oldNav=nav;nav=function(){oldNav();navigation()};navigation();
 const navHost=document.querySelector('#nav');if(navHost)new MutationObserver(navigation).observe(navHost,{childList:true});
 
+document.addEventListener('click',e=>{if(!e.target.closest('#nav [data-view],#nav [data-chapter],[data-mobile]'))return;requestAnimationFrame(()=>{window.scrollTo({top:0,left:0,behavior:'instant'});const content=document.querySelector('#content');if(content)content.scrollTop=0})});
 const dashboardBase=dashboard;dashboard=function(){dashboardBase();winterHero()};
 let frame=0,snowCanvas=null,snowContext=null,last=0,flakes=[],heroObserver=null;
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -71,3 +93,4 @@ setInterval(countdown,1000);
 const heroContent=document.querySelector('#content');if(heroContent)new MutationObserver(countdown).observe(heroContent,{childList:true});
 document.addEventListener('visibilitychange',()=>{const hero=document.querySelector('.pr-winter'),video=hero?.querySelector('video');if(!hero)return;if(document.hidden){video.pause();cancelAnimationFrame(frame)}else if(hero.querySelector('button').getAttribute('aria-pressed')!=='true'){video.play().catch(()=>{});startSnow(hero)}});
 })();
+
