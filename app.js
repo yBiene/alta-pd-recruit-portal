@@ -1,4 +1,4 @@
-function apdActiveRecruit(r){return r?.role==="recruit"&&!r.archivedAt&&!r.archived_at&&r.status!=="Archiviert"}
+function apdActiveRecruit(r){return r?.role==="recruit"&&(!r.rank||["Rekrut","Recruit"].includes(r.rank))&&!r.archivedAt&&!r.archived_at&&r.status!=="Archiviert"}
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));

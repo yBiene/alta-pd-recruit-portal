@@ -151,7 +151,11 @@ Deno.serve(async (req) => {
       // ----------------------------------------------------------
       // Rang prüfen
       // ----------------------------------------------------------
-      const rank = role==='recruit'?'Rekrut':String(body.rank||'Sergeant').trim();
+      const officerAccount=body.accountType==='officer';
+      if(officerAccount&&!mayCreateRecruit)throw new Error('Keine Berechtigung zum Erstellen von Officer-Accounts');
+      const rank = role==='recruit'&&!officerAccount?'Rekrut':String(body.rank||(officerAccount?'Police Officer':'Sergeant')).trim();
+      if(officerAccount&&allowedTrainerRanks.indexOf(rank)>=4&&!mayCreateTrainer)throw new Error('Accounts ab Sergeant können nur Ausbilder + erstellen');
+      if(officerAccount&&rank==='Rekrut')throw new Error('Bitte einen Officer-Dienstgrad auswählen');
       if(!allowedTrainerRanks.includes(rank))throw new Error('Ungültiger Dienstgrad');
       const temporaryPassword=String(body.password||('APD-'+crypto.randomUUID().replaceAll('-','').slice(0,14)));
       if(temporaryPassword.length<10)throw new Error('Startpasswort benötigt mindestens 10 Zeichen');
@@ -218,7 +222,7 @@ Deno.serve(async (req) => {
                 : "standard"
             )
           : "standard";
-      const status =
+      const status = officerAccount ? "Officer" :
         role === "recruit"
           ? "In Ausbildung"
           : (

@@ -4,6 +4,12 @@ const content=document.querySelector('#content'),navigation=document.querySelect
 if(!content)return;
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const paths={
+ badges:'M12 2 4 5v8c0 5 8 9 8 9s8-4 8-9V5ZM8 11l3 3 5-6',
+ 'rank-changes':'m5 12 7-7 7 7M5 20l7-7 7 7',
+ departments:'M9 2h6v6H9ZM12 8v5M4 13h16M4 13v4m16-4v4M1 17h6v5H1Zm16 0h6v5h-6Z',
+ feedback:'M3 3h18v14H9l-6 5ZM7 8h10M7 12h7',
+ 'staff-channel':'M3 4h14v11H9l-6 4ZM18 9h4v12l-4-3h-6',
+ 'officer-home':'M12 2 3 6v6c0 5 9 10 9 10s9-5 9-10V6ZM8 12l3 3 5-6',
  dashboard:'M3 10 12 3l9 7v11h-6v-7H9v7H3Z',
  evidence:'M3 7h7l2-3h9v17H3ZM3 10h18M8 14h8',
  admin:'M4 3h16v18H4ZM8 7h8M8 17h8M10 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0',

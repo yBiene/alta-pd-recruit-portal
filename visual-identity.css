@@ -1,0 +1,27 @@
+/* Crisp local artwork with vector insignia; photographs remain clear on the right. */
+body #app .content>.section-head:has(>.vi-banner-art),body #app .pr-record-header:has(>.vi-banner-art){isolation:isolate;position:relative;overflow:hidden;min-height:218px!important;padding:32px!important;background:#0c1929!important;animation:none!important;display:flex;align-items:center;gap:24px}
+.vi-banner-art{position:absolute;inset:0;z-index:-2;pointer-events:none;overflow:hidden}
+.vi-banner-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:70% 46%;filter:none!important;opacity:1!important}
+.vi-banner-art:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#091523f5 0%,#091523ed 25%,#091523ac 47%,#09152312 72%,#09152336 100%)}
+body #app .section-head:has(>.vi-banner-art)>div:not(.vi-banner-art){position:relative;z-index:1;max-width:66%}
+body #app .section-head:has(>.vi-banner-art) h1{max-width:780px;text-wrap:balance}
+body #app .section-head:has(>.vi-banner-art) p{max-width:620px;color:#d6e2ed!important;line-height:1.7;text-shadow:0 1px 4px #000}
+.vi-page-emblem{position:relative;margin-left:auto;z-index:1;display:grid;place-items:center;width:105px;flex:0 0 105px;filter:drop-shadow(0 8px 15px #0009)}
+.vi-insignia{display:block;width:100%;height:auto;overflow:visible}
+body #app .hub-medal{width:76px;min-width:76px;height:auto;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;display:block;padding:0!important;flex:0 0 76px;filter:drop-shadow(0 5px 8px #0004)}
+body #app .hub-badge{align-items:center;gap:21px;min-height:185px;border-top:2px solid #6a8598!important;background:linear-gradient(125deg,#21384c,#122537)!important}
+body #app .hub-badge.locked{opacity:1!important}.hub-badge.locked .hub-medal{filter:saturate(.46);opacity:.8}.hub-badge.earned .hub-medal{filter:drop-shadow(0 3px 12px #dbc38433)}
+body #app .hub-badge.earned{border-top-color:#d7b76e!important;background:linear-gradient(120deg,#3d3929,#152a3d)!important}
+body #app .hub-badge h3{font-size:17px;line-height:1.4}.hub-badge p{line-height:1.65}
+body #app .hub-rank-symbol{display:block;width:86px;height:auto;flex:0 0 86px;background:none!important;border:0!important;border-radius:0!important;padding:0!important;filter:drop-shadow(0 5px 10px #0005)}
+body #app .hub-rank-card.up{background:linear-gradient(115deg,#343729,#182b3c 70%)!important;border-color:#ae945d!important}.hub-rank-card.down .hub-rank-symbol{filter:saturate(.2)}
+body #app .hub-chat-mark{width:40px;padding:0;border:0;background:none}.hub-chat-mark .vi-insignia{max-height:48px}
+@media(min-width:1550px){body #app .content>.section-head:has(>.vi-banner-art){min-height:255px!important}}
+@media(max-width:760px){body #app .content>.section-head:has(>.vi-banner-art){min-height:185px!important;padding:25px!important;gap:12px}.vi-page-emblem{width:66px;flex-basis:66px}.vi-banner-art img{object-position:65% center}.vi-banner-art:after{background:linear-gradient(90deg,#091523ed,#091523b3 55%,#09152345)}body #app .section-head:has(>.vi-banner-art)>div:not(.vi-banner-art){max-width:calc(100% - 78px)}body #app .hub-medal{width:64px;min-width:64px;flex-basis:64px}body #app .hub-badge{gap:17px}body #app .hub-rank-symbol{width:64px;flex-basis:64px}}
+@media(max-width:450px){.vi-page-emblem{width:49px;flex-basis:49px}body #app .section-head:has(>.vi-banner-art)>div:not(.vi-banner-art){max-width:calc(100% - 60px)}body #app .section-head:has(>.vi-banner-art) h1{font-size:26px!important}body #app .section-head:has(>.vi-banner-art) p{font-size:12px}.vi-banner-art img{object-position:60% center}}
+@media print{.vi-banner-art,.vi-page-emblem{display:none!important}.hub-medal,.hub-rank-symbol{filter:none!important}}
+.vi-banner-art{z-index:0}
+body #app .section-head:has(>.vi-banner-art)>.no-banner-caption{z-index:2}
+
+.vi-banner-art{background-size:cover;background-position:70% 46%}.vi-banner-art img{visibility:hidden!important}
+.hub-credentials{margin-top:18px;padding:18px;border:1px solid #789baf;border-radius:10px;background:#11293b}.hub-credentials pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.8 ui-monospace,monospace;color:#e4f3ff}.hub-credentials button{margin-top:9px}
