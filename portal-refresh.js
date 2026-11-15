@@ -12,7 +12,7 @@ invokeAccountAction=async function(body){
 };
 const originalAdmin=admin;
 admin=function(){
- if(!recruitRecordsOnly||!hasExtraTrainerAccess(current))return originalAdmin();
+ if(!recruitRecordsOnly||!isTrainer(current))return originalAdmin();
  const r=db.users.find(u=>u.id===selectedRecruit&&u.role==='recruit');
  if(!r||recruitRecordClosed){selectedRecruit=null;recordList();return}
  originalAdmin();recordLayout(r);
@@ -53,13 +53,14 @@ function navigation(){
  if(host.dataset.prSignature===signature&&host.querySelector('.pr-menu-group')&&!host.querySelector(':scope > button.nav-btn:not([data-pr-essential])'))return;
  const openState=new Map([...host.querySelectorAll('details[data-menu-group]')].map(g=>[g.dataset.menuGroup,g.open]));
  const unique=[...new Map(buttons.map(b=>[(b.dataset.view||'chapter:'+b.dataset.chapter),b])).values()];
- const essentials=['dashboard','evidence','admin'];
+ const essentials=['dashboard','officer-home','evidence','admin'];
+ const areaOf=b=>b.dataset.chapter?'academy':(['dashboard','admin','tests','cad','scenario','radio','mapquiz','rides','plan','leaderboard'].includes(b.dataset.view)?'academy':b.dataset.view==='calendar'?(typeof isTrainer==='function'&&isTrainer(current)?'officer':'academy'):['badges','achievements','feedback','messages'].includes(b.dataset.view)?'shared':'officer');
  const primary=essentials.map(key=>unique.find(b=>b.dataset.view===key)).filter(Boolean);
- primary.forEach(b=>b.dataset.prEssential='true');
- const groups=[{key:'academy',title:'Ausbildung & Prüfungen',icon:'◈',views:['tests'],chapters:true},{key:'practice',title:'Training & Simulatoren',icon:'◇',views:['cad','scenario','radio','mapquiz','rides','dienstbuch','achievements','leaderboard']},{key:'planning',title:'Planung & Termine',icon:'▦',views:['calendar','plan']},{key:'department',title:'Department & Dokumente',icon:'▤',views:['news','documents','messages']},{key:'management',title:'FTO & Verwaltung',icon:'⚙',views:['command','command-live','accounts']}];
+ primary.forEach(b=>{b.dataset.prEssential='true';b.dataset.portalArea=areaOf(b)});
+ const groups=[{key:'academy',title:'Academy · Ausbildung',icon:'◈',area:'academy',views:['tests'],chapters:true},{key:'practice',title:'Academy · Training',icon:'◇',area:'academy',views:['cad','scenario','radio','mapquiz','rides','plan','leaderboard']},{key:'training-calendar',title:'Ausbildungskalender',icon:'▦',area:'academy',views:typeof isTrainer==='function'&&isTrainer(current)?[]:['calendar']},{key:'department',title:'Officer · Department',icon:'▤',area:'officer',views:['rank-changes','departments','news','documents','dienstbuch',...(typeof isTrainer==='function'&&isTrainer(current)?['calendar']:[])]},{key:'staff',title:'Officer · Staff',icon:'◇',area:'officer',views:['staff-channel','command','command-live','accounts']},{key:'personal',title:'Persönlich & Austausch',icon:'○',area:'shared',views:['messages','feedback','badges','achievements']}];
  const used=new Set(primary),elements=[...primary];
  for(const group of groups){const members=unique.filter(b=>!used.has(b)&&(group.views.includes(b.dataset.view)||(group.chapters&&b.dataset.chapter)));if(!members.length)continue;
-  const details=document.createElement('details');details.className='pr-menu-group';details.dataset.menuGroup=group.key;
+  const details=document.createElement('details');details.className='pr-menu-group';details.dataset.menuGroup=group.key;details.dataset.portalArea=group.area;
   let remembered=false;try{remembered=sessionStorage.getItem('apd_menu_'+group.key)==='1'}catch{}
   details.open=openState.has(group.key)?openState.get(group.key):remembered;
   const summary=document.createElement('summary');summary.innerHTML='<span class="pr-menu-icon">'+group.icon+'</span><span>'+group.title+'</span><small>'+members.length+'</small>';

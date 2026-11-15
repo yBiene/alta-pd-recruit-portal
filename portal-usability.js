@@ -4,7 +4,7 @@ const root=document.querySelector('#content'),nav=document.querySelector('#nav')
 const notice=document.createElement('div');notice.className='ux-save-status';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');notice.hidden=true;document.body.append(notice);
 let noticeTimer=0;
 function status(message,state='idle'){clearTimeout(noticeTimer);notice.textContent=message;notice.dataset.state=state;notice.hidden=false;if(['saved','idle'].includes(state))noticeTimer=setTimeout(()=>notice.hidden=true,4500)}
-window.APD_UX={status};
+window.APD_UX={status,clean(scope){for(const [el] of edits)if(scope?.contains(el)){edits.delete(el);el.dataset.uxInitial=JSON.stringify(value(el))}status(connectedEdits()?'Weitere ungespeicherte Änderungen':'Gespeichert',connectedEdits()?'dirty':'saved')}};
 const edits=new Map();let writes=0,writeFailed=false,saveScope=null;
 document.addEventListener('submit',e=>{saveScope=e.target},true);
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&/speichern|übernehmen|save/i.test(b.textContent+' '+b.id))saveScope=b.closest('form,.card,.zb-panel')},true);
@@ -16,7 +16,7 @@ document.addEventListener('input',changed);document.addEventListener('change',ch
 function changed(e){const el=e.target;if(!root?.contains(el)||!editable(el))return;const initial=el.dataset.uxInitial;if(initial!==undefined&&JSON.stringify(value(el))===initial)edits.delete(el);else edits.set(el,value(el));status(connectedEdits()?'Ungespeicherte Änderungen':'Bereit',connectedEdits()?'dirty':'idle')}
 // Feedback follows confirmed server responses; failed writes retain the changed fields.
 const originalFetch=window.fetch;
-window.fetch=async function(input,init){const url=typeof input==='string'?input:input?.url||String(input),method=(init?.method||input?.method||'GET').toUpperCase();const write=/\/rest\/v1\//.test(url)&&['POST','PATCH','PUT','DELETE'].includes(method)&&!url.includes('/rpc/apd_evidence_')&&(!url.includes('/rpc/')||/\/rpc\/(update|save|mark|apd_archive)/.test(url));
+window.fetch=async function(input,init){const url=typeof input==='string'?input:input?.url||String(input),method=(init?.method||input?.method||'GET').toUpperCase();const write=/\/rest\/v1\//.test(url)&&['POST','PATCH','PUT','DELETE'].includes(method)&&!url.includes('/rpc/apd_evidence_')&&!/portal_hub_staff_(receipts|reactions)/.test(url)&&(!url.includes('/rpc/')||/\/rpc\/(update|save|mark|apd_archive)/.test(url));
 if(!write)return originalFetch.apply(this,arguments);
 const snapshot=new Map([...edits].filter(([el])=>el.isConnected&&saveScope?.contains(el)));if(!writes)writeFailed=false;writes++;status('Wird gespeichert …','saving');
 try{const response=await originalFetch.apply(this,arguments);if(response.ok){for(const [el,v] of snapshot)if(el.isConnected&&value(el)===v){edits.delete(el);el.dataset.uxInitial=JSON.stringify(v)}}else writeFailed=true;return response}catch(error){writeFailed=true;throw error}finally{writes--;if(!writes)status(writeFailed?'Speichern fehlgeschlagen – Eingaben prüfen':connectedEdits()?'Weitere ungespeicherte Änderungen':'Gespeichert',writeFailed?'error':connectedEdits()?'dirty':'saved')}};
