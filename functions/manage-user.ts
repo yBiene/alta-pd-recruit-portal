@@ -157,8 +157,8 @@ Deno.serve(async (req) => {
       if(officerAccount&&allowedTrainerRanks.indexOf(rank)>=4&&!mayCreateTrainer)throw new Error('Accounts ab Sergeant können nur Ausbilder + erstellen');
       if(officerAccount&&rank==='Rekrut')throw new Error('Bitte einen Officer-Dienstgrad auswählen');
       if(!allowedTrainerRanks.includes(rank))throw new Error('Ungültiger Dienstgrad');
-      const temporaryPassword=String(body.password||('APD-'+crypto.randomUUID().replaceAll('-','').slice(0,14)));
-      if(temporaryPassword.length<10)throw new Error('Startpasswort benötigt mindestens 10 Zeichen');
+      const temporaryPassword="123456";
+
       // ----------------------------------------------------------
       // Auth Account erstellen
       // ----------------------------------------------------------
@@ -254,6 +254,7 @@ Deno.serve(async (req) => {
             ).trim(),
             training_start: start || null,
             must_change_password: true,
+            initial_password_is_default: true,
           });
       if (profileErr) {
         // Auth Account wieder entfernen,
@@ -352,6 +353,7 @@ Deno.serve(async (req) => {
         .from("profiles")
         .update({
           must_change_password: true,
+            initial_password_is_default: true,
         })
         .eq("id", userId);
       if (flagError) {

@@ -14,7 +14,7 @@ function authEmail(username){
 }
 function mapProfile(p){
  return {
-  id:p.id, username:p.username, name:p.name, serviceNo:p.service_no||"", archivedAt:p.archived_at||null, accountEnabled:p.account_enabled!==false,
+  id:p.id, initialPasswordIsDefault:!!p.initial_password_is_default, username:p.username, name:p.name, serviceNo:p.service_no||"", archivedAt:p.archived_at||null, accountEnabled:p.account_enabled!==false,
   role:p.role, access:p.access_level||"standard", rank:p.rank||"",
   fto:p.fto||"", start:p.training_start||"", status:p.status==="Ausbilder · Extra-Zugriff"?"Ausbilder +":p.status||"In Ausbildung",
   mustChangePassword:!!p.must_change_password, secondaryFto:p.secondary_fto||"", leaderFtoId:p.leader_fto_id||null, secondaryFtoId:p.secondary_fto_id||null, lastLogin:p.last_login||null, unlockedPhase:+p.unlocked_phase||1,
