@@ -1,0 +1,17 @@
+.mrpd-duty-card { margin-block:0 16px; }
+.mrpd-duty-overview { border-top:2px solid #5da5d6; }
+.mrpd-duty-tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr)); gap:.75rem; }
+.mrpd-duty-tiles article,.mrpd-duty-list article { min-width:0; padding:1rem; border:1px solid rgba(123,176,217,.26); border-radius:.65rem; background:rgba(24,63,94,.2); }
+.mrpd-duty-tiles h3,.mrpd-duty-list h3 { margin:0 0 .45rem; }
+.mrpd-duty-tiles p,.mrpd-duty-list article p,.mrpd-plan-next [data-duty-body] { overflow-wrap:anywhere; white-space:pre-wrap; }
+.mrpd-duty-list { display:grid; gap:.65rem; margin-block:1rem; }
+.mrpd-duty-list details article { margin-top:.65rem; }
+.mrpd-duty-buttons { display:inline-flex; gap:.45rem; align-items:center; flex-wrap:wrap; }
+.mrpd-duty-buttons [aria-pressed=true] { border-color:#79c4ef; color:#a3ddff; }
+.mrpd-duty-profile { display:grid; grid-template-columns:max-content 1fr; gap:.6rem 1.15rem; }
+.mrpd-duty-profile dt { font-weight:700; }
+.mrpd-duty-profile dd { margin:0; overflow-wrap:anywhere; }
+.mrpd-duty-dialog [data-duty-body] { padding:0 1rem 1rem; }
+.mrpd-rsvp { margin-top:.7rem; }
+.mrpd-rsvp summary { cursor:pointer; color:#a3ddff; }
+.mrpd-chart button.mrpd-position-profile { background:transparent; color:inherit; padding:0; border:0; text-align:left; text-decoration:underline; text-underline-offset:.18em; }

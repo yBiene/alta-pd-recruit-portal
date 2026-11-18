@@ -38,16 +38,37 @@ function insignia(title) {
  const symbol=ranks.find(([pattern])=>pattern.test(title))?.[1];
  return symbol?`<span class="mrpd-insignia" aria-hidden="true">${symbol}</span>`:'';
 }
+function chartAssignment(item, parents) {
+ const division = parents.find(parent => parent.tone);
+ const unit = /\bPatrol\b/i.test(item.title) ? 'Patrol Unit' :
+  /\bFTO\b/i.test(item.title) ? 'FTO' : division?.title || 'Executive Staff';
+ return {title:item.title,unit};
+}
+async function assignment(name) {
+ const old=await read('mrpd_org_chart','id',1);
+ const matches=[];
+ function visit(items,parents=[]) {
+  for(const item of items){
+   if(item.name?.trim().toLowerCase()===name.trim().toLowerCase())matches.push(chartAssignment(item,parents));
+   visit(item.children||[],[...parents,item]);
+  }
+ }
+ visit(old?.tree||initial);
+ return matches.length===1?matches[0]:null;
+}
 async function chart(options) {
- const {host,canEdit}=options;
+ const {host,canEdit,people=[]}=options;
  const old=await read('mrpd_org_chart','id',1);
  if(!host.isConnected)return;
  const tree=structuredClone(old?.tree||initial), cards=[];
- function branch(items,tone='blue') {
+ function branch(items,tone='blue',parents=[]) {
   return '<ul>'+items.map(item=>{
-   const id=cards.push({item,items})-1;
+   const matches=item.name?people.filter(p=>p.name.trim().toLowerCase()===item.name.trim().toLowerCase()):[];
+   const profile=matches.length===1?matches[0]:null;
+   const id=cards.push({item,items,profile,info:chartAssignment(item,parents)})-1;
+   const name=profile?`<button type="button" class="mrpd-position-profile" data-position-profile="${id}">${escape(item.name)}</button>`:`<span>${escape(item.name||(item.children?.length?'':'Unbesetzt'))}</span>`;
    const color=item.tone==='gold'?'gold':item.tone==='blue'?'blue':tone;
-   return `<li><div class="mrpd-position ${color}"><strong>${insignia(item.title)}${escape(item.title)}</strong><span>${escape(item.name|| (item.children?.length?'':'Unbesetzt'))}</span>${canEdit?`<button class="secondary" data-position="${id}" aria-label="${escape(item.title)} bearbeiten">✎</button>`:''}</div>${item.children?.length?branch(item.children,color):''}</li>`;
+   return `<li><div class="mrpd-position ${color}"><strong>${insignia(item.title)}${escape(item.title)}</strong>${name}${canEdit?`<button class="secondary" data-position="${id}" aria-label="${escape(item.title)} bearbeiten">✎</button>`:''}</div>${item.children?.length?branch(item.children,color,[...parents,item]):''}</li>`;
   }).join('')+'</ul>';
  }
 
@@ -64,11 +85,12 @@ async function chart(options) {
    await persist();
   });
  }
+ host.querySelectorAll('[data-position-profile]').forEach(b=>b.onclick=()=>{const c=cards[Number(b.dataset.positionProfile)];window.MRPDDuty?.profile(c.profile.id,c.info)});
  host.querySelectorAll('[data-position]').forEach(b=>b.onclick=()=>{const c=cards[Number(b.dataset.position)];edit(c.item,c.items)});
  host.querySelector('[data-root-position]')?.addEventListener('click',()=>edit(null,tree));
 
 }
-window.MRPDDepartments={...window.MRPDDepartments,render:chart};
+window.MRPDDepartments={...window.MRPDDepartments,render:chart,assignment};
 function format(body) {
  return body.split(/\r?\n/).map(line=>{
   const h=line.match(/^(#{1,3}) (.*)$/);
