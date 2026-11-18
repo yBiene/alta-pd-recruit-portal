@@ -35,12 +35,6 @@ Deno.serve(async (req) => {
         autoRefreshToken: false,
       },
     });
-    const admin = createClient(url, service, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
     // ============================================================
     // ANGEMELDETEN BENUTZER PRÜFEN
     // ============================================================
@@ -56,6 +50,13 @@ Deno.serve(async (req) => {
     if (!user) {
       throw new Error("Nicht angemeldet");
     }
+    const admin = createClient(url, service, {
+      global: { headers: { "x-mrpd-audit-actor": user.id } },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
     const { data: me, error: meError } = await admin
       .from("profiles")
       .select("id,username,role,access_level,account_enabled,archived_at,status")
