@@ -1,0 +1,11 @@
+begin;
+create table public.mrpd_org_chart(id integer primary key check(id=1), tree jsonb not null check(jsonb_typeof(tree)='array'), revision integer not null default 0);
+create table public.mrpd_chapter_content(chapter integer primary key check(chapter between 1 and 22), body text not null, revision integer not null default 0);
+alter table public.mrpd_org_chart enable row level security;
+alter table public.mrpd_chapter_content enable row level security;
+grant select,insert,update on public.mrpd_org_chart,public.mrpd_chapter_content to authenticated;
+create policy org_read on public.mrpd_org_chart for select to authenticated using ((select portal_private.hub_member()));
+create policy org_edit on public.mrpd_org_chart for all to authenticated using ((select portal_private.hub_plus())) with check ((select portal_private.hub_plus()));
+create policy chapter_read on public.mrpd_chapter_content for select to authenticated using ((select portal_private.hub_staff()) or ((select portal_private.hub_member()) and exists(select 1 from public.chapter_unlocks u where u.recruit_id=auth.uid() and u.chapter=mrpd_chapter_content.chapter)));
+create policy chapter_edit on public.mrpd_chapter_content for all to authenticated using ((select portal_private.hub_plus())) with check ((select portal_private.hub_plus()));
+commit;
