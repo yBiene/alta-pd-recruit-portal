@@ -33,6 +33,11 @@ function dialog(title,html,submit) {
   try{await submit(Object.fromEntries(new FormData(form)),form);d.close()}catch(err){form.querySelector('[role=status]').textContent=err.message}finally{b.disabled=false}
  };document.body.append(d);d.showModal();return d;
 }
+function insignia(title) {
+ const ranks=[[/^Chief of Police/i,'★★★★'],[/^Assistant Chief/i,'★★★'],[/^Deputy Chief/i,'★★'],[/^Commander/i,'★'],[/^Captain/i,'▮▮'],[/^Lieutenant/i,'▮'],[/^Sergeant/i,'❮❮❮']];
+ const symbol=ranks.find(([pattern])=>pattern.test(title))?.[1];
+ return symbol?`<span class="mrpd-insignia" aria-hidden="true">${symbol}</span>`:'';
+}
 async function chart(options) {
  const {host,canEdit}=options;
  const old=await read('mrpd_org_chart','id',1);
@@ -42,12 +47,12 @@ async function chart(options) {
   return '<ul>'+items.map(item=>{
    const id=cards.push({item,items})-1;
    const color=item.tone==='gold'?'gold':item.tone==='blue'?'blue':tone;
-   return `<li><div class="mrpd-position ${color}"><strong>${escape(item.title)}</strong><span>${escape(item.name|| (item.children?.length?'':'Unbesetzt'))}</span>${canEdit?`<button class="secondary" data-position="${id}" aria-label="${escape(item.title)} bearbeiten">✎</button>`:''}</div>${item.children?.length?branch(item.children,color):''}</li>`;
+   return `<li><div class="mrpd-position ${color}"><strong>${insignia(item.title)}${escape(item.title)}</strong><span>${escape(item.name|| (item.children?.length?'':'Unbesetzt'))}</span>${canEdit?`<button class="secondary" data-position="${id}" aria-label="${escape(item.title)} bearbeiten">✎</button>`:''}</div>${item.children?.length?branch(item.children,color):''}</li>`;
   }).join('')+'</ul>';
  }
- const original=document.createElement('div');
- host.innerHTML=`<section class="mrpd-chart"><header><img src="assets/mrpd-logo.svg" alt=""><div><h2>Mission Row Police Department</h2><p>Organigramm · Executive Staff</p></div></header><div class="mrpd-chart-scroll">${branch(tree)}</div>${canEdit?'<button class="secondary" type="button" data-root-position>＋ Oberste Position</button>':''}</section><details class="card"><summary>Abteilungen und Portalzuordnungen</summary></details>`;
- host.querySelector('details').append(original);
+
+ host.innerHTML=`<section class="mrpd-chart"><header><img src="assets/mrpd-logo.svg" alt=""><div><h2>Mission Row Police Department</h2><p>Organigramm · Executive Staff</p></div></header><div class="mrpd-chart-scroll">${branch(tree)}</div>${canEdit?'<button class="secondary" type="button" data-root-position>＋ Oberste Position</button>':''}</section>`;
+
  const persist=async()=>{await save('mrpd_org_chart','id',1,{tree},old);await chart(options)};
  function edit(item,items) {
   dialog(item?'Position bearbeiten':'Position hinzufügen',`<label>Position oder Bereich<input name="title" required value="${escape(item?.title)}"></label><label>Name<input name="name" value="${escape(item?.name)}"></label><label>Farbe<select name="tone"><option value="">Vom Bereich übernehmen</option><option value="blue" ${item?.tone==='blue'?'selected':''}>Blau</option><option value="gold" ${item?.tone==='gold'?'selected':''}>Gold</option></select></label>${item?'<label>Aktion<select name="action"><option value="edit">Position aktualisieren</option><option value="child">Untergeordnete Position hinzufügen</option><option value="remove">Position entfernen</option></select></label>':''}`,async f=>{
@@ -61,9 +66,8 @@ async function chart(options) {
  }
  host.querySelectorAll('[data-position]').forEach(b=>b.onclick=()=>{const c=cards[Number(b.dataset.position)];edit(c.item,c.items)});
  host.querySelector('[data-root-position]')?.addEventListener('click',()=>edit(null,tree));
- await originalDepartments({...options,host:original});
+
 }
-const originalDepartments=window.MRPDDepartments.render;
 window.MRPDDepartments={...window.MRPDDepartments,render:chart};
 function format(body) {
  return body.split(/\r?\n/).map(line=>{
@@ -73,10 +77,32 @@ function format(body) {
   return line.startsWith('- ')?'<div>• '+inline.slice(2)+'</div>':inline?'<div>'+inline+'</div>':'<br>';
  }).join('');
 }
-function originalText(html) {
+const richPrefix='MRPD-RICH-V1\n';
+function cleanRich(html) {
  const template=document.createElement('template');
- template.innerHTML=html.replace(/<br\s*\/?\s*>|<\/(?:p|div|h[1-6]|li|tr)>/gi,'$&\n');
- return template.content.textContent.trim();
+ template.innerHTML=html;
+ const tags=new Set('p div span h2 h3 h4 h5 h6 strong b em i u s strike br ul ol li blockquote pre code table thead tbody tfoot tr th td hr font'.split(' '));
+ const classes=new Set('eyebrow mnemonic notice step-dot step-row table-wrap'.split(' '));
+ for(const el of [...template.content.querySelectorAll('*')]){
+  if(!tags.has(el.localName)||el.namespaceURI!=='http://www.w3.org/1999/xhtml'){
+   if(el.namespaceURI!=='http://www.w3.org/1999/xhtml'||['script','style','iframe','object','template'].includes(el.localName))el.remove();
+   else el.replaceWith(...el.childNodes);
+   continue;
+  }
+  const names=[...el.classList].filter(c=>classes.has(c));
+  const color=el.style.color||el.getAttribute('color'), bg=el.style.backgroundColor;
+  const spans=['colspan','rowspan'].map(name=>[name,el.getAttribute(name)]);
+  for(const attr of [...el.attributes])el.removeAttribute(attr.name);
+  if(names.length)el.className=names.join(' ');
+  if(color)el.style.color=color;
+  if(bg)el.style.backgroundColor=bg;
+  for(const [name,value] of spans)if(value&&/^\d{1,2}$/.test(value))el.setAttribute(name,value);
+ }
+ return template.innerHTML;
+}
+function chapterHtml(body,chapter) {
+ if(body==null)return cleanRich(CHAPTERS[chapter].html);
+ return body.startsWith(richPrefix)?cleanRich(body.slice(richPrefix.length)):format(body);
 }
 async function decorate() {
  const article=document.querySelector('#content .chapter-body article.article');
@@ -91,21 +117,52 @@ async function decorate() {
  const gallery=article.querySelector('.gallery');
  const galleryTitle=gallery?.previousElementSibling;
  const draw=()=>{
-  if(old){article.replaceChildren(block);block.innerHTML='<div class="mrpd-formatted">'+format(old.body)+'</div>';if(gallery){if(galleryTitle)article.append(galleryTitle);article.append(gallery)}}
+  if(old){article.replaceChildren(block);block.innerHTML='<div class="mrpd-formatted">'+chapterHtml(old.body,chapter)+'</div>';if(gallery){if(galleryTitle)article.append(galleryTitle);article.append(gallery)}}
   if(window.APD_HUB?.plus(current)){
    const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='✎ Kapiteltext bearbeiten';
    button.onclick=()=>{
-    const d=dialog('Kapitel '+chapterNumber(chapter)+' bearbeiten',`<div class="hub-wide mrpd-format-bar"><button type="button" data-format="# ">Überschrift</button><button type="button" data-format="**">Fett</button><button type="button" data-format="*">Kursiv</button><button type="button" data-format="- ">Liste</button></div><label class="hub-wide">Kapiteltext und Formationen<textarea name="body" rows="18" required>${escape(old?.body??originalText(CHAPTERS[chapter].html))}</textarea></label>`,async f=>{
-      await save('mrpd_chapter_content','chapter',chapter,{body:f.body},old);old=await read('mrpd_chapter_content','chapter',chapter);button.remove();draw();
+    const d=dialog('Kapitel '+chapterNumber(chapter)+' bearbeiten',`<div class="hub-wide mrpd-format-bar" aria-label="Textformatierung"><button type="button" data-command="formatBlock" data-value="h3">Überschrift</button><button type="button" data-command="bold">Fett</button><button type="button" data-command="italic">Kursiv</button><button type="button" data-command="insertUnorderedList">Liste</button><button type="button" data-command="foreColor" data-value="#e2bc72">Gold</button><button type="button" data-command="foreColor" data-value="#73c6ee">Blau</button><button type="button" data-original>Originaltext wieder laden</button></div><div class="hub-wide mrpd-rich-editor" contenteditable="true" role="textbox" aria-label="Kapiteltext und Formationen" aria-multiline="true"></div>`,async (_f,form)=>{
+      const editor=form.querySelector('.mrpd-rich-editor');
+      const body=cleanRich(editor.innerHTML);
+      if(!editor.textContent.trim())throw Error('Bitte Kapiteltext eingeben.');
+      await save('mrpd_chapter_content','chapter',chapter,{body:richPrefix+body},old);old=await read('mrpd_chapter_content','chapter',chapter);button.remove();draw();
     });
-    const input=d.querySelector('textarea');
-    d.querySelectorAll('[data-format]').forEach(b=>b.onclick=()=>{const mark=b.dataset.format,t=input.value.slice(input.selectionStart,input.selectionEnd);input.setRangeText(mark+t+(mark.endsWith(' ')?'':mark),input.selectionStart,input.selectionEnd,'end');input.focus()});
+    const editor=d.querySelector('.mrpd-rich-editor');
+    editor.innerHTML=chapterHtml(old?.body,chapter);
+    editor.addEventListener('paste',e=>{e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'))});
+    editor.addEventListener('drop',e=>e.preventDefault());
+    d.querySelectorAll('[data-command]').forEach(b=>{
+     b.onmousedown=e=>e.preventDefault();
+     b.onclick=()=>{editor.focus();document.execCommand(b.dataset.command,false,b.dataset.value||null)};
+    });
+    d.querySelector('[data-original]').onclick=()=>{if(confirm('Den Originaltext in den Editor laden? Gespeichert wird erst mit „Speichern“.'))editor.innerHTML=chapterHtml(null,chapter)};
+
    };article.prepend(button);
   }
  };
  draw();
 }
 const content=document.querySelector('#content');
-if(content)new MutationObserver(decorate).observe(content,{childList:true,subtree:true});
+function refinePortal() {
+ decorate();
+ for(const field of document.querySelectorAll('#hubRankForm textarea[name="reason"], dialog textarea[name="reason"]')){
+  const label=field.closest('label');
+  if(label?.firstChild?.nodeType===Node.TEXT_NODE&&label.firstChild.textContent!=='Kommentar zur Dienstgradänderung')label.firstChild.textContent='Kommentar zur Dienstgradänderung';
+  field.placeholder='Grund oder persönlicher Kommentar zur Beförderung';
+ }
+ const mail=content?.querySelector('.mail-desktop');
+ if(!mail||mail.dataset.refined)return;
+ mail.dataset.refined='1';
+ const back=document.createElement('button');
+ back.type='button';back.className='secondary mail-back-to-list';
+ back.textContent='← Zur Nachrichtenliste';
+ mail.querySelector('.mail-toolbar')?.prepend(back);
+ back.onclick=()=>mail.classList.remove('mail-reading-active');
+ mail.addEventListener('click',e=>{
+  if(e.target.closest('[data-select-mail]'))mail.classList.add('mail-reading-active');
+  if(e.target.closest('[data-folder]'))mail.classList.remove('mail-reading-active');
+ });
+}
+if(content)new MutationObserver(refinePortal).observe(document.body,{childList:true,subtree:true});
 decorate();
 })();
