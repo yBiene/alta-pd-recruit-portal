@@ -79,6 +79,27 @@ Deno.serve(async (req) => {
     // GÜLTIGE AUSBILDER-RÄNGE
     // ============================================================
     const allowedTrainerRanks = ['Rekrut','Police Officer','Police Officer 2','Detective','Sergeant','Lieutenant','Captain 1','Captain 2','Deputy Chief','Assistant Chief','Chief of Police'];
+    if(action === "profile_update") {
+      if(!owner && !(me.role==='trainer' && me.access_level==='extra'))throw new Error('Accountinformationen dürfen nur Ausbilder + bearbeiten');
+      const targetId=String(body.userId||'');
+      const {data:target,error:targetError}=await admin.from('profiles').select('id,username,name,service_no,training_start,access_level').eq('id',targetId).single();
+      if(targetError||!target)throw new Error('Account nicht gefunden');
+      if(target.access_level==='owner'&&!owner)throw new Error('Nur der Hauptadmin darf seinen Account bearbeiten');
+      const username=String(body.username||'').trim().toLowerCase(),name=String(body.name||'').trim(),serviceNo=String(body.serviceNo||'').trim(),start=String(body.start||'').trim();
+      if(!/^[a-z0-9._-]{3,40}$/.test(username))throw new Error('Benutzername: 3–40 Zeichen, ohne Leerzeichen');
+      if(!name||name.length>100||serviceNo.length>40)throw new Error('Name oder Dienstnummer ungültig');
+      if(start&&(!/^\d{4}-\d{2}-\d{2}$/.test(start)||!Number.isFinite(Date.parse(start))||new Date(start).toISOString().slice(0,10)!==start))throw new Error('Ungültiges Einstellungsdatum');
+      const changed=username!==target.username;
+      if(changed){
+        const {data:duplicate,error:duplicateError}=await admin.from('profiles').select('id').eq('username',username).maybeSingle();
+        if(duplicateError)throw duplicateError;if(duplicate)throw new Error('Benutzername bereits vergeben');
+        const {error:authError}=await admin.auth.admin.updateUserById(targetId,{email:username+'@altapd.internal',email_confirm:true});if(authError)throw authError;
+      }
+      const {error:updateError}=await admin.from('profiles').update({username,name,service_no:serviceNo,training_start:start||null}).eq('id',targetId);
+      if(updateError){if(changed){const {error:rollbackError}=await admin.auth.admin.updateUserById(targetId,{email:target.username+'@altapd.internal',email_confirm:true});if(rollbackError)throw new Error('Profil nicht gespeichert; Login-Abgleich benötigt Prüfung durch den Hauptadmin');}throw updateError;}
+      await admin.from('audit_log').insert({actor_id:user.id,action:'Accountinformationen bearbeitet',target_id:targetId,details:'Name, Dienstnummer, Benutzername und Eintrittsdatum aktualisiert'});
+      return new Response(JSON.stringify({ok:true,username}),{status:200,headers:cors});
+    }
     // ============================================================
     // ACCOUNT ERSTELLEN
     // ============================================================

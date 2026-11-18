@@ -1,0 +1,7 @@
+/* Shared channel navigation and a viewport-sized chat workspace. */
+(()=>{'use strict';
+function onView(view){const chat=['staff-channel','officer-channel','rookie-channel'].includes(view);document.body.classList.toggle('portal-chat-open',chat);document.querySelectorAll('[data-quick-channel]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.quickChannel===view)));if(chat)window.scrollTo({top:0,behavior:'auto'})}
+function navigation(){const hub=window.APD_HUB;if(!current||!hub)return;let bar=document.querySelector('.mrpd-channel-tabs');if(!bar){bar=document.createElement('nav');bar.className='mrpd-channel-tabs';bar.setAttribute('aria-label','Schnellzugriff auf MRPD Channels');document.querySelector('.topbar')?.after(bar)}bar.innerHTML='';for(const [key,c]of Object.entries(hub.CHANNELS)){if(!hub.channelAccess(current,key))continue;const b=document.createElement('button');b.type='button';b.dataset.quickChannel=c.view;b.textContent=c.label;b.setAttribute('aria-selected',String(hub.state.currentView===c.view));b.onclick=()=>showView(c.view);bar.append(b)}bar.hidden=!bar.children.length}
+const content=document.querySelector('#content');if(content)new MutationObserver(()=>{const chat=!!content.querySelector('.hub-chat');document.body.classList.toggle('portal-chat-open',chat)}).observe(content,{childList:true,subtree:true});
+window.MRPDWorkspace=Object.freeze({onView,navigation});
+})();
