@@ -83,44 +83,6 @@
   if (p.id !== current.id) bodyOf(el).append(button('Private Nachricht', () => {el.close();mailTo(id);}, 'primary'));
  }
 
- const upcoming = () => list(sb.from('portal_hub_pd_events').select('id,title,starts_at,location').gte('starts_at',new Date().toISOString()).order('starts_at').limit(1));
- async function dutySummary(el) {
-  const uid = current.id;
-  const staff = hub.staff(current);
-  const showPatrol = officer();
-  const jobs = [
-   staff ? upcoming() : Promise.resolve((typeof trainingEvents === 'undefined' ? [] : trainingEvents).filter(e => Date.parse(e.starts_at)>Date.now()).slice(0,1)),
-   !staff && hub.rankIndex(current) <= 0 ? list(sb.from('mrpd_next_steps').select('*').eq('recruit_id',uid).maybeSingle()) : Promise.resolve(null),
-   showPatrol ? list(sb.from('mrpd_shift_handover').select('id',{count:'exact',head:true}).eq('resolved',false).then(({count,error})=>({data:count,error}))) : Promise.resolve(null),
-   list(sb.from('mrpd_marked_messages').select('message_id',{count:'exact',head:true}).eq('task',true).then(({count,error})=>({data:count,error}))),
-   staff ? list(sb.from('mrpd_next_steps').select('recruit_id').eq('fto_id',uid)) : Promise.resolve(null)
-  ];
-  const [events,step,shifts,tasks,assigned] = (await Promise.allSettled(jobs)).map(result => result.status==='fulfilled' ? result.value : undefined);
-  if (!el.isConnected || current?.id !== uid) return;
-  const tiles = document.createElement('div');
-  tiles.className = 'mrpd-duty-tiles';
-  const add = (label, text, open, cta) => {
-   const tile = document.createElement('article');
-   tile.innerHTML = `<h3>${esc(label)}</h3><p>${esc(text)}</p>`;
-   if (open) tile.append(button(cta,open));
-   tiles.append(tile);
-  };
-  const event = events?.[0];
-  add('Nächster Termin',event ? `${event.title} · ${calendarDate(event.starts_at)}` : events ? 'Keine kommenden Termine' : 'Termine konnten nicht geladen werden.',
-   staff ? () => event ? hub.openCalendarEvent(event) : showView('calendar') : () => showView('training-calendar'),staff?'PD-Kalender':'Ausbildungskalender');
-  add('Postfach',`${v62Unread()} ungelesen`,() => showView('messages'),'Postfach öffnen');
-  if (staff) {
-   const pending = db.users.filter(apdActiveRecruit).filter(r => (r.goals || []).some(g => !g.done));
-   add('Ausbildung',`${pending.length} Rekruten mit offenen Ausbildungszielen${assigned ? ' · '+assigned.length+' nächste Schritte für dich' : ''}`,() => showView('admin'),'Rekrutenakten');
-  } else if (hub.rankIndex(current) <= 0) {
-   const open = (current.goals||[]).filter(g=>!g.done).length;
-   const fto = step ? person(step.fto_id)?.name : '';
-   add('Nächster Ausbildungsschritt',step ? [step.task,fto || 'FTO nicht mehr im Verzeichnis',day(step.due_on)].filter(Boolean).join(' · ') : step === undefined ? 'Ausbildungsschritt konnte nicht geladen werden.' : `${open} offene Ausbildungsziele`,() => showView('plan'),'Mein Plan');
-  }
-  if (showPatrol) add('Schichtübergabe',shifts === undefined ? 'Übergaben konnten nicht geladen werden.' : `${shifts} offene Vorgänge`,() => showView('duty-handover'),'Übergabe öffnen');
-  add('Meine Aufgaben',tasks === undefined ? 'Aufgaben konnten nicht geladen werden.' : `${tasks} Nachrichten als Aufgabe markiert`,() => showView('duty-marks'),'Aufgaben öffnen');
-  bodyOf(el).replaceChildren(tiles);
- }
  async function nextStep(el, recruit) {
   const host = bodyOf(el);
   try {
@@ -547,13 +509,6 @@
   installSearch();
   const view=hub.state.currentView;
   const pageTitle=document.querySelector('#pageTitle')?.textContent;
-  if(((view==='dashboard'&&pageTitle==='Dashboard')||(view==='officer-home'&&pageTitle==='Officer Dashboard'))&&root.children.length&&!root.querySelector('.mrpd-duty-overview')){
-   const el=card('Heute im Dienst');
-   el.classList.add('mrpd-duty-overview');
-   bodyOf(el).textContent='Dienstübersicht wird geladen …';
-   root.prepend(el);
-   dutySummary(el).catch(error=>warning(bodyOf(el),error));
-  }
   const tabs=root.querySelector('.record-tabs');
   const recruit=tabs&&hub.staff(current)&&db.users.find(p=>p.id===selectedRecruit&&p.role==='recruit');
   if(recruit&&!root.querySelector('.mrpd-record-next')){
