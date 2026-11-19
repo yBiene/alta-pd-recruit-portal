@@ -14,7 +14,13 @@ Accounttyp, Dienstgrad und Unit-Funktion sind getrennt. Portalverwaltung und Hau
 
 ## Bodycam-Bilder
 
-`bodycam-frames.js` erzeugt einen schwarzen MRPD-Rahmen für Vorschau, Großansicht, JPEG-Download und Druck. Beim Upload werden der authentifizierte Name, Dienstgrad, Dienstnummer und der serverseitige Upload-Zeitpunkt gespeichert. Eine optional angegebene Aufnahmezeit wird als manuell gekennzeichnet. Bei alten Bildern werden ausschließlich tatsächlich gespeicherte Angaben gezeigt. Originaldatei und SHA-256 bleiben erhalten.
+`bodycam-frames.js` erzeugt einen schwarzen MRPD-Rahmen für Vorschau, Großansicht, JPEG-Download und Druck. Beim Upload werden der authentifizierte Name, Dienstgrad, Dienstnummer und der serverseitige Upload-Zeitpunkt gespeichert. Eine Aufnahmezeit kann im Formular optional manuell angegeben werden. Der Bildkopf zeigt Los Santos, Datum, Uhrzeit und Officer; der untere Bildrand bleibt frei. Bei alten Bildern werden ausschließlich tatsächlich gespeicherte Angaben gezeigt. Originaldatei und SHA-256 bleiben erhalten.
+
+## Akten als JPEG oder PNG
+
+„Akte drucken / als Bild“ öffnet eine Vorschau mit Formatwahl, drei Schriftgrößen und optionalem Adressaten. `case-export.js` zeichnet den gespeicherten Inhalt direkt auf liniertes Papier mit blauer, lokal geladener Handschrift. Beweisbilder werden mit Bodycam-Kopf und Klebestreifen angefügt. Dateinamen, Upload-Zeilen, Prüfsummen, Bearbeitungsverlauf und technische Druck-Fußzeilen gehören nicht zum Dokument. Lange Akten werden vollständig in Bildteile bis 1440 × 10000 Pixel aufgeteilt; jeder Teil hat einen eigenen Download.
+
+`assets/fonts/` enthält die lokal eingebettete Notebook-Schrift und deren SIL-OFL-Lizenz. Der Export verwendet keinen Browser-Druckdialog.
 
 ## Quellen und Datenbank
 
@@ -36,4 +42,4 @@ Die Migrationen wurden für das bestehende Projekt ausgeführt. Qualifikationser
 
 `node tests/account-types.cjs` und `node tests/account-edit.cjs` prüfen die Account-API mit Test-Doubles. `database/department_operations.tests.sql` und `database/bodycam_frames.tests.sql` prüfen die echten Datenbankfunktionen und Rechte in einer zurückgerollten Transaktion.
 
-`tests/browser-operations.cjs` verwendet Playwright und `@sparticuz/chromium`. Optional können `PLAYWRIGHT_MODULE` und `CHROMIUM_MODULE` auf installierte Module zeigen. Der Test prüft Formulare, die echte Unit-Einbindung, Freigaben, Upload-Oberfläche, mobile Breite sowie Canvas-Bilder, JPEG-Download und Akten-Druck mit API-Test-Doubles. Er ändert keine produktiven Datensätze.
+`tests/browser-operations.cjs` verwendet Playwright und `@sparticuz/chromium`. Optional können `PLAYWRIGHT_MODULE` und `CHROMIUM_MODULE` auf installierte Module zeigen. Der Test prüft Formulare, die echte Unit-Einbindung, Freigaben, Upload-Oberfläche, mobile Breite sowie Bodycam-Bilder, vollständige PNG/JPEG-Aktenexports und die Aufteilung langer Dokumente mit API-Test-Doubles. Er ändert keine produktiven Datensätze.

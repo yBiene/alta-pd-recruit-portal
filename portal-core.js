@@ -1775,7 +1775,7 @@ function leaderboardViewV565(){
       let msg='Aktion konnte nicht abgeschlossen werden.';
       if(/duplicate|unique/i.test(raw)) msg='Dieser Eintrag existiert bereits. Bitte Eingaben prüfen.';
       else if(/permission|policy|rls|403/i.test(raw)) msg='Dafür fehlt die erforderliche Berechtigung.';
-      else if(/network|fetch|offline/i.test(raw)) msg='Keine Verbindung zum Server. Bitte Verbindung prüfen und erneut versuchen.';
+      else if(/network|fetch|offline/i.test(raw)) msg='Die Verbindung ist unterbrochen. Bitte Verbindung prüfen und erneut versuchen.';
       if(typeof toast==='function') toast(msg,'error');
     });
   }
