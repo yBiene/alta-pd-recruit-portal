@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     // ============================================================
     const allowedTrainerRanks = ['Rekrut','Police Officer','Police Officer 2','Detective','Sergeant','Lieutenant','Captain 1','Captain 2','Deputy Chief','Assistant Chief','Chief of Police'];
     if(action === "profile_update") {
-      if(!owner && !(me.role==='trainer' && me.access_level==='extra'))throw new Error('Accountinformationen dürfen nur Ausbilder + bearbeiten');
+      if(!owner && !(me.role==='trainer' && me.access_level==='extra'))throw new Error('Accountinformationen darf nur die Portalverwaltung bearbeiten');
       const targetId=String(body.userId||'');
       const {data:target,error:targetError}=await admin.from('profiles').select('id,username,name,service_no,training_start,access_level').eq('id',targetId).single();
       if(targetError||!target)throw new Error('Account nicht gefunden');
@@ -105,32 +105,14 @@ Deno.serve(async (req) => {
     // ACCOUNT ERSTELLEN
     // ============================================================
     if (action === "create") {
-      const role =
-        body.role === "trainer"
-          ? "trainer"
-          : "recruit";
-      const mayCreateRecruit =
-        owner ||
-        (
-          me.role === "trainer"
-        );
-      const mayCreateTrainer = owner || (me.role === "trainer" && me.access_level === "extra");
-      if (
-        role === "recruit" &&
-        !mayCreateRecruit
-      ) {
-        throw new Error(
-          "Keine Berechtigung zum Erstellen von Recruit-Accounts"
-        );
-      }
-      if (
-        role === "trainer" &&
-        !mayCreateTrainer
-      ) {
-        throw new Error(
-          "Nur Ausbilder + dürfen Ausbilder-Accounts erstellen"
-        );
-      }
+      const requestedType = String(body.accountType || '');
+      if(requestedType && !['employee','management','recruit','officer','trainer','extra'].includes(requestedType))throw new Error('Accounttyp ungültig');
+      const legacyFto = !['employee','management'].includes(requestedType) && (requestedType==='trainer'||(!requestedType&&body.role==='trainer')) && body.access!=='extra';
+      const management = requestedType==='management'||requestedType==='extra'||(!requestedType&&body.role==='trainer'&&body.access==='extra');
+      if(!owner && !(me.role==='trainer'&&me.access_level==='extra'))throw new Error('Nur die Portalverwaltung darf Accounts erstellen');
+      if(management&&!owner)throw new Error('Nur der Hauptadministrator darf Verwaltungsrechte vergeben');
+      const role = management ? 'trainer' : 'recruit';
+      const modernType = ['employee','management'].includes(requestedType);
       // ----------------------------------------------------------
       // Benutzername
       // ----------------------------------------------------------
@@ -173,10 +155,8 @@ Deno.serve(async (req) => {
       // ----------------------------------------------------------
       // Rang prüfen
       // ----------------------------------------------------------
-      const officerAccount=body.accountType==='officer';
-      if(officerAccount&&!mayCreateRecruit)throw new Error('Keine Berechtigung zum Erstellen von Officer-Accounts');
-      const rank = role==='recruit'&&!officerAccount?'Rekrut':String(body.rank||(officerAccount?'Police Officer':'Sergeant')).trim();
-      if(officerAccount&&allowedTrainerRanks.indexOf(rank)>=4&&!mayCreateTrainer)throw new Error('Accounts ab Sergeant können nur Ausbilder + erstellen');
+      const officerAccount=requestedType==='officer';
+      const rank = modernType ? String(body.rank||'Rekrut').trim() : officerAccount ? String(body.rank||'Police Officer').trim() : management||legacyFto ? String(body.rank||'Sergeant').trim() : 'Rekrut';
       if(officerAccount&&rank==='Rekrut')throw new Error('Bitte einen Officer-Dienstgrad auswählen');
       if(!allowedTrainerRanks.includes(rank))throw new Error('Ungültiger Dienstgrad');
       const temporaryPassword="123456";
@@ -236,22 +216,8 @@ Deno.serve(async (req) => {
       // ----------------------------------------------------------
       // Zugriff
       // ----------------------------------------------------------
-      const accessLevel =
-        role === "trainer"
-          ? (
-              body.access === "extra"
-                ? "extra"
-                : "standard"
-            )
-          : "standard";
-      const status = officerAccount ? "Officer" :
-        role === "recruit"
-          ? "In Ausbildung"
-          : (
-              accessLevel === "extra"
-                ? "Ausbilder +"
-                : "Ausbilder"
-            );
+      const accessLevel = management ? 'extra' : 'standard';
+      const status = !management&&!legacyFto&&rank==='Rekrut' ? 'In Ausbildung' : 'Aktiv';
       // ----------------------------------------------------------
       // Profil erstellen
       // ----------------------------------------------------------
@@ -288,6 +254,15 @@ Deno.serve(async (req) => {
           "Portal-Profil konnte nicht erstellt werden: " +
             profileErr.message
         );
+      }
+      if(legacyFto){
+        const {data:ftoUnit,error:unitError}=await admin.from('portal_hub_departments').select('id').eq('workspace_kind','fto').single();
+        const membershipResult=unitError||!ftoUnit ? {error:unitError||new Error('FTO Unit fehlt')} : await admin.from('portal_hub_memberships').insert({department_id:ftoUnit.id,user_id:created.user.id,unit_role:'instructor',position:'Ausbilder'});
+        if(membershipResult.error){
+          const {error:cleanupError}=await admin.auth.admin.deleteUser(created.user.id);
+          if(cleanupError)throw new Error('Die FTO-Zuordnung ist fehlgeschlagen. Der Hauptadministrator muss den unvollständigen Account prüfen.');
+          throw new Error('Die FTO-Zuordnung konnte nicht angelegt werden. Bitte erneut versuchen.');
+        }
       }
       return new Response(
         JSON.stringify({
@@ -403,87 +378,14 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify(data),{status:200,headers:cors});
     }
     if (action === "trainer_access") {
-      if (!owner) {
-        throw new Error(
-          "Nur der Hauptadmin darf Ausbilderrechte ändern"
-        );
-      }
-      const userId = String(
-        body.userId || ""
-      );
-      if (!userId) {
-        throw new Error(
-          "Benutzer-ID fehlt"
-        );
-      }
-      const {
-        data: targetTrainer,
-        error: targetTrainerError,
-      } = await admin
-        .from("profiles")
-        .select(
-          "id,role,access_level"
-        )
-        .eq("id", userId)
-        .maybeSingle();
-      if (targetTrainerError) {
-        throw new Error(
-          "Ausbilder konnte nicht geladen werden: " +
-            targetTrainerError.message
-        );
-      }
-      if (!targetTrainer) {
-        throw new Error(
-          "Ausbilder nicht gefunden"
-        );
-      }
-      if (
-        targetTrainer.access_level ===
-        "owner"
-      ) {
-        throw new Error(
-          "Die Rechte des Hauptadmins können hier nicht geändert werden"
-        );
-      }
-      if (
-        targetTrainer.role !== "trainer"
-      ) {
-        throw new Error(
-          "Der ausgewählte Account ist kein Ausbilder"
-        );
-      }
-      const access =
-        body.access === "extra"
-          ? "extra"
-          : "standard";
-      const status =
-        access === "extra"
-          ? "Ausbilder +"
-          : "Ausbilder";
-      const { error } = await admin
-        .from("profiles")
-        .update({
-          access_level: access,
-          status,
-        })
-        .eq("id", userId)
-        .eq("role", "trainer");
-      if (error) {
-        throw new Error(
-          "Ausbilderrechte konnten nicht geändert werden: " +
-            error.message
-        );
-      }
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          access,
-        }),
-        {
-          status: 200,
-          headers: cors,
-        }
-      );
+      if(!owner)throw new Error('Nur der Hauptadministrator darf Verwaltungsrechte ändern');
+      if(!['standard','extra'].includes(body.access))throw new Error('Accounttyp ungültig');
+      const targetId=String(body.userId||'');
+      const {data:target,error:targetError}=await admin.from('profiles').select('account_type').eq('id',targetId).maybeSingle();
+      if(targetError||!target)throw new Error('Account nicht gefunden');
+      const {data,error}=await caller.rpc('mrpd_set_account_type',{p_user:targetId,p_type:body.access==='extra'?'management':'employee',p_expected:target.account_type});
+      if(error)throw error;
+      return new Response(JSON.stringify(data),{status:200,headers:cors});
     }
     // ============================================================
     // ACCOUNT LÖSCHEN

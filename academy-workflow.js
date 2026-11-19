@@ -14,7 +14,7 @@ refreshData=async function(){
  return ok;
 };
 function portalPeople(){return [...new Map([...db.users.filter(x=>x.accountEnabled!==false&&!x.archivedAt),...portalDirectory].map(x=>[x.id,x])).values()].filter(x=>x.id!==current?.id).sort((a,b)=>a.name.localeCompare(b.name,'de'))}
-function portalPersonLabel(u){return `${u.rank||''} ${u.name||''} · ${u.role==='recruit'?'Rekrut':u.role==='admin'?'Leitung':'Ausbilder'}${u.serviceNo?' · '+u.serviceNo:''}`.trim()}
+function portalPersonLabel(u){return `${u.rank||''} ${u.name||''} · ${roleLabel(u)}${u.serviceNo?' · '+u.serviceNo:''}`.trim()}
 const portalLabelBase=v62UserLabel;
 v62UserLabel=function(id){const u=portalDirectory.find(x=>x.id===id);return u?`${u.rank||''} ${u.name}`.trim():portalLabelBase(id)};
 function portalRecipientOptions(people){return people.map(u=>`<option value="${esc(u.id)}">${esc(portalPersonLabel(u))}</option>`).join('')}

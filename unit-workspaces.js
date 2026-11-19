@@ -99,7 +99,7 @@
   try{
    await load(true);if(!isCurrent(token))return;
    const visible=directory.units.filter(access).sort((a,b)=>(a.workspace_kind==='general'?-1:b.workspace_kind==='general'?1:a.name.localeCompare(b.name,'de')));
-   content.innerHTML=`<section class="unit-department-head"><div><p class="eyebrow">MISSION ROW POLICE DEPARTMENT</p><h1>Department</h1><p>Deine Units und gemeinsamen Arbeitsbereiche.</p></div>${hub.plus(current)?'<div data-unit-admin></div>':''}</section><div class="unit-grid"></div>${visible.length?'':'<section class="card"><h2>Deine Unit-Zuordnung</h2><p>Ein Ausbilder + kann dir unter „Units & Funktionen“ einen Arbeitsbereich zuweisen.</p></section>'}`;
+   content.innerHTML=`<section class="unit-department-head"><div><p class="eyebrow">MISSION ROW POLICE DEPARTMENT</p><h1>Department</h1><p>Deine Units und gemeinsamen Arbeitsbereiche.</p></div>${hub.plus(current)?'<div data-unit-admin></div>':''}</section><div class="unit-grid"></div>${visible.length?'':'<section class="card"><h2>Deine Unit-Zuordnung</h2><p>Die Portalverwaltung kann dir unter „Units & Funktionen“ einen Arbeitsbereich zuweisen.</p></section>'}`;
    const grid=content.querySelector('.unit-grid');
    for(const unit of visible){
     const card=document.createElement('button');card.type='button';card.className='unit-card';card.style.setProperty('--unit-color',unit.color||'#6c91b3');
@@ -123,6 +123,7 @@
     const unit=currentPage&&directory.units.find(d=>d.id===currentPage.id);
     if(currentPage&&(!unit||!access(unit))){await home(false);toast('Deine Unit-Zuordnung hat sich geändert.');return;}
     if(before!==membershipSignature()){
+     await refreshData();assertSession(uid);if(!isCurrent(token))return;nav();
      updateSidebar();
      if(unit)await open(unit.id,currentPage.tab,false);else await home(false);
     }else if(currentPage?.tab==='chat'){
@@ -394,7 +395,7 @@
  }
  let chatSession=null;
  async function chat(unit,host,token){
-  host.innerHTML=`<div class="unit-section-head"><h2>Unit-Chat</h2><button class="secondary" type="button" data-chat-refresh>Aktualisieren</button></div><p class="muted">${unitMembers(unit).length} zugeordnete Mitglieder · Unit-Leitung und Ausbilder + haben Zugriff.</p><div class="unit-chat"><button class="secondary" type="button" data-unit-chat-older>Ältere Nachrichten laden</button><div class="unit-chat-log" role="log" aria-label="Unit-Nachrichten"></div><form><label class="hub-sr">Nachricht<textarea name="body" required maxlength="8000"></textarea></label><div class="unit-actions"><button class="primary" type="submit">Senden</button><p role="status"></p></div></form></div>`;
+  host.innerHTML=`<div class="unit-section-head"><h2>Unit-Chat</h2><button class="secondary" type="button" data-chat-refresh>Aktualisieren</button></div><p class="muted">${unitMembers(unit).length} zugeordnete Mitglieder · Unit-Leitung und Portalverwaltung haben Zugriff.</p><div class="unit-chat"><button class="secondary" type="button" data-unit-chat-older>Ältere Nachrichten laden</button><div class="unit-chat-log" role="log" aria-label="Unit-Nachrichten"></div><form><label class="hub-sr">Nachricht<textarea name="body" required maxlength="8000"></textarea></label><div class="unit-actions"><button class="primary" type="submit">Senden</button><p role="status"></p></div></form></div>`;
   const form=host.querySelector('form');
   // Keep the input label visible to screen readers while the composer stays usable.
   form.querySelector('label').className='unit-chat-label';
@@ -476,7 +477,7 @@
     assertSession(uid);
     const units=[...form.querySelectorAll('input:checked')].map(box=>({id:box.value,role:form.querySelector(`[data-unit-role="${CSS.escape(box.value)}"]`).value}));
     await command('memberships',{user_id:id,version:saved.version,units});
-    assertSession(uid);await load(true);el.close();
+    assertSession(uid);await refreshData();nav();await load(true);el.close();
     updateSidebar();document.querySelector('.unit-own-card')?.remove();decorateAccount();
     for(const section of document.querySelectorAll('.unit-profile-memberships[data-profile-user]')){
      const parent=section.parentElement,profileId=section.dataset.profileUser;section.remove();profileUnits(parent,profileId);

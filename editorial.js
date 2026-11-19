@@ -1,12 +1,6 @@
 (() => {
 'use strict';
 const escape = esc;
-const previousRoleLabel = roleLabel;
-roleLabel = function (user) {
- const profile = user ?? current;
- if (isFtoLead(profile) || profile?.name?.trim().toLowerCase() === 'tyre carter') return 'Patrol Unit';
- return previousRoleLabel(profile);
-};
 const node = (title, name = '', children = [], tone = '') => ({title,name,children,tone});
 const initial = [node('Chief of Police','Gibson Juvanovic',[
  node('Assistant Chief of Police','',[node('Deputy Chief','Michi Mirano',[node('Commander','',[

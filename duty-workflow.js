@@ -340,7 +340,7 @@
   await draw();
  }
 
- const changes = {department_id:'Unit',unit_role:'Unit-Funktion',position:'Funktion',description:'Beschreibung',color:'Farbe',username:'Benutzername',name:'Name',service_no:'Dienstnummer',rank:'Dienstgrad',role:'Rolle',access_level:'Zugriff',status:'Status',fto:'FTO',secondary_fto:'Zweiter FTO',leader_fto_id:'Zuständiger FTO',secondary_fto_id:'Zweiter FTO',training_start:'Ausbildungsbeginn',account_enabled:'Aktivierung',archived_at:'Archivierung',from_rank:'Vorheriger Dienstgrad',to_rank:'Neuer Dienstgrad',body:'Kapiteltext',tree:'Organigramm'};
+ const changes = {account_type:'Accounttyp',department_id:'Unit',unit_role:'Unit-Funktion',position:'Funktion',description:'Beschreibung',color:'Farbe',username:'Benutzername',name:'Name',service_no:'Dienstnummer',rank:'Dienstgrad',role:'Rolle',access_level:'Zugriff',status:'Status',fto:'FTO',secondary_fto:'Zweiter FTO',leader_fto_id:'Zuständiger FTO',secondary_fto_id:'Zweiter FTO',training_start:'Ausbildungsbeginn',account_enabled:'Aktivierung',archived_at:'Archivierung',from_rank:'Vorheriger Dienstgrad',to_rank:'Neuer Dienstgrad',body:'Kapiteltext',tree:'Organigramm'};
  async function history(){
   const host=customView('duty-history','Änderungsverlauf');
   host.innerHTML='<label>Bereich<select><option value="">Alle Bereiche</option><option>Account</option><option>Dienstgrad</option><option>Kapitel</option><option>Abteilungen</option><option>Units</option><option>Unit-Zuordnung</option></select></label><div class="mrpd-duty-list" aria-live="polite"></div><button class="secondary" type="button" hidden>Ältere Einträge laden</button>';

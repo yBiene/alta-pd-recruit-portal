@@ -14,7 +14,7 @@ function authEmail(username){
 }
 function mapProfile(p){
  return {
-  id:p.id, initialPasswordIsDefault:!!p.initial_password_is_default, username:p.username, name:p.name, serviceNo:p.service_no||"", archivedAt:p.archived_at||null, accountEnabled:p.account_enabled!==false,
+  id:p.id, accountType:p.account_type||null, initialPasswordIsDefault:!!p.initial_password_is_default, username:p.username, name:p.name, serviceNo:p.service_no||"", archivedAt:p.archived_at||null, accountEnabled:p.account_enabled!==false,
   role:p.role, access:p.access_level||"standard", rank:p.rank||"",
   fto:p.fto||"", start:p.training_start||"", status:p.status==="Ausbilder · Extra-Zugriff"?"Ausbilder +":p.status||"In Ausbildung",
   mustChangePassword:!!p.must_change_password, secondaryFto:p.secondary_fto||"", leaderFtoId:p.leader_fto_id||null, secondaryFtoId:p.secondary_fto_id||null, lastLogin:p.last_login||null, unlockedPhase:+p.unlocked_phase||1,
@@ -98,12 +98,17 @@ function canCreateRecruit(u=current){return isTrainer(u)}
 function hasExtraTrainerAccess(u=current){return isOwner(u)||(u?.role==="trainer"&&u.access==="extra")}
 function isFtoLead(u=current){return !!u && isOwner(u) && (u.username==="sgt.carter" || u.name==="Sgt Carter")}
 function ftoLeadershipLabel(u=current){return isFtoLead(u)?"Leitung der FTO":""}
-function roleLabel(u){
- if(!u)return "";
- if(isOwner(u))return isFtoLead(u)?"Hauptadmin / Leitung der FTO":"Hauptadmin / FTO";
- if(u.role==="trainer")return u.access==="extra"?"Ausbilder · Extra-Zugriff":"Ausbilder";
- return "Recruit";
+function accountType(u){
+ if(!u)return 'employee';
+ if(u.accountType)return u.accountType;
+ const access=u.access??u.access_level;
+ return u.role==='admin'&&access==='owner'?'owner':u.role==='trainer'&&access==='extra'?'management':'employee';
 }
+function roleLabel(u){
+ if(!u)return '';
+ return {employee:'Mitarbeiter',management:'Portalverwaltung',owner:'Hauptadministrator'}[accountType(u)];
+}
+
 async function invokeAccountAction(body){
  const {data,error}=await sb.functions.invoke("manage-user",{body});
  if(error) throw error;
@@ -2302,7 +2307,7 @@ refreshData=async function(){
  return ok;
 };
 function portalPeople(){return [...new Map([...db.users.filter(x=>x.accountEnabled!==false&&!x.archivedAt),...portalDirectory].map(x=>[x.id,x])).values()].filter(x=>x.id!==current?.id).sort((a,b)=>a.name.localeCompare(b.name,'de'))}
-function portalPersonLabel(u){return `${u.rank||''} ${u.name||''} · ${u.role==='recruit'?'Rekrut':u.role==='admin'?'Leitung':'Ausbilder'}${u.serviceNo?' · '+u.serviceNo:''}`.trim()}
+function portalPersonLabel(u){return `${u.rank||''} ${u.name||''} · ${roleLabel(u)}${u.serviceNo?' · '+u.serviceNo:''}`.trim()}
 const portalLabelBase=v62UserLabel;
 v62UserLabel=function(id){const u=portalDirectory.find(x=>x.id===id);return u?`${u.rank||''} ${u.name}`.trim():portalLabelBase(id)};
 function portalRecipientOptions(people){return people.map(u=>`<option value="${esc(u.id)}">${esc(portalPersonLabel(u))}</option>`).join('')}
