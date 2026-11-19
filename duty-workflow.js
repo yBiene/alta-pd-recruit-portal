@@ -80,6 +80,7 @@
     el.querySelector('[data-position]').textContent = info.title;
    }).catch(console.error);
   }
+  window.MRPDUnits?.profileUnits(bodyOf(el),p.id);
   if (p.id !== current.id) bodyOf(el).append(button('Private Nachricht', () => {el.close();mailTo(id);}, 'primary'));
  }
 
@@ -339,10 +340,10 @@
   await draw();
  }
 
- const changes = {username:'Benutzername',name:'Name',service_no:'Dienstnummer',rank:'Dienstgrad',role:'Rolle',access_level:'Zugriff',status:'Status',fto:'FTO',secondary_fto:'Zweiter FTO',leader_fto_id:'Zuständiger FTO',secondary_fto_id:'Zweiter FTO',training_start:'Ausbildungsbeginn',account_enabled:'Aktivierung',archived_at:'Archivierung',from_rank:'Vorheriger Dienstgrad',to_rank:'Neuer Dienstgrad',body:'Kapiteltext',tree:'Organigramm'};
+ const changes = {department_id:'Unit',unit_role:'Unit-Funktion',position:'Funktion',description:'Beschreibung',color:'Farbe',username:'Benutzername',name:'Name',service_no:'Dienstnummer',rank:'Dienstgrad',role:'Rolle',access_level:'Zugriff',status:'Status',fto:'FTO',secondary_fto:'Zweiter FTO',leader_fto_id:'Zuständiger FTO',secondary_fto_id:'Zweiter FTO',training_start:'Ausbildungsbeginn',account_enabled:'Aktivierung',archived_at:'Archivierung',from_rank:'Vorheriger Dienstgrad',to_rank:'Neuer Dienstgrad',body:'Kapiteltext',tree:'Organigramm'};
  async function history(){
   const host=customView('duty-history','Änderungsverlauf');
-  host.innerHTML='<label>Bereich<select><option value="">Alle Bereiche</option><option>Account</option><option>Dienstgrad</option><option>Kapitel</option><option>Abteilungen</option></select></label><div class="mrpd-duty-list" aria-live="polite"></div><button class="secondary" type="button" hidden>Ältere Einträge laden</button>';
+  host.innerHTML='<label>Bereich<select><option value="">Alle Bereiche</option><option>Account</option><option>Dienstgrad</option><option>Kapitel</option><option>Abteilungen</option><option>Units</option><option>Unit-Zuordnung</option></select></label><div class="mrpd-duty-list" aria-live="polite"></div><button class="secondary" type="button" hidden>Ältere Einträge laden</button>';
   const filter=host.querySelector('select'),results=host.querySelector('.mrpd-duty-list'),more=host.querySelector('button');
   let cursor=null,generation=0;
   filter.onchange=()=>{cursor=null;results.replaceChildren();draw();};
@@ -361,7 +362,7 @@
     cursor=batch.at(-1)?.id??cursor;
     for(const row of batch){
      const el=document.createElement('article');
-     const target=row.area==='Kapitel'?'Kapitel '+chapterNumber(Number(row.target)):row.area==='Abteilungen'?'Organigramm':person(row.target)?.name||'Ehemaliger Account';
+     const target=row.area==='Kapitel'?'Kapitel '+chapterNumber(Number(row.target)):row.area==='Abteilungen'?'Organigramm':row.area==='Units'?'Unit':person(row.target)?.name||'Ehemaliger Account';
      const actor=row.actor_id ? person(row.actor_id)?.name||'Ehemaliger Account' : 'System';
      const change={INSERT:'Erstellt',UPDATE:'Geändert',DELETE:'Entfernt'}[row.action];
      el.innerHTML=`<h3>${esc(row.area)} · ${esc(target)}</h3><small>${esc(change)} von ${esc(actor)} · ${esc(calendarDate(row.changed_at))}</small><p>${esc([...new Set(row.fields.map(key=>changes[key]||key))].join(', '))}</p>`;
@@ -441,9 +442,10 @@
   const findEvents=()=>Promise.all(['title','location','notes'].map(field=>list(
    sb.from('portal_hub_pd_events').select('id,title,starts_at,location,notes').ilike(field,term).order('starts_at',{ascending:false}).limit(30)
   ))).then(groups=>[...new Map(groups.flat().map(event=>[event.id,event])).values()]);
-  const [customEvents,edits]=await Promise.allSettled([
+  const [customEvents,edits,unitResults]=await Promise.allSettled([
    staff?findEvents():Promise.resolve([]),
-   permitted.length?list(sb.from('mrpd_chapter_content').select('chapter,body').in('chapter',permitted)):Promise.resolve([])
+   permitted.length?list(sb.from('mrpd_chapter_content').select('chapter,body').in('chapter',permitted)):Promise.resolve([]),
+   window.MRPDUnits?.search(search.value.trim())||Promise.resolve([])
   ]);
   if(token!==searchGeneration||current?.id!==uid||!active())return;
   const edited=new Map((edits.value||[]).map(row=>[row.chapter,row.body]));
@@ -457,6 +459,7 @@
   }
   for(const event of customEvents.value||[])add(event.title,`PD-Kalender · ${calendarDate(event.starts_at)}`,()=>hub.openCalendarEvent(event),event.location+' '+event.notes);
   if(!staff)for(const event of trainingEvents)add(event.title,`Ausbildungskalender · ${calendarDate(event.starts_at)}`,()=>showView('training-calendar'),event.location);
+  for(const item of unitResults?.value||[])hit.push(item);
   for(const view of document.querySelectorAll('#nav button[data-view]')){
    const key=view.dataset.view;
    const channel=Object.keys(hub.CHANNELS).find(name=>hub.CHANNELS[name].view===key);

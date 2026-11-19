@@ -46,7 +46,7 @@ function recordLayout(r){
 const originalAccounts=accountManagement;accountManagement=function(){originalAccounts();document.querySelectorAll('[data-account-delete]').forEach(b=>{if(db.users.find(u=>u.id===b.dataset.accountDelete)?.role==='recruit'){b.textContent='Archivieren';b.onclick=async()=>{if(!confirm('Rekrut unter Alte Rekruten archivieren? Alle Ausbildungsdaten bleiben erhalten.'))return;try{await invokeAccountAction({action:'delete',userId:b.dataset.accountDelete});await refreshData();accountManagement()}catch(e){alert(e.message)}}}})};
 
 function navigation(){
- const host=document.querySelector('#nav');if(!host)return;
+ const host=document.querySelector('#nav');if(!host||host.querySelector('.unit-nav-section'))return;
  const buttons=[...host.querySelectorAll('button.nav-btn')].filter(b=>b.dataset.view||b.dataset.chapter);
  if(!buttons.length)return;
  const signature=buttons.map(b=>b.dataset.view||'chapter:'+b.dataset.chapter).sort().join('|');
