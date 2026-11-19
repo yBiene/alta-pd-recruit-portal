@@ -442,10 +442,11 @@
   const findEvents=()=>Promise.all(['title','location','notes'].map(field=>list(
    sb.from('portal_hub_pd_events').select('id,title,starts_at,location,notes').ilike(field,term).order('starts_at',{ascending:false}).limit(30)
   ))).then(groups=>[...new Map(groups.flat().map(event=>[event.id,event])).values()]);
-  const [customEvents,edits,unitResults]=await Promise.allSettled([
+  const [customEvents,edits,unitResults,operationResults]=await Promise.allSettled([
    staff?findEvents():Promise.resolve([]),
    permitted.length?list(sb.from('mrpd_chapter_content').select('chapter,body').in('chapter',permitted)):Promise.resolve([]),
-   window.MRPDUnits?.search(search.value.trim())||Promise.resolve([])
+   window.MRPDUnits?.search(search.value.trim())||Promise.resolve([]),
+   window.MRPDOperations?.search(search.value.trim())||Promise.resolve([])
   ]);
   if(token!==searchGeneration||current?.id!==uid||!active())return;
   const edited=new Map((edits.value||[]).map(row=>[row.chapter,row.body]));
@@ -460,6 +461,7 @@
   for(const event of customEvents.value||[])add(event.title,`PD-Kalender · ${calendarDate(event.starts_at)}`,()=>hub.openCalendarEvent(event),event.location+' '+event.notes);
   if(!staff)for(const event of trainingEvents)add(event.title,`Ausbildungskalender · ${calendarDate(event.starts_at)}`,()=>showView('training-calendar'),event.location);
   for(const item of unitResults?.value||[])hit.push(item);
+  for(const item of operationResults?.value||[])hit.push(item);
   for(const view of document.querySelectorAll('#nav button[data-view]')){
    const key=view.dataset.view;
    const channel=Object.keys(hub.CHANNELS).find(name=>hub.CHANNELS[name].view===key);

@@ -7,7 +7,7 @@
  const roleNames = {member:'Mitglied',instructor:'Ausbilder',deputy:'Stellvertretende Leitung',lead:'Leitung'};
  const statuses = {open:'Offen',progress:'In Bearbeitung',done:'Erledigt'};
  const kinds = {notice:'Mitteilung',task:'Auftrag',case:'Fall',document:'Dokument',training:'Training',qualification:'Qualifikation'};
- const tabs = {overview:'Übersicht',tasks:'Aufträge & Übergabe',members:'Mitglieder',documents:'Dokumente',training:'Training',chat:'Chat'};
+ const tabs = {overview:'Übersicht',tasks:'Aufträge & Übergabe',members:'Mitglieder',documents:'Dokumente',training:'Training',operations:'Dienstbetrieb',chat:'Chat'};
  const visuals = {
   general:'assets/personnel-honors.webp',patrol:'assets/patrol-training.webp',swat:'chapter-art-09.webp',
   cid:'assets/evidence-division.webp',sheriff:'chapter-art-06.webp',fto:'chapter-art-02.webp',custom:'assets/radio-communications.webp'
@@ -107,6 +107,7 @@
     card.innerHTML=`<img src="${esc(visuals[unit.workspace_kind]||visuals.custom)}" alt="" loading="lazy"><div><p class="eyebrow">${unit.workspace_kind==='general'?'GEMEINSAMER BEREICH':esc(roleNames[membership(unit)?.unit_role]||(hub.plus(current)?'Verwaltungszugriff':'UNIT'))}</p><h2>${esc(unit.name)}</h2><p>${esc(unit.description||'Unit-Arbeitsbereich')}</p><span>${count} Mitglieder <b aria-hidden="true">↗</b></span></div>`;
     card.onclick=()=>open(unit.id);grid.append(card);
    }
+   window.MRPDOperations?.homeLinks(content);
    if(hub.plus(current))content.querySelector('[data-unit-admin]').append(button('Units verwalten',()=>settings()));
    updateSidebar();watch(token);
   }catch(error){if(isCurrent(token))errorAt(content,error);}
@@ -151,7 +152,7 @@
    content.querySelectorAll('[data-unit-tab]').forEach(b=>b.onclick=()=>open(id,b.dataset.unitTab));
    updateSidebar();
    const host=content.querySelector('.unit-content');
-   const routes={overview:()=>overview(unit,host,token),tasks:()=>entryList(unit,host,token,'tasks'),documents:()=>entryList(unit,host,token,'document'),training:()=>training(unit,host,token),members:()=>members(unit,host,token),chat:()=>chat(unit,host,token)};
+   const routes={overview:()=>overview(unit,host,token),tasks:()=>entryList(unit,host,token,'tasks'),documents:()=>entryList(unit,host,token,'document'),training:()=>training(unit,host,token),members:()=>members(unit,host,token),operations:()=>window.MRPDOperations.render(host,unit),chat:()=>chat(unit,host,token)};
    await routes[tab]();
    if(isCurrent(token))watch(token);
   }catch(error){if(isCurrent(token))errorAt(content.querySelector('.unit-content')||content,error);}
@@ -283,6 +284,8 @@
     };
     label.append(select);actions.append(label);
    }
+   window.MRPDOperations?.caseLinks(host,entry);
+   window.MRPDPortalFiles?.mount(host,'entry',entry.id,!entry.archived&&canEdit(unit,entry));
    if(entry.kind==='training'&&!entry.archived)attendance(entry,host.querySelector('[data-attendance]'));
    const comments=host.querySelector('[data-comments]'),more=host.querySelector('[data-comments-more]');
    let offset=0;
@@ -332,6 +335,7 @@
  async function training(unit,host,token){
   host.innerHTML='<div class="unit-section-head"><h2>Training & Qualifikationen</h2><div class="unit-actions" data-training-actions></div></div><div class="unit-filters"><label>Inhalt<select data-training-type><option value="training">Trainings</option><option value="qualification">Qualifikationen</option></select></label><label>Ansicht<select data-training-period><option value="active">Aktuell</option><option value="all">Alle</option><option value="archived">Archiviert</option></select></label></div><div class="unit-entry-list" data-training-list></div><div class="unit-pagination"></div>';
   const actions=host.querySelector('[data-training-actions]');
+  window.MRPDOperations?.qualificationMatrix(actions,unit);
   if(manager(unit))actions.append(button('Training planen',()=>entryEditor(unit,'training'),'primary'),button('Qualifikation eintragen',()=>entryEditor(unit,'qualification')));
   const type=host.querySelector('[data-training-type]'),period=host.querySelector('[data-training-period]'),target=host.querySelector('[data-training-list]'),pagination=host.querySelector('.unit-pagination');
   let page=0,request=0;
@@ -438,10 +442,15 @@
    }
    rows.forEach(row=>session.rows.set(row.id,row));
    const values=[...session.rows.values()].sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id));
-   log.replaceChildren();
+   const retained=new Map([...log.querySelectorAll(':scope > [data-unit-message]')].map(el=>[el.dataset.unitMessage,el]));
+   const keep=new Set(values.map(row=>row.id));
+   for(const node of [...log.childNodes])if(!keep.has(node.dataset?.unitMessage))node.remove();
    if(!values.length)log.textContent='Noch keine Nachrichten in dieser Unit.';
-   for(const row of values){
-    const el=document.createElement('article');el.className='unit-chat-message'+(row.author_id===current.id?' own':'');
+   for(const [index,row] of values.entries()){
+    const signature=JSON.stringify([row.body,row.author_id]),existing=retained.get(row.id);
+    if(existing?.dataset.signature===signature){if(log.children[index]!==existing)log.insertBefore(existing,log.children[index]||null);continue;}
+    existing?.remove();
+    const el=document.createElement('article');el.dataset.unitMessage=row.id;el.dataset.signature=signature;el.className='unit-chat-message'+(row.author_id===current.id?' own':'');
     el.innerHTML=`<header><button type="button" class="unit-chat-person">${esc(person(row.author_id)?.name||'Ehemaliger Mitarbeiter')}</button><time>${esc(dateTime(row.created_at))}</time></header><p>${esc(row.body)}</p>`;
     el.querySelector('.unit-chat-person').onclick=()=>window.MRPDDuty.profile(row.author_id);
     if(row.author_id===current.id||manager(session.unit))el.append(button('Entfernen',async event=>{
@@ -450,7 +459,7 @@
      try{await result(sb.from('mrpd_unit_messages').delete().eq('id',row.id));session.rows.delete(row.id);await fetchChat(session);}
      catch(error){toast(error.message);control.disabled=false;}
     }));
-    log.append(el);
+    log.insertBefore(el,log.children[index]||null);window.MRPDPortalFiles?.mount(el,'message',row.id,row.author_id===current.id||manager(session.unit));
    }
    more.hidden=!session.more;
    if(bottom||nearBottom)log.scrollTop=log.scrollHeight;
@@ -681,7 +690,7 @@
   stop();directory={uid:null,units:[],memberships:[]};loading=null;chatSession=null;restoredUser=null;
   document.querySelectorAll('.unit-dialog[open]').forEach(el=>el.close());
  });
- window.MRPDUnits=Object.freeze({home,open,load,accountEditor,accountButton,profileUnits,search:searchUnits});
+ window.MRPDUnits=Object.freeze({home,open,load,stop,accountEditor,accountButton,profileUnits,openEntry:async id=>{await load();const row=await result(sb.from('mrpd_unit_entries').select('*').eq('id',id).single());const unit=directory.units.find(u=>u.id===row.unit_id);if(!unit)throw Error('Unit nicht verfügbar.');await open(unit.id,'tasks');await entryDetail(unit,id);},search:searchUnits,units:()=>directory.units,canManage:manager});
  if(enabled())nav();
  decorate();
 })();
