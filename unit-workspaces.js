@@ -9,9 +9,17 @@
  const kinds = {notice:'Mitteilung',task:'Auftrag',case:'Fall',document:'Dokument',training:'Training',qualification:'Qualifikation'};
  const tabs = {overview:'Übersicht',tasks:'Aufträge & Übergabe',members:'Mitglieder',documents:'Dokumente',training:'Training',operations:'Dienstbetrieb',chat:'Chat'};
  const visuals = {
-  general:'assets/personnel-honors.webp',patrol:'assets/patrol-training.webp',swat:'chapter-art-09.webp',
-  cid:'assets/evidence-division.webp',sheriff:'chapter-art-06.webp',fto:'chapter-art-02.webp',custom:'assets/radio-communications.webp'
+  general:'assets/personnel-honors.webp',patrol:'assets/patrol-training.webp',swat:'assets/unit-swat.webp',
+  cid:'assets/evidence-division.webp',sheriff:'assets/unit-sheriff.webp',fto:'assets/patrol-training.webp',custom:'assets/radio-communications.webp'
  };
+ function unitVisual(unit){
+  if(/\bk[ -]?9\b|hund/i.test(unit.name))return 'assets/unit-k9.webp';
+  if(/\bair\b|luft|flug/i.test(unit.name))return 'assets/unit-air.webp';
+  if(/command|führung|leitung/i.test(unit.name))return 'assets/personnel-honors.webp';
+  if(/traffic|verkehr/i.test(unit.name))return 'assets/patrol-training.webp';
+  return visuals[unit.workspace_kind]||visuals.custom;
+ }
+ const picturePosition=unit=>unitVisual(unit).includes('/unit-')?'center':'75% center';
  let directory = {uid:null,units:[],memberships:[]};
  let loading = null;
  let generation = 0;
@@ -95,16 +103,16 @@
  async function home(push=true){
   if(!enabled())return;
   if(push)pushRoute('#department');
-  const token=begin('officer-home','Department');
+  const token=begin('officer-home','Department-Übersicht');
   try{
    await load(true);if(!isCurrent(token))return;
    const visible=directory.units.filter(access).sort((a,b)=>(a.workspace_kind==='general'?-1:b.workspace_kind==='general'?1:a.name.localeCompare(b.name,'de')));
-   content.innerHTML=`<section class="unit-department-head"><div><p class="eyebrow">MISSION ROW POLICE DEPARTMENT</p><h1>Department</h1><p>Deine Units und gemeinsamen Arbeitsbereiche.</p></div>${hub.plus(current)?'<div data-unit-admin></div>':''}</section><div class="unit-grid"></div>${visible.length?'':'<section class="card"><h2>Deine Unit-Zuordnung</h2><p>Die Portalverwaltung kann dir unter „Units & Funktionen“ einen Arbeitsbereich zuweisen.</p></section>'}`;
+   content.innerHTML=`<section class="unit-department-head"><img class="unit-department-cover" src="assets/patrol-training.webp" alt="" fetchpriority="high"><div class="unit-department-intro"><p class="eyebrow">MISSION ROW POLICE DEPARTMENT</p><h1>Department-Übersicht</h1><p>Wähle deine Unit oder einen gemeinsamen Arbeitsbereich.</p></div>${hub.plus(current)?'<div data-unit-admin></div>':''}</section><div class="unit-grid" aria-label="Units und Arbeitsbereiche"></div>${visible.length?'':'<section class="card"><h2>Deine Unit-Zuordnung</h2><p>Die Portalverwaltung kann dir unter „Units & Funktionen“ einen Arbeitsbereich zuweisen.</p></section>'}`;
    const grid=content.querySelector('.unit-grid');
    for(const unit of visible){
     const card=document.createElement('button');card.type='button';card.className='unit-card';card.style.setProperty('--unit-color',unit.color||'#6c91b3');
     const count=unitMembers(unit).length;
-    card.innerHTML=`<img src="${esc(visuals[unit.workspace_kind]||visuals.custom)}" alt="" loading="lazy"><div><p class="eyebrow">${unit.workspace_kind==='general'?'GEMEINSAMER BEREICH':esc(roleNames[membership(unit)?.unit_role]||(hub.plus(current)?'Verwaltungszugriff':'UNIT'))}</p><h2>${esc(unit.name)}</h2><p>${esc(unit.description||'Unit-Arbeitsbereich')}</p><span>${count} Mitglieder <b aria-hidden="true">↗</b></span></div>`;
+    card.innerHTML=`<img src="${esc(unitVisual(unit))}" alt="" loading="lazy" decoding="async" style="object-position:${picturePosition(unit)}"><div><p class="eyebrow">${unit.workspace_kind==='general'?'GEMEINSAMER BEREICH':esc(roleNames[membership(unit)?.unit_role]||(hub.plus(current)?'Verwaltungszugriff':'UNIT'))}</p><h2>${esc(unit.name)}</h2><p>${esc(unit.description||'Unit-Arbeitsbereich')}</p><span>${count} ${count===1?'Mitglied':'Mitglieder'} <b aria-hidden="true">Öffnen ↗</b></span></div>`;
     card.onclick=()=>open(unit.id);grid.append(card);
    }
    window.MRPDOperations?.homeLinks(content);
@@ -147,7 +155,7 @@
    }
    currentPage={id,tab};
    document.querySelector('#pageTitle').textContent=unit.name;
-   content.innerHTML=`<section class="unit-shell" style="--unit-color:${esc(/^#[0-9a-f]{6}$/i.test(unit.color)?unit.color:'#6c91b3')}"><div class="unit-breadcrumb"><button class="secondary" type="button" data-unit-home>← Department</button><span>${esc(unit.name)}</span></div><header class="unit-header"><img class="unit-header-photo" src="${esc(visuals[unit.workspace_kind]||visuals.custom)}" alt=""><div class="unit-header-copy"><img src="assets/mrpd-logo.svg" alt="MRPD"><div><p class="eyebrow">${unit.workspace_kind==='general'?'ALLGEMEINER DIENST':esc(roleNames[membership(unit)?.unit_role]||(hub.plus(current)?'VERWALTUNGSZUGRIFF':'UNIT'))}</p><h1>${esc(unit.name)}</h1><p>${esc(unit.description)}</p></div></div></header><nav class="unit-tabs" aria-label="Unit-Bereiche">${Object.entries(tabs).map(([key,title])=>`<button type="button" data-unit-tab="${key}" aria-current="${key===tab?'page':'false'}">${esc(key==='tasks'&&unit.workspace_kind==='cid'?'Fälle & Aufträge':title)}</button>`).join('')}</nav><div class="unit-content" aria-live="polite"></div></section>`;
+   content.innerHTML=`<section class="unit-shell" style="--unit-color:${esc(/^#[0-9a-f]{6}$/i.test(unit.color)?unit.color:'#6c91b3')}"><div class="unit-breadcrumb"><button class="secondary" type="button" data-unit-home>← Department</button><span>${esc(unit.name)}</span></div><header class="unit-header"><img class="unit-header-photo" src="${esc(unitVisual(unit))}" alt="" style="object-position:${picturePosition(unit)}"><div class="unit-header-copy"><img src="assets/mrpd-logo.svg" alt="MRPD"><div><p class="eyebrow">${unit.workspace_kind==='general'?'ALLGEMEINER DIENST':esc(roleNames[membership(unit)?.unit_role]||(hub.plus(current)?'VERWALTUNGSZUGRIFF':'UNIT'))}</p><h1>${esc(unit.name)}</h1><p>${esc(unit.description)}</p></div></div></header><nav class="unit-tabs" aria-label="Unit-Bereiche">${Object.entries(tabs).map(([key,title])=>`<button type="button" data-unit-tab="${key}" aria-current="${key===tab?'page':'false'}">${esc(key==='tasks'&&unit.workspace_kind==='cid'?'Fälle & Aufträge':title)}</button>`).join('')}</nav><div class="unit-content" aria-live="polite"></div></section>`;
    content.querySelector('[data-unit-home]').onclick=()=>home();
    content.querySelectorAll('[data-unit-tab]').forEach(b=>b.onclick=()=>open(id,b.dataset.unitTab));
    updateSidebar();
@@ -559,60 +567,66 @@
   });
  }
 
+ const navigationKey=()=>current?.id?'mrpd-navigation-folds:'+current.id:null;
+ function navigationPreferences(){try{return JSON.parse(localStorage.getItem(navigationKey())||'{}')||{};}catch{return {};}}
+ function revealActiveNavigation(){
+  let node=document.querySelector('#nav .nav-btn.active')?.parentElement;
+  while(node&&node.id!=='nav'){if(node.matches('details'))node.open=true;node=node.parentElement;}
+ }
  function arrangeNavigation(host){
   if(!host||!enabled())return;
   const buttons=new Map([...host.querySelectorAll('button[data-view]')].map(b=>[b.dataset.view,b]));
-  const chapters=[...host.querySelectorAll('button[data-chapter]')];
-  const used=new Set();
-  const group=(title,area=null)=>{
-   const section=document.createElement('section');section.className='unit-nav-section';
+  const chapters=[...host.querySelectorAll('button[data-chapter]')],used=new Set(),preferences=navigationPreferences();
+  const group=(title,area=null,fold=null)=>{
+   const section=document.createElement(fold?'details':'section');section.className='unit-nav-section'+(fold?' unit-nav-fold':'');
    if(area)section.dataset.portalArea=area;
-   const heading=document.createElement('h3');heading.textContent=title;section.append(heading);return section;
-  };
-  const take=(section,keys)=>{
-   for(const key of keys){
-    const node=buttons.get(key);if(!node||used.has(key))continue;
-    node.removeAttribute('data-portal-area');section.append(node);used.add(key);
+   const heading=document.createElement(fold?'summary':'h3');heading.textContent=title;section.append(heading);
+   if(fold){
+    heading.title=title;heading.setAttribute('aria-label',title);
+    section.dataset.navGroup=fold;section.dataset.navOwner=current.id;section.open=preferences[fold]===true;
+    const items=document.createElement('div');items.className='unit-nav-items';section.append(items);
+    const actor=current.id,key=navigationKey();
+    section.addEventListener('toggle',()=>{if(current?.id!==actor||!section.isConnected)return;try{const saved=navigationPreferences();saved[fold]=section.open;localStorage.setItem(key,JSON.stringify(saved));}catch{}});
    }
+   return section;
   };
-  const academy=group('Academy','academy');
-  take(academy,['dashboard']);
+  const target=section=>section.querySelector(':scope > .unit-nav-items')||section;
+  const take=(section,keys)=>{
+   for(const key of keys){const node=buttons.get(key);if(!node||used.has(key))continue;node.removeAttribute('data-portal-area');target(section).append(node);used.add(key);}
+  };
+  const pinned=document.createElement('section');pinned.className='unit-nav-section unit-nav-pinned';pinned.setAttribute('aria-label','Schnellzugriff');pinned.dataset.unitNavPinned='';
+  take(pinned,['evidence']);
+  const academy=group('Academy','academy');take(academy,['dashboard']);
   const handbook=document.createElement('details');handbook.className='unit-nav-handbook';handbook.innerHTML='<summary>Handbuch · Kapitel 1–22</summary>';
   chapters.forEach(node=>{node.removeAttribute('data-portal-area');handbook.append(node);});academy.append(handbook);
   take(academy,['tests','plan','radio','scenario','cad','mapquiz','rides','leaderboard','training-calendar']);
-  const department=group('Department','officer');
-  take(department,['officer-home']);
+  const department=group('Department','officer');department.dataset.unitNavDepartment='';
+  take(department,['officer-home','departments','department-operations']);
   const departmentHome=buttons.get('officer-home');if(departmentHome)departmentHome.textContent='Department-Übersicht';
-  const unitLinks=document.createElement('div');unitLinks.className='unit-nav-links';department.append(unitLinks);
-  const shared=group('Persönlich & gemeinsam');shared.dataset.unitNavShared='';
-  take(shared,['messages','duty-marks','calendar','news','evidence','departments','documents','feedback','badges','account']);
-  const admin=group('Verwaltung');
-  take(admin,['accounts','admin','rank-changes','duty-history','command','command-live']);
+  const shared=group('Persönlich & gemeinsam',null,'shared');target(shared).dataset.unitNavShared='';
+  if(document.querySelector('.sidebar-bottom [data-view="account"]'))used.add('account');
+  take(shared,['messages','calendar','news','duty-marks','documents','feedback','badges']);
+  const admin=group('Verwaltung',null,'admin');take(admin,['accounts','admin','rank-changes','duty-history','command','command-live']);
   used.add('duty-handover');
-  for(const [key,node] of buttons){
-   if(used.has(key))continue;
-   node.removeAttribute('data-portal-area');shared.append(node);
-  }
-  if(hub.plus(current)){
-   admin.append(button('Units & Funktionen zuweisen',()=>chooseAccount(),'nav-btn'),button('Units verwalten',()=>settings(),'nav-btn'));
-  }
-  host.replaceChildren(academy,department,shared,...(admin.children.length>1?[admin]:[]));
-  const switcher=document.querySelector('[data-hub-area="officer"]');
-  if(switcher)switcher.textContent='Department';
-  updateSidebar();
+  for(const [key,node]of buttons){if(used.has(key))continue;node.removeAttribute('data-portal-area');target(shared).append(node);}
+  if(hub.plus(current))target(admin).append(button('Units & Funktionen zuweisen',()=>chooseAccount(),'nav-btn'),button('Units verwalten',()=>settings(),'nav-btn'));
+  host.replaceChildren(pinned,academy,department,shared,...(target(admin).childElementCount?[admin]:[]));
+  const switcher=document.querySelector('[data-hub-area="officer"]');if(switcher)switcher.textContent='Department';
+  updateSidebar();revealActiveNavigation();
  }
  function updateSidebar(){
-  const host=document.querySelector('.unit-nav-links');if(!host||directory.uid!==current?.id)return;
-  host.replaceChildren();
-  for(const unit of directory.units.filter(access)){
-   const control=button(unit.name,()=>open(unit.id),'nav-btn unit-nav-link');control.dataset.unitId=unit.id;
-   const activeUnit=currentPage?.id===unit.id;control.classList.toggle('active',activeUnit);
-   control.setAttribute('aria-current',activeUnit?'page':'false');host.append(control);
-  }
+  const home=document.querySelector('#nav [data-view="officer-home"]');if(!home)return;
+  const selected=['officer-home','unit-workspace'].includes(hub.state.currentView);
+  home.classList.toggle('active',selected);home.setAttribute('aria-current',selected?'page':'false');
+ }
+ function rememberNavigation(){
+  if(!enabled())return;const saved=navigationPreferences();
+  for(const section of document.querySelectorAll('#nav details[data-nav-group]'))if(section.dataset.navOwner===current.id)saved[section.dataset.navGroup]=section.open;
+  try{localStorage.setItem(navigationKey(),JSON.stringify(saved));}catch{}
  }
  const previousNav=nav;
  nav=function(){
-  previousNav.apply(this,arguments);
+  rememberNavigation();previousNav.apply(this,arguments);
   if(!enabled())return;
   arrangeNavigation(document.querySelector('#nav'));
   const uid=current.id;
@@ -676,8 +690,9 @@
  const navHost=document.querySelector('#nav');
  if(navHost)new MutationObserver(()=>{
   const shared=navHost.querySelector('[data-unit-nav-shared]');if(!shared)return;
-  navHost.querySelectorAll(':scope > button[data-view]').forEach(node=>shared.append(node));
- }).observe(navHost,{childList:true});
+  navHost.querySelectorAll(':scope > button[data-view]').forEach(node=>{const parent=node.dataset.view==='evidence'?navHost.querySelector('[data-unit-nav-pinned]'):shared;parent?.append(node);});
+  revealActiveNavigation();
+ }).observe(navHost,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
  window.addEventListener('popstate',event=>{
   if(!enabled())return;
   const match=location.hash.match(/^#unit\/([0-9a-f-]{36})\/([a-z]+)$/i);

@@ -60,9 +60,9 @@ async function chart(options) {
    const matches=item.name?people.filter(p=>p.name.trim().toLowerCase()===item.name.trim().toLowerCase()):[];
    const profile=matches.length===1?matches[0]:null;
    const id=cards.push({item,items,profile,info:chartAssignment(item,parents)})-1;
-   const name=profile?`<button type="button" class="mrpd-position-profile" data-position-profile="${id}">${escape(item.name)}</button>`:`<span>${escape(item.name||(item.children?.length?'':'Unbesetzt'))}</span>`;
+   const name=profile?`<button type="button" class="mrpd-position-name mrpd-position-profile" data-position-profile="${id}">${escape(item.name)}</button>`:`<span class="mrpd-position-name">${escape(item.name||(item.children?.length?'':'Unbesetzt'))}</span>`;
    const color=item.tone==='gold'?'gold':item.tone==='blue'?'blue':tone;
-   return `<li><div class="mrpd-position ${color}"><strong>${insignia(item.title)}${escape(item.title)}</strong>${name}${canEdit?`<button class="secondary" data-position="${id}" aria-label="${escape(item.title)} bearbeiten">✎</button>`:''}</div>${item.children?.length?branch(item.children,color,[...parents,item]):''}</li>`;
+   return `<li><div class="mrpd-position ${color}">${name}<strong>${insignia(item.title)}${escape(item.title)}</strong>${canEdit?`<button class="secondary mrpd-position-edit" type="button" data-position="${id}" aria-label="${escape(item.title)} bearbeiten">✎</button>`:''}</div>${item.children?.length?branch(item.children,color,[...parents,item]):''}</li>`;
   }).join('')+'</ul>';
  }
 

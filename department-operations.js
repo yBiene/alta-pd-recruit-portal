@@ -301,9 +301,9 @@
  const previousView=showView;showView=function(view){if(view==='department-operations')return show();return previousView.apply(this,arguments);};
  const previousNav=nav;nav=function(){
   previousNav.apply(this,arguments);if(!active())return;
-  const unitLinks=document.querySelector('.unit-nav-links');
-  if(unitLinks&&!document.querySelector('[data-view="department-operations"]')){
-   const b=button('Personal & Dienstbetrieb',()=>show(),'nav-btn');b.dataset.view='department-operations';unitLinks.before(b);
+  const department=document.querySelector('[data-unit-nav-department]');
+  if(department&&!document.querySelector('[data-view="department-operations"]')){
+   const b=button('Personal & Dienstbetrieb',()=>show(),'nav-btn');b.dataset.view='department-operations';department.append(b);
   }
   if(restoredUser!==current.id){restoredUser=current.id;if(location.hash==='#operations')show();}
   if(alertUser!==current.id){clearInterval(alertTimer);loadAlerts();alertTimer=setInterval(loadAlerts,60000);}
